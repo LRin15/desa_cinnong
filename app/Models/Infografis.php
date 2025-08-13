@@ -17,4 +17,8 @@ class Infografis extends Model
         'gambar',
         'tanggal_terbit',
     ];
+
+    protected $casts = [
+    'tanggal_terbit' => 'datetime',
+];
 }

@@ -1,11 +1,48 @@
 // resources/js/Pages/Beranda.tsx
+
 import MainLayout from '@/layouts/MainLayout';
 import { Head, Link } from '@inertiajs/react';
-import { BarChart3, Building2, Calendar, MapPin, TrendingUp, Users } from 'lucide-react';
+import { BarChart3, Building2, Calendar, MapPin, Newspaper, TrendingUp, Users } from 'lucide-react';
 
-export default function Beranda() {
+// Tipe data untuk satu item berita, sekarang dengan 'gambar'
+interface BeritaItem {
+    slug: string;
+    judul: string;
+    kategori: string;
+    tanggal_terbit: string;
+    kutipan: string;
+    gambar: string | null; // URL gambar bisa jadi null
+}
+
+// Tipe data untuk props halaman Beranda
+interface BerandaProps {
+    beritaTerbaru: BeritaItem[];
+    auth?: any;
+}
+
+// Fungsi untuk menentukan warna badge berdasarkan kategori
+const getCategoryClass = (category: string) => {
+    switch (category) {
+        case 'Pengumuman':
+            return 'bg-orange-100 text-orange-800';
+        case 'Program Desa':
+            return 'bg-green-100 text-green-800';
+        case 'Informasi':
+            return 'bg-blue-100 text-blue-800';
+        case 'Kegiatan Warga':
+            return 'bg-purple-100 text-purple-800';
+        case 'Kesehatan':
+            return 'bg-pink-100 text-pink-800';
+        case 'Pendidikan':
+            return 'bg-yellow-100 text-yellow-800';
+        default:
+            return 'bg-gray-100 text-gray-800';
+    }
+};
+
+export default function Beranda({ auth, beritaTerbaru }: BerandaProps) {
     return (
-        <MainLayout>
+        <MainLayout auth={auth}>
             <Head title="Beranda" />
             <div className="min-h-screen">
                 {/* Hero Section */}
@@ -21,14 +58,14 @@ export default function Beranda() {
                                 untuk transparansi dan kemudahan akses.
                             </p>
                             <div className="flex flex-col justify-center gap-4 sm:flex-row">
-                                <Link href="/profil-desa">
-                                    <button className="flex items-center justify-center rounded-lg bg-orange-600 px-6 py-3 text-lg font-medium text-white transition-colors hover:bg-orange-700">
+                                <Link href={route('profil.desa')}>
+                                    <button className="flex w-full items-center justify-center rounded-lg bg-orange-600 px-6 py-3 text-lg font-medium text-white transition-colors hover:bg-orange-700 sm:w-auto">
                                         <MapPin className="mr-2 h-5 w-5" />
                                         Jelajahi Profil Desa
                                     </button>
                                 </Link>
-                                <Link href="/data-desa">
-                                    <button className="flex items-center justify-center rounded-lg border border-orange-600 px-6 py-3 text-lg font-medium text-orange-600 transition-colors hover:bg-orange-50">
+                                <Link href={route('data.desa')}>
+                                    <button className="flex w-full items-center justify-center rounded-lg border border-orange-600 px-6 py-3 text-lg font-medium text-orange-600 transition-colors hover:bg-orange-50 sm:w-auto">
                                         <BarChart3 className="mr-2 h-5 w-5" />
                                         Lihat Data Statistik
                                     </button>
@@ -45,40 +82,32 @@ export default function Beranda() {
                             <h2 className="mb-4 text-3xl font-bold text-gray-900">Data Terkini Desa Cinnong</h2>
                             <p className="text-gray-600">Informasi statistik dan demografis terbaru</p>
                         </div>
-
-                        <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
                             <div className="rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm">
                                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
                                     <Users className="h-6 w-6 text-orange-600" />
                                 </div>
-                                {/* Data updated based on PDF source [cite: 134] */}
                                 <div className="mb-1 text-2xl font-bold text-orange-600">1.868</div>
                                 <div className="text-sm text-gray-600">Total Penduduk</div>
                             </div>
-
                             <div className="rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm">
                                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
                                     <Building2 className="h-6 w-6 text-orange-600" />
                                 </div>
-                                {/* Data updated based on PDF source [cite: 91] */}
                                 <div className="mb-1 text-2xl font-bold text-orange-600">4</div>
                                 <div className="text-sm text-gray-600">Jumlah Dusun</div>
                             </div>
-
                             <div className="rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm">
                                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
                                     <TrendingUp className="h-6 w-6 text-orange-600" />
                                 </div>
-                                {/* NOTE: UMKM data is not available in the provided PDF. */}
                                 <div className="mb-1 text-2xl font-bold text-orange-600">156</div>
                                 <div className="text-sm text-gray-600">UMKM Aktif</div>
                             </div>
-
                             <div className="rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm">
                                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
                                     <Calendar className="h-6 w-6 text-orange-600" />
                                 </div>
-                                {/* Data updated based on PDF source [cite: 5, 9, 14] */}
                                 <div className="mb-1 text-2xl font-bold text-orange-600">2025</div>
                                 <div className="text-sm text-gray-600">Data Terakhir</div>
                             </div>
@@ -86,55 +115,56 @@ export default function Beranda() {
                     </div>
                 </section>
 
-                {/* News/Updates Section */}
+                {/* News/Updates Section - KONTEN DINAMIS DENGAN GAMBAR */}
                 <section className="bg-gray-50 py-16">
                     <div className="container mx-auto px-4">
                         <div className="mb-12 text-center">
-                            <h2 className="mb-4 text-3xl font-bold text-gray-900">Berita & Pengumuman</h2>
-                            <p className="text-gray-600">Informasi terbaru dari Desa Cinnong</p>
+                            <h2 className="mb-4 text-3xl font-bold text-gray-900">Berita & Pengumuman Terbaru</h2>
+                            <p className="text-gray-600">Informasi terkini dari Desa Cinnong</p>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                            <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-                                <div className="mb-3">
-                                    <span className="inline-flex items-center rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-800">
-                                        Pengumuman
-                                    </span>
-                                </div>
-                                <h3 className="mb-1 text-lg font-semibold text-gray-900">Update Data Kependudukan</h3>
-                                <p className="mb-3 text-sm text-gray-600">10 Agustus 2025</p>
-                                <p className="text-sm text-gray-600">
-                                    {/* Data updated based on PDF source [cite: 134, 91] */}
-                                    Data kependudukan Desa Cinnong telah diperbarui dengan total 1.868 jiwa tersebar di 4 dusun.
-                                </p>
-                            </div>
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                            {beritaTerbaru.map((berita) => (
+                                <Link
+                                    key={berita.slug}
+                                    href={route('berita.detail', berita.slug)}
+                                    className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-shadow duration-300 hover:shadow-lg"
+                                >
+                                    {/* 👇 BAGIAN GAMBAR BARU 👇 */}
+                                    <div className="aspect-w-16 aspect-h-9">
+                                        {berita.gambar ? (
+                                            <img src={berita.gambar} alt={berita.judul} className="h-full w-full object-cover" />
+                                        ) : (
+                                            <div className="flex h-full w-full items-center justify-center bg-gray-200">
+                                                <Newspaper className="h-12 w-12 text-gray-400" />
+                                            </div>
+                                        )}
+                                    </div>
 
-                            <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-                                <div className="mb-3">
-                                    <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                                        Program Desa
-                                    </span>
-                                </div>
-                                <h3 className="mb-1 text-lg font-semibold text-gray-900">Program Bantuan UMKM</h3>
-                                <p className="mb-3 text-sm text-gray-600">5 Agustus 2025</p>
-                                <p className="text-sm text-gray-600">
-                                    {/* NOTE: UMKM data is not available in the provided PDF. */}
-                                    Pembukaan pendaftaran program bantuan modal usaha untuk UMKM di Desa Cinnong dengan total bantuan Rp 500 juta.
-                                </p>
-                            </div>
-
-                            <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-                                <div className="mb-3">
-                                    <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                                        Informasi
-                                    </span>
-                                </div>
-                                <h3 className="mb-1 text-lg font-semibold text-gray-900">Sistem Informasi Desa</h3>
-                                <p className="mb-3 text-sm text-gray-600">1 Agustus 2025</p>
-                                <p className="text-sm text-gray-600">
-                                    Peluncuran sistem informasi desa digital untuk memudahkan akses data dan transparansi pemerintahan.
-                                </p>
-                            </div>
+                                    {/* Bagian Teks */}
+                                    <div className="flex flex-1 flex-col p-6">
+                                        <div className="mb-3">
+                                            <span
+                                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getCategoryClass(berita.kategori)}`}
+                                            >
+                                                {berita.kategori}
+                                            </span>
+                                        </div>
+                                        <h3 className="mb-1 text-lg font-semibold text-gray-900">{berita.judul}</h3>
+                                        <p className="mb-3 text-sm text-gray-600">{berita.tanggal_terbit}</p>
+                                        <p className="line-clamp-3 flex-1 text-sm text-gray-600">{berita.kutipan}</p>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                        <div className="mt-12 text-center">
+                            <Link
+                                href={route('berita')}
+                                className="inline-flex items-center justify-center rounded-lg bg-orange-600 px-6 py-3 text-lg font-medium text-white transition-colors hover:bg-orange-700"
+                            >
+                                <Newspaper className="mr-2 h-5 w-5" />
+                                Lihat Semua Berita
+                            </Link>
                         </div>
                     </div>
                 </section>

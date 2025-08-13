@@ -48,6 +48,9 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                 >
                                     Infografis
                                 </Link>
+                                <Link href={route('berita')} className="text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]">
+                                    Berita
+                                </Link>
                             </div>
                         </div>
 
@@ -57,14 +60,15 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                 // Jika Pengguna SUDAH Login
                                 <div className="flex items-center space-x-4">
                                     <span className="hidden font-medium text-white sm:block">Selamat datang, {auth.user.name}</span>
-                                    {/* 
+
+                                    {/* === AKTIFKAN TAUTAN INI === */}
                                     <Link
                                         href={route('dashboard')}
                                         className="text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]"
                                     >
                                         Dashboard
-                                    </Link> 
-                                    */}
+                                    </Link>
+
                                     <Link
                                         href={route('logout')}
                                         method="post"

@@ -19,6 +19,9 @@ class DatabaseSeeder extends Seeder
         $this->call([
         InfografisSeeder::class,
     ]);
+    $this->call([
+        BeritaSeeder::class,
+    ]);
         // User::factory(10)->create();
 
         User::factory()->create([
