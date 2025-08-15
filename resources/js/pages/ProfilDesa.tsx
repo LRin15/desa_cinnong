@@ -1,7 +1,7 @@
 // resources/js/Pages/ProfilDesa.tsx
 import MainLayout from '@/layouts/MainLayout';
 import { Head } from '@inertiajs/react';
-import { Award, Calendar, Eye, MapPin, Target, Users } from 'lucide-react';
+import { Calendar, Eye, MapPin, Target, Users } from 'lucide-react';
 
 export default function ProfilDesa() {
     return (
@@ -26,16 +26,13 @@ export default function ProfilDesa() {
                                 </div>
                                 <div>
                                     <h2 className="mb-2 text-3xl font-bold">Desa Cinnong</h2>
-                                    {/* NOTE: Kecamatan/Kabupaten is not specified in the PDF, but is inferred. */}
                                     <p className="text-orange-100">Kecamatan Sibulue, Kabupaten Bone</p>
                                     <div className="mt-2 flex items-center space-x-4">
                                         <span className="inline-flex items-center rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-medium text-white">
-                                            {/* NOTE: Area data is not available in the provided PDF. */}
-                                            Luas: 12.5 km²
+                                            8 RT
                                         </span>
                                         <span className="inline-flex items-center rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-medium text-white">
-                                            {/* NOTE: Altitude data is not available in the provided PDF. */}
-                                            Ketinggian: 450 mdpl
+                                            Luas: 16.29 km²
                                         </span>
                                     </div>
                                 </div>
@@ -43,179 +40,163 @@ export default function ProfilDesa() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-                        {/* Main Content */}
-                        <div className="space-y-8 lg:col-span-2">
-                            {/* Sejarah */}
-                            <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-                                <div className="mb-4">
-                                    <h3 className="flex items-center space-x-2 text-xl font-semibold text-gray-900">
-                                        <Calendar className="h-5 w-5 text-orange-600" />
-                                        <span>Sejarah Desa</span>
-                                    </h3>
-                                </div>
-                                <div>
-                                    {/* NOTE: Historical information is not available in the provided PDF. */}
-                                    <p className="mb-4 leading-relaxed text-gray-700">
-                                        Desa Cinnong didirikan pada tahun 1945 oleh para pejuang kemerdekaan yang menetap di daerah ini setelah
-                                        proklamasi kemerdekaan Indonesia. Nama "Cinnong" berasal dari bahasa daerah yang berarti "air jernih", merujuk
-                                        pada sumber mata air alami yang melimpah di wilayah ini.
-                                    </p>
-                                    <p className="mb-4 leading-relaxed text-gray-700">
-                                        Sejak awal berdirinya, Desa Cinnong dikenal sebagai daerah agraris dengan mayoritas penduduk bermata
-                                        pencaharian sebagai petani dan peternak. Seiring perkembangan zaman, desa ini telah bertransformasi menjadi
-                                        pusat UMKM dan kegiatan ekonomi kreatif yang dinamis.
-                                    </p>
-                                    <p className="leading-relaxed text-gray-700">
-                                        Pada tahun 2020, Desa Cinnong meraih penghargaan sebagai Desa Wisata Terbaik tingkat kabupaten berkat upaya
-                                        pelestarian budaya dan pengembangan potensi alam yang berkelanjutan.
-                                    </p>
-                                </div>
+                    {/* Peta Desa */}
+                    <div className="mb-12 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+                        <div className="mb-6">
+                            <h3 className="flex items-center space-x-2 text-xl font-semibold text-gray-900">
+                                <MapPin className="h-5 w-5 text-orange-600" />
+                                <span>Peta Wilayah Desa Cinnong</span>
+                            </h3>
+                        </div>
+                        <div className="flex justify-center">
+                            <div className="rounded-lg bg-gray-50 p-4">
+                                <img
+                                    src="/images/profil/peta.png"
+                                    alt="Peta Desa Cinnong menunjukkan pembagian wilayah RT"
+                                    className="h-auto max-w-full rounded-lg shadow-md"
+                                    style={{ maxHeight: '500px' }}
+                                />
+                                <p className="mt-3 text-center text-sm text-gray-600">Peta wilayah Desa Cinnong dengan pembagian 8 RT</p>
                             </div>
+                        </div>
+                    </div>
 
-                            {/* Visi Misi */}
-                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-                                    <div className="mb-4">
-                                        <h3 className="flex items-center space-x-2 text-xl font-semibold text-gray-900">
-                                            <Eye className="h-5 w-5 text-orange-600" />
-                                            <span>Visi</span>
-                                        </h3>
-                                    </div>
-                                    <div>
-                                        {/* NOTE: Vision/Mission is not available in the provided PDF. */}
-                                        <p className="leading-relaxed text-gray-700">
-                                            "Menjadikan Desa Cinnong sebagai desa mandiri, sejahtera, dan berkelanjutan dengan mengedepankan
-                                            nilai-nilai kearifan lokal dan inovasi teknologi."
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-                                    <div className="mb-4">
-                                        <h3 className="flex items-center space-x-2 text-xl font-semibold text-gray-900">
-                                            <Target className="h-5 w-5 text-orange-600" />
-                                            <span>Misi</span>
-                                        </h3>
-                                    </div>
-                                    <div>
-                                        <ul className="space-y-2 text-gray-700">
-                                            <li>• Meningkatkan kesejahteraan masyarakat melalui pemberdayaan ekonomi</li>
-                                            <li>• Mengembangkan potensi wisata dan budaya lokal</li>
-                                            <li>• Menerapkan tata kelola pemerintahan yang transparan</li>
-                                            <li>• Melestarikan lingkungan hidup</li>
-                                        </ul>
-                                    </div>
-                                </div>
+                    {/* Main Content Grid */}
+                    <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+                        {/* Sejarah */}
+                        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+                            <div className="mb-4">
+                                <h3 className="flex items-center space-x-2 text-xl font-semibold text-gray-900">
+                                    <Calendar className="h-5 w-5 text-orange-600" />
+                                    <span>Sejarah Desa</span>
+                                </h3>
                             </div>
-
-                            {/* Struktur Pemerintahan */}
-                            <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-                                <div className="mb-6">
-                                    <h3 className="flex items-center space-x-2 text-xl font-semibold text-gray-900">
-                                        <Users className="h-5 w-5 text-orange-600" />
-                                        <span>Struktur Pemerintahan</span>
-                                    </h3>
-                                </div>
-                                <div>
-                                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                        <div className="rounded-lg bg-orange-50 p-4 text-center">
-                                            <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-orange-600">
-                                                <span className="text-lg font-bold text-white">KD</span>
-                                            </div>
-                                            {/* Data updated based on PDF source [cite: 61] */}
-                                            <h4 className="font-semibold text-gray-900"> Irfan, S. Sos</h4>
-                                            <p className="text-sm text-gray-600">Kepala Desa</p>
-                                            <p className="mt-1 text-xs text-gray-500">Periode 2019-2025</p>
-                                        </div>
-
-                                        <div className="rounded-lg bg-gray-50 p-4 text-center">
-                                            <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-gray-600">
-                                                <span className="text-lg font-bold text-white">SD</span>
-                                            </div>
-                                            {/* NOTE: Staff names are not available in the PDF [cite: 103] */}
-                                            <h4 className="font-semibold text-gray-900">Ibu Sari Dewi</h4>
-                                            <p className="text-sm text-gray-600">Sekretaris Desa</p>
-                                            <p className="mt-1 text-xs text-gray-500">Sejak 2020</p>
-                                        </div>
-
-                                        <div className="rounded-lg bg-gray-50 p-4 text-center">
-                                            <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-gray-600">
-                                                <span className="text-lg font-bold text-white">KU</span>
-                                            </div>
-                                            {/* NOTE: Staff names are not available in the PDF [cite: 103] */}
-                                            <h4 className="font-semibold text-gray-900">Bapak Ahmad Wijaya</h4>
-                                            <p className="text-sm text-gray-600">Kepala Urusan Keuangan</p>
-                                            <p className="mt-1 text-xs text-gray-500">Sejak 2021</p>
-                                        </div>
-
-                                        <div className="rounded-lg bg-gray-50 p-4 text-center">
-                                            <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-gray-600">
-                                                <span className="text-lg font-bold text-white">KP</span>
-                                            </div>
-                                            {/* NOTE: Staff names are not available in the PDF [cite: 103] */}
-                                            <h4 className="font-semibold text-gray-900">Ibu Ratna Sari</h4>
-                                            <p className="text-sm text-gray-600">Kepala Urusan Perencanaan</p>
-                                            <p className="mt-1 text-xs text-gray-500">Sejak 2019</p>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div>
+                                <p className="mb-4 leading-relaxed text-gray-700">
+                                    Sejarah kepemimpinan Desa Cinnong dapat dimulai dari tahun 70-an sampai tahun 1994 dibawah Pemerintahan Asapah.
+                                    Pada tahun yang sama pucuk kepemimpinan diambil alih oleh H. Muh. Anshar sebagai Kepala Desa Cinnong sampai tahun
+                                    2010.
+                                </p>
+                                <p className="mb-4 leading-relaxed text-gray-700">
+                                    Pada tahun 2010 diadakan Pemilihan Kepala Desa tongkat estafet kepemimpinan berpindah kepada Irfan, S.Kom selaku
+                                    Kepala Desa Cinnong sampai pada tahun 2016 dan kembali memimpin desa Cinnong setelah terpilih kedua kalinya pada
+                                    Pemilihan serentak Kepala Desa tahap II untuk memimpin Desa Cinnong sampai pada tahun 2022, yang kemudian kembali
+                                    memimpin setelah terpilih yang ketiga kalinya pada Pemilihan kepala desa serentak gel. II untuk memimpin desa
+                                    Cinnong Periode 2023-2030.
+                                </p>
                             </div>
                         </div>
 
-                        {/* Sidebar */}
-                        <div className="space-y-6">
-                            {/* Quick Facts */}
-                            <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-                                <div className="mb-4">
-                                    <h3 className="text-xl font-semibold text-gray-900">Fakta Singkat</h3>
-                                </div>
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-gray-600">Tahun Berdiri</span>
-                                        {/* NOTE: Founding year is not available in the provided PDF. */}
-                                        <span className="font-semibold">1945</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-gray-600">Luas Wilayah</span>
-                                        {/* NOTE: Area data is not available in the provided PDF. */}
-                                        <span className="font-semibold">12.5 km²</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-gray-600">Jumlah RT</span>
-                                        {/* Data updated based on PDF source [cite: 91] */}
-                                        <span className="font-semibold">8 RT</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-gray-600">Ketinggian</span>
-                                        {/* NOTE: Altitude data is not available in the provided PDF. */}
-                                        <span className="font-semibold">450 mdpl</span>
-                                    </div>
-                                </div>
+                        {/* Visi */}
+                        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+                            <div className="mb-4">
+                                <h3 className="flex items-center space-x-2 text-xl font-semibold text-gray-900">
+                                    <Eye className="h-5 w-5 text-orange-600" />
+                                    <span>Visi</span>
+                                </h3>
                             </div>
+                            <div>
+                                <p className="mb-6 leading-relaxed text-gray-700">
+                                    "Menjadikan Desa Cinnong sebagai desa mandiri, sejahtera, dan berkelanjutan dengan mengedepankan nilai-nilai
+                                    kearifan lokal dan inovasi teknologi."
+                                </p>
 
-                            {/* Prestasi */}
-                            <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-                                <div className="mb-4">
-                                    <h3 className="flex items-center space-x-2 text-xl font-semibold text-gray-900">
-                                        <Award className="h-5 w-5 text-orange-600" />
-                                        <span>Prestasi</span>
-                                    </h3>
+                                <h4 className="mb-3 flex items-center space-x-2 text-lg font-semibold text-gray-900">
+                                    <Target className="h-4 w-4 text-orange-600" />
+                                    <span>Misi</span>
+                                </h4>
+                                <ul className="space-y-2 text-gray-700">
+                                    <li>• Meningkatkan kesejahteraan masyarakat melalui pemberdayaan ekonomi</li>
+                                    <li>• Mengembangkan potensi wisata dan budaya lokal</li>
+                                    <li>• Menerapkan tata kelola pemerintahan yang transparan</li>
+                                    <li>• Melestarikan lingkungan hidup</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Foto Struktur Pemerintahan */}
+                    <div className="mt-12 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+                        <div className="mb-6">
+                            <h3 className="flex items-center space-x-2 text-xl font-semibold text-gray-900">
+                                <Users className="h-5 w-5 text-orange-600" />
+                                <span>Tim Pemerintahan Desa Cinnong</span>
+                            </h3>
+                        </div>
+                        <div className="mb-6 flex justify-center">
+                            <div className="rounded-lg bg-gray-50 p-4">
+                                <img
+                                    src="/images/profil/struktur.png"
+                                    alt="Foto bersama tim pemerintahan Desa Cinnong"
+                                    className="h-auto max-w-full rounded-lg shadow-md"
+                                    style={{ maxHeight: '400px' }}
+                                />
+                                <p className="mt-3 text-center text-sm text-gray-600">Tim Pemerintahan Desa Cinnong periode 2023-2030</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Struktur Pemerintahan Detail */}
+                    <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+                        <div className="mb-6">
+                            <h3 className="flex items-center space-x-2 text-xl font-semibold text-gray-900">
+                                <Users className="h-5 w-5 text-orange-600" />
+                                <span>Struktur Pemerintahan</span>
+                            </h3>
+                        </div>
+                        <div>
+                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                                <div className="rounded-lg bg-orange-50 p-4 text-center">
+                                    <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-white shadow-md">
+                                        <img
+                                            src="/images/profil/kades.png"
+                                            alt="Irfan, S.Kom - Kepala Desa Cinnong"
+                                            className="h-full w-full object-cover"
+                                        />
+                                    </div>
+                                    <h4 className="font-semibold text-gray-900">IRFAN, S.Kom</h4>
+                                    <p className="text-sm text-gray-600">Kepala Desa</p>
+                                    <p className="mt-1 text-xs text-gray-500">Periode 2023-2030</p>
                                 </div>
-                                {/* NOTE: Village achievements are not available in the provided PDF. */}
-                                <div className="space-y-3">
-                                    <div className="rounded-lg bg-orange-50 p-3">
-                                        <p className="text-sm font-semibold">Desa Wisata Terbaik</p>
-                                        <p className="text-xs text-gray-600">Tingkat Kabupaten - 2020</p>
+
+                                <div className="rounded-lg bg-gray-50 p-4 text-center">
+                                    <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-gray-600">
+                                        <span className="text-lg font-bold text-white">SD</span>
                                     </div>
-                                    <div className="rounded-lg bg-green-50 p-3">
-                                        <p className="text-sm font-semibold">Desa Inovatif</p>
-                                        <p className="text-xs text-gray-600">Tingkat Provinsi - 2021</p>
+                                    <h4 className="font-semibold text-gray-900">HERLINA, S.Sos</h4>
+                                    <p className="text-sm text-gray-600">Sekretaris Desa</p>
+                                </div>
+
+                                <div className="rounded-lg bg-gray-50 p-4 text-center">
+                                    <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-gray-600">
+                                        <span className="text-lg font-bold text-white">KU</span>
                                     </div>
-                                    <div className="rounded-lg bg-blue-50 p-3">
-                                        <p className="text-sm font-semibold">Desa Sehat</p>
-                                        <p className="text-xs text-gray-600">Tingkat Kabupaten - 2022</p>
+                                    <h4 className="font-semibold text-gray-900">IRMAWATI, SP.d</h4>
+                                    <p className="text-sm text-gray-600">Kaur Keuangan</p>
+                                </div>
+
+                                <div className="rounded-lg bg-gray-50 p-4 text-center">
+                                    <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-gray-600">
+                                        <span className="text-lg font-bold text-white">KU</span>
                                     </div>
+                                    <h4 className="font-semibold text-gray-900">MARVINA</h4>
+                                    <p className="text-sm text-gray-600">Kaur Umum & Perencanaan</p>
+                                </div>
+
+                                <div className="rounded-lg bg-gray-50 p-4 text-center">
+                                    <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-gray-600">
+                                        <span className="text-lg font-bold text-white">KP</span>
+                                    </div>
+                                    <h4 className="font-semibold text-gray-900">NASIR NGATTA</h4>
+                                    <p className="text-sm text-gray-600">Kasi Pemerintahan</p>
+                                </div>
+
+                                <div className="rounded-lg bg-gray-50 p-4 text-center">
+                                    <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-gray-600">
+                                        <span className="text-lg font-bold text-white">KK</span>
+                                    </div>
+                                    <h4 className="font-semibold text-gray-900">ARDI JUMADIL</h4>
+                                    <p className="text-sm text-gray-600">Kasi Kesejahteraan</p>
                                 </div>
                             </div>
                         </div>
