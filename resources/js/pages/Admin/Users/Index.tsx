@@ -1,7 +1,7 @@
 // resources/js/Pages/Admin/Users/Index.tsx
 
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Pencil, Plus, Trash2, Users } from 'lucide-react';
 
 interface User {
@@ -51,6 +51,60 @@ export default function Index() {
     // Add debugging logs
     console.log('Users page props:', { auth, users, flash });
 
+    // Function to handle user deletion with improved error handling
+    const handleDeleteUser = (user: User) => {
+        if (window.confirm(`Apakah Anda yakin ingin menghapus pengguna "${user.name}"?`)) {
+            console.log('Attempting to delete user:', user.id);
+
+            // Use explicit URL instead of route() helper
+            const deleteUrl = `/admin/users/${user.id}`;
+
+            router.delete(deleteUrl, {
+                onStart: () => {
+                    console.log('Delete request started');
+                },
+                onSuccess: (page) => {
+                    console.log('User deleted successfully', page);
+                },
+                onError: (errors) => {
+                    console.error('Error deleting user:', errors);
+                    alert('Terjadi kesalahan saat menghapus pengguna. Silakan coba lagi.');
+                },
+                onFinish: () => {
+                    console.log('Delete request finished');
+                },
+            });
+        }
+    };
+
+    // Alternative delete function using fetch API as fallback
+    const handleDeleteUserFallback = async (user: User) => {
+        if (window.confirm(`Apakah Anda yakin ingin menghapus pengguna "${user.name}"?`)) {
+            try {
+                const response = await fetch(`/admin/users/${user.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                        Accept: 'application/json',
+                    },
+                });
+
+                if (response.ok) {
+                    // Reload the page or update state
+                    window.location.reload();
+                } else {
+                    const errorData = await response.json();
+                    console.error('Delete failed:', errorData);
+                    alert('Terjadi kesalahan saat menghapus pengguna.');
+                }
+            } catch (error) {
+                console.error('Network error:', error);
+                alert('Terjadi kesalahan jaringan. Silakan coba lagi.');
+            }
+        }
+    };
+
     // Safety checks
     if (!auth || !auth.user) {
         return (
@@ -86,7 +140,7 @@ export default function Index() {
                 <div className="flex items-center justify-between">
                     <h2 className="text-2xl font-semibold text-gray-700">Daftar Pengguna</h2>
                     <Link
-                        href={route('admin.users.create')}
+                        href="/admin/users/create"
                         className="inline-flex items-center rounded-lg bg-orange-600 px-4 py-2 font-semibold text-white transition hover:bg-orange-700"
                     >
                         <Plus className="mr-2 h-5 w-5" />
@@ -103,7 +157,7 @@ export default function Index() {
                             <p className="mt-2 text-gray-500">Mulai dengan menambahkan pengguna baru.</p>
                             <div className="mt-6">
                                 <Link
-                                    href={route('admin.users.create')}
+                                    href="/admin/users/create"
                                     className="inline-flex items-center rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-700"
                                 >
                                     <Plus className="mr-2 h-4 w-4" />
@@ -128,22 +182,20 @@ export default function Index() {
                                         <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
                                             <div className="flex justify-end space-x-2">
                                                 <Link
-                                                    href={route('admin.users.edit', user.id)}
+                                                    href={`/admin/users/${user.id}/edit`}
                                                     className="rounded p-1 text-blue-600 transition-colors hover:text-blue-900"
                                                     title={`Edit ${user.name}`}
                                                 >
                                                     <Pencil className="h-5 w-5" />
                                                 </Link>
-                                                <Link
-                                                    href={route('admin.users.destroy', user.id)}
-                                                    method="delete"
-                                                    as="button"
-                                                    onBefore={() => window.confirm('Apakah Anda yakin ingin menghapus pengguna ini?')}
+                                                <button
+                                                    onClick={() => handleDeleteUser(user)}
                                                     className="rounded p-1 text-red-600 transition-colors hover:text-red-900"
                                                     title={`Hapus ${user.name}`}
+                                                    type="button"
                                                 >
                                                     <Trash2 className="h-5 w-5" />
-                                                </Link>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>

@@ -22,6 +22,11 @@ class UserController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
             ]),
+            // Explicitly pass flash messages
+            'flash' => [
+                'success' => session('success'),
+                'error' => session('error'),
+            ],
         ]);
     }
 
@@ -50,7 +55,8 @@ class UserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        return redirect()->route('admin.users.index')->with('success', 'Pengguna berhasil dibuat.');
+        return redirect()->route('admin.users.index')
+            ->with('success', 'Pengguna berhasil dibuat.');
     }
 
     /**
@@ -89,7 +95,8 @@ class UserController extends Controller
             ]);
         }
 
-        return redirect()->route('admin.users.index')->with('success', 'Pengguna berhasil diperbarui.');
+        return redirect()->route('admin.users.index')
+            ->with('success', 'Pengguna berhasil diperbarui.');
     }
 
     /**
@@ -97,13 +104,51 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
-        // Tambahkan validasi agar pengguna tidak bisa menghapus dirinya sendiri
-        if (auth()->id() === $user->id) {
-            return redirect()->route('admin.users.index')->with('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
-        }
+        // Log untuk memastikan method ini dipanggil
+        \Log::info('=== DESTROY METHOD CALLED ===');
+        \Log::info('Request method: ' . request()->method());
+        \Log::info('Request URL: ' . request()->url());
+        \Log::info('User to delete: ' . $user->id . ' - ' . $user->name);
+        \Log::info('Current auth user: ' . auth()->id());
         
-        $user->delete();
+        try {
+            // Tambahkan validasi agar pengguna tidak bisa menghapus dirinya sendiri
+            if (auth()->id() === $user->id) {
+                \Log::warning('User attempted to delete themselves: ' . auth()->id());
+                return redirect()->route('admin.users.index')
+                    ->with('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
+            }
+            
+            $userName = $user->name; // Simpan nama sebelum menghapus
+            
+            // Log sebelum delete
+            \Log::info('About to delete user: ' . $user->id);
+            
+            // Cek apakah user exists sebelum delete
+            if (!$user->exists) {
+                \Log::error('User does not exist in database: ' . $user->id);
+                return redirect()->route('admin.users.index')
+                    ->with('error', 'Pengguna tidak ditemukan.');
+            }
+            
+            $deleted = $user->delete();
+            
+            \Log::info('Delete result: ' . ($deleted ? 'SUCCESS' : 'FAILED'));
+            \Log::info('User deleted successfully: ' . $user->id . ' (' . $userName . ')');
 
-        return redirect()->route('admin.users.index')->with('success', 'Pengguna berhasil dihapus.');
+            // Pastikan flash message di-set dengan benar
+            return redirect()->route('admin.users.index')
+                ->with('success', "Pengguna '{$userName}' berhasil dihapus.");
+
+        } catch (\Exception $e) {
+            // Log error dengan detail
+            \Log::error('=== ERROR DELETING USER ===');
+            \Log::error('User ID: ' . $user->id);
+            \Log::error('Error: ' . $e->getMessage());
+            \Log::error('Trace: ' . $e->getTraceAsString());
+
+            return redirect()->route('admin.users.index')
+                ->with('error', 'Terjadi kesalahan saat menghapus pengguna: ' . $e->getMessage());
+        }
     }
 }
