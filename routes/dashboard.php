@@ -1,18 +1,17 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
-// Grup untuk semua rute di dalam area admin
-// Semua rute di sini akan memiliki prefix '/admin' dan memerlukan login
-Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
-    
-    // Rute utama dasbor
+Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::resource('users', UserController::class);
+});
 
-    // (Placeholder) Rute untuk mengelola berita, infografis, dan pengguna
-    // Route::resource('berita', BeritaAdminController::class);
-    // Route::resource('infografis', InfografisAdminController::class);
-    // Route::resource('users', UserAdminController::class);
-
+// Add a redirect from /dashboard to /admin/dashboard for convenience
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard', function () {
+        return redirect()->route('admin.dashboard');
+    })->name('dashboard');
 });

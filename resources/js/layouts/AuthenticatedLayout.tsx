@@ -22,10 +22,10 @@ export default function AuthenticatedLayout({ auth, children, title }: Authentic
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     const navItems = [
-        { name: 'Dashboard', href: route('dashboard'), icon: Grid, current: route().current('dashboard') },
+        { name: 'Dashboard', href: route('admin.dashboard'), icon: Grid, current: route().current('admin.dashboard') },
         { name: 'Kelola Berita', href: '#', icon: Newspaper, current: false }, // Ganti href nanti
         { name: 'Kelola Infografis', href: '#', icon: ImageIcon, current: false }, // Ganti href nanti
-        { name: 'Kelola Pengguna', href: '#', icon: Users, current: false }, // Ganti href nanti
+        { name: 'Kelola Pengguna', href: route('admin.users.index'), icon: Users, current: route().current('admin.users.*') },
     ];
 
     return (
@@ -37,7 +37,7 @@ export default function AuthenticatedLayout({ auth, children, title }: Authentic
                     className={`absolute z-20 h-full w-64 transform bg-gray-800 text-white transition-transform duration-300 sm:relative sm:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
                 >
                     <div className="flex h-16 items-center justify-between px-6">
-                        <Link href={route('dashboard')} className="text-2xl font-bold text-orange-400">
+                        <Link href={route('admin.dashboard')} className="text-2xl font-bold text-orange-400">
                             Admin SID
                         </Link>
                         <button onClick={() => setSidebarOpen(false)} className="sm:hidden">

@@ -6,12 +6,19 @@ import { ArrowRight, Image as ImageIcon, Newspaper, PlusCircle, Users } from 'lu
 
 // Tipe untuk props halaman
 interface DashboardProps {
-    auth: any; // Anda bisa membuat tipe yang lebih spesifik jika perlu
+    auth: {
+        user: {
+            id: number;
+            name: string;
+            email: string;
+        };
+    };
     stats: {
         total_berita: number;
         total_infografis: number;
         total_pengguna: number;
     };
+    [key: string]: unknown;
 }
 
 // Komponen untuk kartu statistik
@@ -73,7 +80,7 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                         value={stats.total_pengguna}
                         icon={<Users className="h-6 w-6 text-purple-600" />}
                         colorClass="bg-purple-100"
-                        link="#" // Ganti dengan route('admin.users.index') nanti
+                        link={route('admin.users.index')}
                     />
                 </div>
 
@@ -96,7 +103,7 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                             <span className="font-semibold">Tambah Infografis Baru</span>
                         </Link>
                         <Link
-                            href="#"
+                            href={route('admin.users.create')}
                             className="flex items-center justify-center rounded-md bg-gray-600 p-4 text-white transition hover:bg-gray-700"
                         >
                             <PlusCircle className="mr-2 h-5 w-5" />
