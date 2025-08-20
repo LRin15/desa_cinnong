@@ -73,7 +73,7 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                         value={stats.total_infografis}
                         icon={<ImageIcon className="h-6 w-6 text-green-600" />}
                         colorClass="bg-green-100"
-                        link="#" // Ganti dengan route('admin.infografis.index') nanti
+                        link={route('admin.infografis.index')} // Ganti dengan route('admin.infografis.index') nanti
                     />
                     <StatCard
                         title="Pengguna"
@@ -96,7 +96,7 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                             <span className="font-semibold">Tambah Berita Baru</span>
                         </Link>
                         <Link
-                            href="#"
+                            href={route('admin.infografis.create')}
                             className="flex items-center justify-center rounded-md bg-orange-600 p-4 text-white transition hover:bg-orange-700"
                         >
                             <PlusCircle className="mr-2 h-5 w-5" />
