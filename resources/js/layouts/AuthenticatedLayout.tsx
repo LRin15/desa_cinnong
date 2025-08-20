@@ -23,8 +23,8 @@ export default function AuthenticatedLayout({ auth, children, title }: Authentic
 
     const navItems = [
         { name: 'Dashboard', href: route('admin.dashboard'), icon: Grid, current: route().current('admin.dashboard') },
-        { name: 'Kelola Berita', href: '#', icon: Newspaper, current: false }, // Ganti href nanti
-        { name: 'Kelola Infografis', href: route('admin.infografis.index'), icon: ImageIcon, current: route().current('admin.infografis.*') }, // Ganti href nanti
+        { name: 'Kelola Berita', href: route('admin.berita.index'), icon: Newspaper, current: route().current('admin.berita.*') },
+        { name: 'Kelola Infografis', href: route('admin.infografis.index'), icon: ImageIcon, current: route().current('admin.infografis.*') },
         { name: 'Kelola Pengguna', href: route('admin.users.index'), icon: Users, current: route().current('admin.users.*') },
     ];
 

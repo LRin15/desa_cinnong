@@ -4,6 +4,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Berita;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -22,8 +23,8 @@ class BeritaController extends Controller
                 'slug' => $berita->slug,
                 'kategori' => $berita->kategori,
                 'kutipan' => $berita->kutipan,
-                // Pastikan path gambar benar untuk diakses dari frontend
-                'gambar' => asset($berita->gambar),
+                // Gunakan Storage::url() yang konsisten dengan dashboard admin
+                'gambar' => $berita->gambar ? Storage::url($berita->gambar) : null,
                 'tanggal_terbit' => $berita->tanggal_terbit->format('d F Y'), // Format tanggal di backend
             ]);
 
@@ -32,7 +33,10 @@ class BeritaController extends Controller
         ]);
     }
 
-    public function show(string $slug)
+    /**
+     * Menampilkan halaman detail berita berdasarkan slug.
+     */
+    public function show(string $slug): Response
     {
         // Cari satu berita berdasarkan slug-nya.
         // firstOrFail() akan otomatis menampilkan halaman 404 jika slug tidak ditemukan.
@@ -42,9 +46,12 @@ class BeritaController extends Controller
             'berita' => [
                 'id' => $berita->id,
                 'judul' => $berita->judul,
+                'slug' => $berita->slug,
                 'kategori' => $berita->kategori,
                 'isi' => $berita->isi, // Kirim konten lengkapnya
-                'gambar' => asset($berita->gambar),
+                'kutipan' => $berita->kutipan,
+                // Konsisten menggunakan Storage::url()
+                'gambar' => $berita->gambar ? Storage::url($berita->gambar) : null,
                 'tanggal_terbit' => $berita->tanggal_terbit->format('d F Y'),
             ],
         ]);

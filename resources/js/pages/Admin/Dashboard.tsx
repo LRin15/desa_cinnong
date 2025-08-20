@@ -66,14 +66,14 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                         value={stats.total_berita}
                         icon={<Newspaper className="h-6 w-6 text-blue-600" />}
                         colorClass="bg-blue-100"
-                        link="#" // Ganti dengan route('admin.berita.index') nanti
+                        link={route('admin.berita.index')}
                     />
                     <StatCard
                         title="Infografis"
                         value={stats.total_infografis}
                         icon={<ImageIcon className="h-6 w-6 text-green-600" />}
                         colorClass="bg-green-100"
-                        link={route('admin.infografis.index')} // Ganti dengan route('admin.infografis.index') nanti
+                        link={route('admin.infografis.index')}
                     />
                     <StatCard
                         title="Pengguna"
@@ -89,7 +89,7 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                     <h2 className="text-xl font-bold text-gray-800">Aksi Cepat</h2>
                     <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         <Link
-                            href="#"
+                            href={route('admin.berita.create')}
                             className="flex items-center justify-center rounded-md bg-orange-600 p-4 text-white transition hover:bg-orange-700"
                         >
                             <PlusCircle className="mr-2 h-5 w-5" />
