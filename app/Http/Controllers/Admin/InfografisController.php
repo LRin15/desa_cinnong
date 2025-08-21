@@ -13,16 +13,33 @@ class InfografisController extends Controller
     /**
      * Menampilkan daftar semua infografis.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $query = Infografis::query();
+
+        // Search functionality
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->where('judul', 'like', "%{$searchTerm}%");
+        }
+
+        // Apply ordering and pagination
+        $infografis = $query->latest()->paginate(10)->through(fn ($item) => [
+            'id' => $item->id,
+            'judul' => $item->judul,
+            'tanggal_terbit' => $item->tanggal_terbit->format('d F Y'),
+            // Kirim URL lengkap dari gambar
+            'gambar' => $item->gambar ? Storage::url($item->gambar) : null,
+        ]);
+
+        // Append query parameters to pagination links
+        $infografis->appends($request->query());
+
         return Inertia::render('Admin/Infografis/Index', [
-            'infografis' => Infografis::latest()->paginate(10)->through(fn ($item) => [
-                'id' => $item->id,
-                'judul' => $item->judul,
-                'tanggal_terbit' => $item->tanggal_terbit->format('d F Y'),
-                // Kirim URL lengkap dari gambar
-                'gambar' => $item->gambar ? Storage::url($item->gambar) : null,
-            ]),
+            'infografis' => $infografis,
+            'filters' => [
+                'search' => $request->search,
+            ],
             // Explicitly pass flash messages
             'flash' => [
                 'success' => session('success'),

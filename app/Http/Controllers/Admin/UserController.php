@@ -14,14 +14,34 @@ class UserController extends Controller
     /**
      * Menampilkan daftar semua pengguna.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $query = User::query();
+
+        // Search functionality
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('name', 'like', "%{$searchTerm}%")
+                  ->orWhere('email', 'like', "%{$searchTerm}%");
+            });
+        }
+
+        // Apply ordering and pagination
+        $users = $query->latest()->paginate(10)->through(fn ($user) => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+        ]);
+
+        // Append query parameters to pagination links
+        $users->appends($request->query());
+
         return Inertia::render('Admin/Users/Index', [
-            'users' => User::latest()->paginate(10)->through(fn ($user) => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-            ]),
+            'users' => $users,
+            'filters' => [
+                'search' => $request->search,
+            ],
             // Explicitly pass flash messages
             'flash' => [
                 'success' => session('success'),

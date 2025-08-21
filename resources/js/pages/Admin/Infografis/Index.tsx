@@ -3,7 +3,8 @@
 import Pagination from '@/components/Pagination';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { ImageIcon, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ImageIcon, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface InfografisItem {
     id: number;
@@ -40,6 +41,9 @@ interface InfografisIndexPageProps {
         success?: string;
         error?: string;
     };
+    filters: {
+        search?: string;
+    };
     [key: string]: unknown;
 }
 
@@ -60,10 +64,54 @@ export default function Index() {
         );
     }
 
-    const { auth, infografis, flash } = pageProps;
+    const { auth, infografis, flash, filters } = pageProps;
+
+    // Search state
+    const [searchTerm, setSearchTerm] = useState(filters.search || '');
+
+    // Debounced search
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            handleSearch();
+        }, 500);
+
+        return () => clearTimeout(timeoutId);
+    }, [searchTerm]);
 
     // Add debugging logs
-    console.log('Infografis page props:', { auth, infografis, flash });
+    console.log('Infografis page props:', { auth, infografis, flash, filters });
+
+    const handleSearch = () => {
+        const params = new URLSearchParams();
+
+        if (searchTerm) {
+            params.set('search', searchTerm);
+        }
+
+        const queryString = params.toString();
+        const url = queryString ? `/admin/infografis?${queryString}` : '/admin/infografis';
+
+        router.get(
+            url,
+            {},
+            {
+                preserveState: true,
+                replace: true,
+            },
+        );
+    };
+
+    const clearSearch = () => {
+        setSearchTerm('');
+        router.get(
+            '/admin/infografis',
+            {},
+            {
+                preserveState: true,
+                replace: true,
+            },
+        );
+    };
 
     // Function to handle infografis deletion with improved error handling
     const handleDeleteInfografis = (item: InfografisItem) => {
@@ -88,34 +136,6 @@ export default function Index() {
                     console.log('Delete request finished');
                 },
             });
-        }
-    };
-
-    // Alternative delete function using fetch API as fallback
-    const handleDeleteInfografisFallback = async (item: InfografisItem) => {
-        if (window.confirm(`Apakah Anda yakin ingin menghapus infografis "${item.judul}"?`)) {
-            try {
-                const response = await fetch(`/admin/infografis/${item.id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                        Accept: 'application/json',
-                    },
-                });
-
-                if (response.ok) {
-                    // Reload the page or update state
-                    window.location.reload();
-                } else {
-                    const errorData = await response.json();
-                    console.error('Delete failed:', errorData);
-                    alert('Terjadi kesalahan saat menghapus infografis.');
-                }
-            } catch (error) {
-                console.error('Network error:', error);
-                alert('Terjadi kesalahan jaringan. Silakan coba lagi.');
-            }
         }
     };
 
@@ -159,6 +179,7 @@ export default function Index() {
                                 {infografis.from && infografis.to ? (
                                     <>
                                         Menampilkan {infografis.from} - {infografis.to} dari {infografis.total} infografis
+                                        {searchTerm && ' (difilter)'}
                                     </>
                                 ) : (
                                     <>Total {infografis.total} infografis</>
@@ -175,22 +196,62 @@ export default function Index() {
                     </Link>
                 </div>
 
+                {/* Search */}
+                <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center">
+                        {/* Search Input */}
+                        <div className="relative flex-1">
+                            <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                <Search className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Cari infografis berdasarkan judul..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="block w-full rounded-lg border border-gray-300 py-2 pr-10 pl-10 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
+                            />
+                            {searchTerm && (
+                                <button onClick={() => setSearchTerm('')} className="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                                </button>
+                            )}
+                        </div>
+
+                        {searchTerm && (
+                            <button
+                                onClick={clearSearch}
+                                className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            >
+                                <X className="mr-2 h-4 w-4" />
+                                Clear
+                            </button>
+                        )}
+                    </div>
+                </div>
+
                 {/* Infografis Table */}
                 <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
                     {infografis.data.length === 0 ? (
                         <div className="py-12 text-center">
                             <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
-                            <h3 className="mt-4 text-lg font-medium text-gray-900">Tidak ada infografis</h3>
-                            <p className="mt-2 text-gray-500">Mulai dengan menambahkan infografis baru.</p>
-                            <div className="mt-6">
-                                <Link
-                                    href="/admin/infografis/create"
-                                    className="inline-flex items-center rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-700"
-                                >
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Tambah Infografis
-                                </Link>
-                            </div>
+                            <h3 className="mt-4 text-lg font-medium text-gray-900">
+                                {searchTerm ? 'Tidak ada infografis yang sesuai dengan pencarian' : 'Tidak ada infografis'}
+                            </h3>
+                            <p className="mt-2 text-gray-500">
+                                {searchTerm ? 'Coba ubah kata kunci pencarian.' : 'Mulai dengan menambahkan infografis baru.'}
+                            </p>
+                            {!searchTerm && (
+                                <div className="mt-6">
+                                    <Link
+                                        href="/admin/infografis/create"
+                                        className="inline-flex items-center rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-700"
+                                    >
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        Tambah Infografis
+                                    </Link>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <>
