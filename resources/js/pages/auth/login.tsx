@@ -101,14 +101,6 @@ export default function Login({ status, canResetPassword = false }: LoginProps) 
                                     <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                                         Kata Sandi
                                     </label>
-                                    {canResetPassword && (
-                                        <Link
-                                            href={route('password.request')}
-                                            className="text-sm text-orange-600 transition duration-150 ease-in-out hover:text-orange-500 hover:underline"
-                                        >
-                                            Lupa kata sandi?
-                                        </Link>
-                                    )}
                                 </div>
                                 <div className="relative">
                                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">

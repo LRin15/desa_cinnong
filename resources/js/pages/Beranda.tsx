@@ -101,8 +101,8 @@ export default function Beranda({ auth, beritaTerbaru }: BerandaProps) {
                                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
                                     <TrendingUp className="h-6 w-6 text-orange-600" />
                                 </div>
-                                <div className="mb-1 text-2xl font-bold text-orange-600">156</div>
-                                <div className="text-sm text-gray-600">UMKM Aktif</div>
+                                <div className="mb-1 text-2xl font-bold text-orange-600">7</div>
+                                <div className="text-sm text-gray-600">Sarana Pendidikan</div>
                             </div>
                             <div className="rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm">
                                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">

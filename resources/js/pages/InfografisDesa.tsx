@@ -1,7 +1,9 @@
 // resources/js/Pages/InfografisDesa.tsx
 
 import MainLayout from '@/layouts/MainLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
+import { Search, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 // 1. Definisikan tipe untuk satu item infografis
 interface InfografisItem {
@@ -23,9 +25,43 @@ interface InfografisDesaProps {
             active: boolean;
         }[];
     };
+    filters: {
+        search: string;
+    };
 }
 
-export default function InfografisDesa({ auth, infografisList }: InfografisDesaProps) {
+export default function InfografisDesa({ auth, infografisList, filters }: InfografisDesaProps) {
+    const [searchQuery, setSearchQuery] = useState(filters.search || '');
+
+    // Update local state when filters change (for back button)
+    useEffect(() => {
+        setSearchQuery(filters.search || '');
+    }, [filters.search]);
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        router.get(
+            '/infografis',
+            { search: searchQuery },
+            {
+                preserveState: true,
+                replace: true,
+            },
+        );
+    };
+
+    const clearSearch = () => {
+        setSearchQuery('');
+        router.get(
+            '/infografis',
+            {},
+            {
+                preserveState: true,
+                replace: true,
+            },
+        );
+    };
+
     return (
         <MainLayout auth={auth}>
             <Head title="Infografis Desa" />
@@ -39,6 +75,53 @@ export default function InfografisDesa({ auth, infografisList }: InfografisDesaP
                             <p className="mt-2 text-gray-700">
                                 Visualisasi data dan informasi penting tentang Desa Cinnong dalam bentuk yang mudah dipahami.
                             </p>
+
+                            {/* Search Form */}
+                            <div className="mx-auto mt-6 max-w-md">
+                                <form onSubmit={handleSearch} className="relative">
+                                    <div className="relative">
+                                        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                        <input
+                                            type="text"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            placeholder="Cari infografis berdasarkan judul..."
+                                            className="w-full rounded-lg border border-gray-300 bg-white py-3 pr-12 pl-10 text-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-200 focus:outline-none"
+                                        />
+                                        {searchQuery && (
+                                            <button
+                                                type="button"
+                                                onClick={clearSearch}
+                                                className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        className="mt-2 w-full rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700 focus:ring-2 focus:ring-orange-200 focus:outline-none"
+                                    >
+                                        Cari Infografis
+                                    </button>
+                                </form>
+                            </div>
+
+                            {/* Search Result Info */}
+                            {filters.search && (
+                                <div className="mt-4 text-center text-sm text-gray-600">
+                                    {infografisList.data.length > 0 ? (
+                                        <p>
+                                            Ditemukan {infografisList.data.length} hasil untuk "
+                                            <span className="font-semibold">{filters.search}</span>"
+                                        </p>
+                                    ) : (
+                                        <p>
+                                            Tidak ditemukan hasil untuk "<span className="font-semibold">{filters.search}</span>"
+                                        </p>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -70,7 +153,21 @@ export default function InfografisDesa({ auth, infografisList }: InfografisDesaP
                                 </Link>
                             ))
                         ) : (
-                            <p className="text-center text-gray-500">Belum ada infografis yang diterbitkan.</p>
+                            <div className="text-center">
+                                <p className="text-xl text-gray-500">
+                                    {filters.search
+                                        ? 'Tidak ada infografis yang sesuai dengan pencarian Anda.'
+                                        : 'Belum ada infografis yang diterbitkan.'}
+                                </p>
+                                {filters.search && (
+                                    <button
+                                        onClick={clearSearch}
+                                        className="mt-4 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700"
+                                    >
+                                        Tampilkan Semua Infografis
+                                    </button>
+                                )}
+                            </div>
                         )}
                     </div>
 

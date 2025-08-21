@@ -1,8 +1,9 @@
 // resources/js/Pages/Berita.tsx
 
 import MainLayout from '@/layouts/MainLayout';
-import { Head, Link } from '@inertiajs/react';
-import { Calendar, ChevronsRight } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { Calendar, ChevronsRight, Search, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 // 1. Definisikan tipe untuk satu item berita
 interface BeritaItem {
@@ -26,6 +27,9 @@ interface BeritaPageProps {
             active: boolean;
         }[];
     };
+    filters: {
+        search: string;
+    };
 }
 
 // Fungsi untuk menentukan warna badge berdasarkan kategori
@@ -48,7 +52,38 @@ const getCategoryClass = (category: string) => {
     }
 };
 
-export default function Berita({ auth, beritaList }: BeritaPageProps) {
+export default function Berita({ auth, beritaList, filters }: BeritaPageProps) {
+    const [searchQuery, setSearchQuery] = useState(filters.search || '');
+
+    // Update local state when filters change (for back button)
+    useEffect(() => {
+        setSearchQuery(filters.search || '');
+    }, [filters.search]);
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        router.get(
+            '/berita',
+            { search: searchQuery },
+            {
+                preserveState: true,
+                replace: true,
+            },
+        );
+    };
+
+    const clearSearch = () => {
+        setSearchQuery('');
+        router.get(
+            '/berita',
+            {},
+            {
+                preserveState: true,
+                replace: true,
+            },
+        );
+    };
+
     return (
         <MainLayout auth={auth}>
             <Head title="Berita" />
@@ -60,6 +95,52 @@ export default function Berita({ auth, beritaList }: BeritaPageProps) {
                         <p className="mx-auto max-w-2xl text-lg text-gray-700">
                             Ikuti perkembangan, kegiatan, dan informasi terbaru dari Pemerintah Desa Cinnong.
                         </p>
+
+                        {/* Search Form */}
+                        <div className="mx-auto mt-8 max-w-md">
+                            <form onSubmit={handleSearch} className="relative">
+                                <div className="relative">
+                                    <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        placeholder="Cari berita berdasarkan judul..."
+                                        className="w-full rounded-lg border border-gray-300 bg-white py-3 pr-12 pl-10 text-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-200 focus:outline-none"
+                                    />
+                                    {searchQuery && (
+                                        <button
+                                            type="button"
+                                            onClick={clearSearch}
+                                            className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </div>
+                                <button
+                                    type="submit"
+                                    className="mt-2 w-full rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700 focus:ring-2 focus:ring-orange-200 focus:outline-none"
+                                >
+                                    Cari Berita
+                                </button>
+                            </form>
+                        </div>
+
+                        {/* Search Result Info */}
+                        {filters.search && (
+                            <div className="mt-4 text-sm text-gray-600">
+                                {beritaList.data.length > 0 ? (
+                                    <p>
+                                        Ditemukan {beritaList.data.length} hasil untuk "<span className="font-semibold">{filters.search}</span>"
+                                    </p>
+                                ) : (
+                                    <p>
+                                        Tidak ditemukan hasil untuk "<span className="font-semibold">{filters.search}</span>"
+                                    </p>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </section>
 
@@ -109,7 +190,17 @@ export default function Berita({ auth, beritaList }: BeritaPageProps) {
                             </div>
                         ) : (
                             <div className="text-center">
-                                <p className="text-xl text-gray-500">Belum ada berita yang diterbitkan.</p>
+                                <p className="text-xl text-gray-500">
+                                    {filters.search ? 'Tidak ada berita yang sesuai dengan pencarian Anda.' : 'Belum ada berita yang diterbitkan.'}
+                                </p>
+                                {filters.search && (
+                                    <button
+                                        onClick={clearSearch}
+                                        className="mt-4 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700"
+                                    >
+                                        Tampilkan Semua Berita
+                                    </button>
+                                )}
                             </div>
                         )}
 
@@ -117,7 +208,6 @@ export default function Berita({ auth, beritaList }: BeritaPageProps) {
                         {beritaList.data.length > 0 && (
                             <nav className="mt-16 flex items-center justify-center border-t border-gray-200 pt-8">
                                 <div className="flex flex-wrap justify-center gap-2">
-                                    {/* 👇 PERUBAHAN ADA DI BARIS INI (MENGHAPUS .meta) 👇 */}
                                     {beritaList.links.map((link, index) => (
                                         <Link
                                             key={index}

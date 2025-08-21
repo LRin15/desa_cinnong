@@ -51,7 +51,7 @@ export default function ProfilDesa() {
                         <div className="flex justify-center">
                             <div className="rounded-lg bg-gray-50 p-4">
                                 <img
-                                    src="/images/profil/peta.png"
+                                    src="/images/peta.png"
                                     alt="Peta Desa Cinnong menunjukkan pembagian wilayah RT"
                                     className="h-auto max-w-full rounded-lg shadow-md"
                                     style={{ maxHeight: '500px' }}
@@ -126,7 +126,7 @@ export default function ProfilDesa() {
                         <div className="mb-6 flex justify-center">
                             <div className="rounded-lg bg-gray-50 p-4">
                                 <img
-                                    src="/images/profil/struktur.png"
+                                    src="/images/struktur.png"
                                     alt="Foto bersama tim pemerintahan Desa Cinnong"
                                     className="h-auto max-w-full rounded-lg shadow-md"
                                     style={{ maxHeight: '400px' }}
@@ -149,7 +149,7 @@ export default function ProfilDesa() {
                                 <div className="rounded-lg bg-orange-50 p-4 text-center">
                                     <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-white shadow-md">
                                         <img
-                                            src="/images/profil/kades.png"
+                                            src="/images/kades.png"
                                             alt="Irfan, S.Kom - Kepala Desa Cinnong"
                                             className="h-full w-full object-cover"
                                         />

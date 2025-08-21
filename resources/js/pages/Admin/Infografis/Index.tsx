@@ -1,5 +1,6 @@
 // resources/js/Pages/Admin/Infografis/Index.tsx
 
+import Pagination from '@/components/Pagination';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { ImageIcon, Pencil, Plus, Trash2 } from 'lucide-react';
@@ -9,6 +10,12 @@ interface InfografisItem {
     judul: string;
     tanggal_terbit: string;
     gambar: string | null;
+}
+
+interface PaginationLink {
+    url: string | null;
+    label: string;
+    active: boolean;
 }
 
 interface InfografisIndexPageProps {
@@ -21,7 +28,13 @@ interface InfografisIndexPageProps {
     };
     infografis: {
         data: InfografisItem[];
-        links?: any[];
+        links?: PaginationLink[];
+        current_page?: number;
+        last_page?: number;
+        per_page?: number;
+        total?: number;
+        from?: number;
+        to?: number;
     };
     flash?: {
         success?: string;
@@ -139,7 +152,20 @@ export default function Index() {
 
                 {/* Header */}
                 <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-semibold text-gray-700">Daftar Infografis</h2>
+                    <div>
+                        <h2 className="text-2xl font-semibold text-gray-700">Daftar Infografis</h2>
+                        {infografis.total && (
+                            <p className="mt-1 text-sm text-gray-500">
+                                {infografis.from && infografis.to ? (
+                                    <>
+                                        Menampilkan {infografis.from} - {infografis.to} dari {infografis.total} infografis
+                                    </>
+                                ) : (
+                                    <>Total {infografis.total} infografis</>
+                                )}
+                            </p>
+                        )}
+                    </div>
                     <Link
                         href="/admin/infografis/create"
                         className="inline-flex items-center rounded-lg bg-orange-600 px-4 py-2 font-semibold text-white transition hover:bg-orange-700"
@@ -167,61 +193,65 @@ export default function Index() {
                             </div>
                         </div>
                     ) : (
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Gambar</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Judul</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Tanggal Terbit</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200 bg-white">
-                                {infografis.data.map((item) => (
-                                    <tr key={item.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4">
-                                            {item.gambar ? (
-                                                <img src={item.gambar} alt={item.judul} className="h-12 w-20 rounded-md border object-cover" />
-                                            ) : (
-                                                <div className="flex h-12 w-20 items-center justify-center rounded-md border bg-gray-100">
-                                                    <ImageIcon className="h-6 w-6 text-gray-400" />
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm font-medium whitespace-nowrap text-gray-900">{item.judul}</td>
-                                        <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">{item.tanggal_terbit}</td>
-                                        <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
-                                            <div className="flex justify-end space-x-2">
-                                                <Link
-                                                    href={`/admin/infografis/${item.id}/edit`}
-                                                    className="rounded p-1 text-blue-600 transition-colors hover:text-blue-900"
-                                                    title={`Edit ${item.judul}`}
-                                                >
-                                                    <Pencil className="h-5 w-5" />
-                                                </Link>
-                                                <button
-                                                    onClick={() => handleDeleteInfografis(item)}
-                                                    className="rounded p-1 text-red-600 transition-colors hover:text-red-900"
-                                                    title={`Hapus ${item.judul}`}
-                                                    type="button"
-                                                >
-                                                    <Trash2 className="h-5 w-5" />
-                                                </button>
-                                            </div>
-                                        </td>
+                        <>
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Gambar</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Judul</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                                            Tanggal Terbit
+                                        </th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">Aksi</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200 bg-white">
+                                    {infografis.data.map((item) => (
+                                        <tr key={item.id} className="hover:bg-gray-50">
+                                            <td className="px-6 py-4">
+                                                {item.gambar ? (
+                                                    <img src={item.gambar} alt={item.judul} className="h-12 w-20 rounded-md border object-cover" />
+                                                ) : (
+                                                    <div className="flex h-12 w-20 items-center justify-center rounded-md border bg-gray-100">
+                                                        <ImageIcon className="h-6 w-6 text-gray-400" />
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                                                <div className="max-w-xs truncate" title={item.judul}>
+                                                    {item.judul}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">{item.tanggal_terbit}</td>
+                                            <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
+                                                <div className="flex justify-end space-x-2">
+                                                    <Link
+                                                        href={`/admin/infografis/${item.id}/edit`}
+                                                        className="rounded p-1 text-blue-600 transition-colors hover:text-blue-900"
+                                                        title={`Edit ${item.judul}`}
+                                                    >
+                                                        <Pencil className="h-5 w-5" />
+                                                    </Link>
+                                                    <button
+                                                        onClick={() => handleDeleteInfografis(item)}
+                                                        className="rounded p-1 text-red-600 transition-colors hover:text-red-900"
+                                                        title={`Hapus ${item.judul}`}
+                                                        type="button"
+                                                    >
+                                                        <Trash2 className="h-5 w-5" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            {/* Pagination */}
+                            {infografis.links && infografis.links.length > 0 && <Pagination links={infografis.links} />}
+                        </>
                     )}
                 </div>
-
-                {/* Pagination - TODO */}
-                {infografis.links && infografis.links.length > 0 && (
-                    <div className="mt-6">
-                        <p className="text-sm text-gray-500">Pagination akan ditambahkan nanti</p>
-                    </div>
-                )}
             </div>
         </AuthenticatedLayout>
     );

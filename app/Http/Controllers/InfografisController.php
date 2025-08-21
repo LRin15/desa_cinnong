@@ -11,13 +11,19 @@ use Inertia\Response;
 class InfografisController extends Controller
 {
     /**
-     * Menampilkan halaman daftar infografis dengan pagination.
+     * Menampilkan halaman daftar infografis dengan pagination dan pencarian.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        // Ambil data infografis dari database
-        $infografisList = Infografis::latest('tanggal_terbit') // Urutkan dari yang terbaru
+        $search = $request->get('search');
+
+        // Ambil data infografis dari database dengan fitur pencarian
+        $infografisList = Infografis::when($search, function ($query, $search) {
+                return $query->where('judul', 'like', '%' . $search . '%');
+            })
+            ->latest('tanggal_terbit') // Urutkan dari yang terbaru
             ->paginate(5) // Ambil 5 item per halaman
+            ->withQueryString() // Pertahankan parameter search di pagination
             ->through(fn ($infografis) => [
                 'id' => $infografis->id,
                 'judul' => $infografis->judul,
@@ -30,6 +36,9 @@ class InfografisController extends Controller
 
         return Inertia::render('InfografisDesa', [
             'infografisList' => $infografisList,
+            'filters' => [
+                'search' => $search,
+            ],
         ]);
     }
 

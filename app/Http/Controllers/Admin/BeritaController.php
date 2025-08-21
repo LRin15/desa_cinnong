@@ -14,42 +14,45 @@ class BeritaController extends Controller
     /**
      * Menampilkan daftar berita.
      */
-    public function index()
+    public function index(Request $request)
     {
-        try {
-            $beritaPaginated = Berita::latest('tanggal_terbit')->paginate(10);
-            
-            return Inertia::render('Admin/Berita/Index', [
-                'berita' => [
-                    'data' => $beritaPaginated->map(fn ($item) => [
-                        'id' => $item->id,
-                        'judul' => $item->judul,
-                        'kategori' => $item->kategori,
-                        'tanggal_terbit' => $item->tanggal_terbit->format('d F Y'),
-                        'gambar' => $item->gambar ? Storage::url($item->gambar) : null,
-                    ])->toArray(),
-                    'links' => $beritaPaginated->linkCollection()->toArray(),
-                ],
-                // Explicitly pass flash messages
-                'flash' => [
-                    'success' => session('success'),
-                    'error' => session('error'),
-                ],
-            ]);
-            
-        } catch (\Exception $e) {
-            \Log::error('Error loading berita index: ' . $e->getMessage());
-            
-            return Inertia::render('Admin/Berita/Index', [
-                'berita' => [
-                    'data' => [],
-                    'links' => [],
-                ],
-                'flash' => [
-                    'error' => 'Terjadi kesalahan saat memuat data berita.',
-                ],
-            ]);
+        $query = Berita::query();
+
+        // Search functionality
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->where('judul', 'like', "%{$searchTerm}%");
         }
+
+        // Filter by category
+        if ($request->filled('kategori')) {
+            $query->where('kategori', $request->kategori);
+        }
+
+        // Apply ordering and pagination
+        $berita = $query->latest('tanggal_terbit')->paginate(10)->through(fn ($item) => [
+            'id' => $item->id,
+            'judul' => $item->judul,
+            'kategori' => $item->kategori,
+            'tanggal_terbit' => $item->tanggal_terbit->format('d F Y'),
+            'gambar' => $item->gambar ? Storage::url($item->gambar) : null,
+        ]);
+
+        // Append query parameters to pagination links
+        $berita->appends($request->query());
+
+        return Inertia::render('Admin/Berita/Index', [
+            'berita' => $berita,
+            'filters' => [
+                'search' => $request->search,
+                'kategori' => $request->kategori,
+            ],
+            // Explicitly pass flash messages
+            'flash' => [
+                'success' => session('success'),
+                'error' => session('error'),
+            ],
+        ]);
     }
 
     /**
@@ -57,12 +60,7 @@ class BeritaController extends Controller
      */
     public function create()
     {
-        return Inertia::render('Admin/Berita/Create', [
-            'flash' => [
-                'success' => session('success'),
-                'error' => session('error'),
-            ],
-        ]);
+        return Inertia::render('Admin/Berita/Create');
     }
 
     /**
@@ -107,17 +105,10 @@ class BeritaController extends Controller
                 'gambar' => $path,
             ]);
 
-            \Log::info('Berita created successfully: ' . $berita->id . ' - ' . $berita->judul);
-
             return redirect()->route('admin.berita.index')
                 ->with('success', "Berita '{$berita->judul}' berhasil dibuat.");
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::warning('Validation failed for berita creation', [
-                'errors' => $e->errors(),
-                'input' => $request->except('gambar')
-            ]);
-            
             return back()
                 ->withErrors($e->errors())
                 ->withInput()
@@ -149,11 +140,7 @@ class BeritaController extends Controller
                 'isi' => $beritum->isi,
                 'tanggal_terbit' => $beritum->tanggal_terbit->format('Y-m-d'),
                 'gambar_url' => $beritum->gambar ? Storage::url($beritum->gambar) : null,
-            ],
-            'flash' => [
-                'success' => session('success'),
-                'error' => session('error'),
-            ],
+            ]
         ]);
     }
 
@@ -203,18 +190,10 @@ class BeritaController extends Controller
                 'gambar' => $path,
             ]);
 
-            \Log::info('Berita updated successfully: ' . $beritum->id . ' - ' . $beritum->judul);
-
             return redirect()->route('admin.berita.index')
                 ->with('success', "Berita '{$beritum->judul}' berhasil diperbarui.");
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::warning('Validation failed for berita update', [
-                'berita_id' => $beritum->id,
-                'errors' => $e->errors(),
-                'input' => $request->except('gambar')
-            ]);
-            
             return back()
                 ->withErrors($e->errors())
                 ->withInput()
@@ -247,7 +226,6 @@ class BeritaController extends Controller
         
         try {
             $beritaJudul = $beritum->judul; // Simpan judul sebelum menghapus
-            $gambarPath = $beritum->gambar;
             
             // Log sebelum delete
             \Log::info('About to delete berita: ' . $beritum->id);
@@ -259,10 +237,10 @@ class BeritaController extends Controller
                     ->with('error', 'Berita tidak ditemukan.');
             }
             
-            // Delete image file if exists
-            if ($gambarPath && Storage::disk('public')->exists($gambarPath)) {
-                Storage::disk('public')->delete($gambarPath);
-                \Log::info('Image deleted: ' . $gambarPath);
+            // Hapus file gambar dari storage sebelum menghapus record dari database
+            if ($beritum->gambar) {
+                Storage::disk('public')->delete($beritum->gambar);
+                \Log::info('Deleted associated image file: ' . $beritum->gambar);
             }
             
             $deleted = $beritum->delete();

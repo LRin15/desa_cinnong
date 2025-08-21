@@ -4,6 +4,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Berita;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -11,12 +12,18 @@ use Inertia\Response;
 class BeritaController extends Controller
 {
     /**
-     * Menampilkan halaman daftar berita.
+     * Menampilkan halaman daftar berita dengan fitur pencarian.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $beritaList = Berita::latest('tanggal_terbit') // Ambil data terbaru dulu
+        $search = $request->get('search');
+
+        $beritaList = Berita::when($search, function ($query, $search) {
+                return $query->where('judul', 'like', '%' . $search . '%');
+            })
+            ->latest('tanggal_terbit') // Ambil data terbaru dulu
             ->paginate(6) // Ambil 6 berita per halaman
+            ->withQueryString() // Pertahankan parameter search di pagination
             ->through(fn ($berita) => [
                 'id' => $berita->id,
                 'judul' => $berita->judul,
@@ -30,6 +37,9 @@ class BeritaController extends Controller
 
         return Inertia::render('Berita', [
             'beritaList' => $beritaList,
+            'filters' => [
+                'search' => $search,
+            ],
         ]);
     }
 

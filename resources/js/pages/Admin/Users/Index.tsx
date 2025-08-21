@@ -1,5 +1,6 @@
 // resources/js/Pages/Admin/Users/Index.tsx
 
+import Pagination from '@/components/Pagination';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Pencil, Plus, Trash2, Users } from 'lucide-react';
@@ -8,6 +9,12 @@ interface User {
     id: number;
     name: string;
     email: string;
+}
+
+interface PaginationLink {
+    url: string | null;
+    label: string;
+    active: boolean;
 }
 
 interface UsersIndexPageProps {
@@ -20,7 +27,13 @@ interface UsersIndexPageProps {
     };
     users: {
         data: User[];
-        links?: any[];
+        links?: PaginationLink[];
+        current_page?: number;
+        last_page?: number;
+        per_page?: number;
+        total?: number;
+        from?: number;
+        to?: number;
     };
     flash?: {
         success?: string;
@@ -53,6 +66,12 @@ export default function Index() {
 
     // Function to handle user deletion with improved error handling
     const handleDeleteUser = (user: User) => {
+        // Prevent users from deleting themselves
+        if (user.id === auth.user.id) {
+            alert('Anda tidak dapat menghapus akun Anda sendiri.');
+            return;
+        }
+
         if (window.confirm(`Apakah Anda yakin ingin menghapus pengguna "${user.name}"?`)) {
             console.log('Attempting to delete user:', user.id);
 
@@ -79,6 +98,12 @@ export default function Index() {
 
     // Alternative delete function using fetch API as fallback
     const handleDeleteUserFallback = async (user: User) => {
+        // Prevent users from deleting themselves
+        if (user.id === auth.user.id) {
+            alert('Anda tidak dapat menghapus akun Anda sendiri.');
+            return;
+        }
+
         if (window.confirm(`Apakah Anda yakin ingin menghapus pengguna "${user.name}"?`)) {
             try {
                 const response = await fetch(`/admin/users/${user.id}`, {
@@ -138,7 +163,20 @@ export default function Index() {
 
                 {/* Header */}
                 <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-semibold text-gray-700">Daftar Pengguna</h2>
+                    <div>
+                        <h2 className="text-2xl font-semibold text-gray-700">Daftar Pengguna</h2>
+                        {users.total && (
+                            <p className="mt-1 text-sm text-gray-500">
+                                {users.from && users.to ? (
+                                    <>
+                                        Menampilkan {users.from} - {users.to} dari {users.total} pengguna
+                                    </>
+                                ) : (
+                                    <>Total {users.total} pengguna</>
+                                )}
+                            </p>
+                        )}
+                    </div>
                     <Link
                         href="/admin/users/create"
                         className="inline-flex items-center rounded-lg bg-orange-600 px-4 py-2 font-semibold text-white transition hover:bg-orange-700"
@@ -166,51 +204,77 @@ export default function Index() {
                             </div>
                         </div>
                     ) : (
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Nama</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Email</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200 bg-white">
-                                {users.data.map((user) => (
-                                    <tr key={user.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 text-sm font-medium whitespace-nowrap text-gray-900">{user.name}</td>
-                                        <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">{user.email}</td>
-                                        <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
-                                            <div className="flex justify-end space-x-2">
-                                                <Link
-                                                    href={`/admin/users/${user.id}/edit`}
-                                                    className="rounded p-1 text-blue-600 transition-colors hover:text-blue-900"
-                                                    title={`Edit ${user.name}`}
-                                                >
-                                                    <Pencil className="h-5 w-5" />
-                                                </Link>
-                                                <button
-                                                    onClick={() => handleDeleteUser(user)}
-                                                    className="rounded p-1 text-red-600 transition-colors hover:text-red-900"
-                                                    title={`Hapus ${user.name}`}
-                                                    type="button"
-                                                >
-                                                    <Trash2 className="h-5 w-5" />
-                                                </button>
-                                            </div>
-                                        </td>
+                        <>
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Nama</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Email</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Status</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">Aksi</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200 bg-white">
+                                    {users.data.map((user) => (
+                                        <tr key={user.id} className="hover:bg-gray-50">
+                                            <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                                                <div className="flex items-center">
+                                                    <div className="h-8 w-8 flex-shrink-0">
+                                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100">
+                                                            <span className="text-xs font-medium text-orange-800">
+                                                                {user.name.charAt(0).toUpperCase()}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="ml-3">
+                                                        <div className="text-sm font-medium text-gray-900">
+                                                            {user.name}
+                                                            {user.id === auth.user.id && (
+                                                                <span className="ml-2 inline-flex items-center rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+                                                                    Anda
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-500">{user.email}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-500">
+                                                <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+                                                    Aktif
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
+                                                <div className="flex justify-end space-x-2">
+                                                    <Link
+                                                        href={`/admin/users/${user.id}/edit`}
+                                                        className="rounded p-1 text-blue-600 transition-colors hover:text-blue-900"
+                                                        title={`Edit ${user.name}`}
+                                                    >
+                                                        <Pencil className="h-5 w-5" />
+                                                    </Link>
+                                                    {user.id !== auth.user.id && (
+                                                        <button
+                                                            onClick={() => handleDeleteUser(user)}
+                                                            className="rounded p-1 text-red-600 transition-colors hover:text-red-900"
+                                                            title={`Hapus ${user.name}`}
+                                                            type="button"
+                                                        >
+                                                            <Trash2 className="h-5 w-5" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            {/* Pagination */}
+                            {users.links && users.links.length > 0 && <Pagination links={users.links} />}
+                        </>
                     )}
                 </div>
-
-                {/* Pagination - TODO */}
-                {users.links && users.links.length > 0 && (
-                    <div className="mt-6">
-                        <p className="text-sm text-gray-500">Pagination akan ditambahkan nanti</p>
-                    </div>
-                )}
             </div>
         </AuthenticatedLayout>
     );
