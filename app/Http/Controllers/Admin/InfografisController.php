@@ -5,7 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Infografis;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class InfografisController extends Controller
@@ -28,8 +29,8 @@ class InfografisController extends Controller
             'id' => $item->id,
             'judul' => $item->judul,
             'tanggal_terbit' => $item->tanggal_terbit->format('d F Y'),
-            // Kirim URL lengkap dari gambar
-            'gambar' => $item->gambar ? Storage::url($item->gambar) : null,
+            // Updated to use public/images/infografis path
+            'gambar' => $item->gambar ? asset('images/infografis/' . $item->gambar) : null,
         ]);
 
         // Append query parameters to pagination links
@@ -61,29 +62,66 @@ class InfografisController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'judul' => 'required|string|max:255',
-            'deskripsi' => 'required|string',
-            'tanggal_terbit' => 'required|date',
-            // Validasi gambar: harus berupa file gambar, required untuk create, maks 2MB
-            'gambar' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-        ]);
+        try {
+            $request->validate([
+                'judul' => 'required|string|max:255',
+                'deskripsi' => 'required|string',
+                'tanggal_terbit' => 'required|date',
+                // Validasi gambar: harus berupa file gambar, required untuk create, maks 2MB
+                'gambar' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            ], [
+                'judul.required' => 'Judul wajib diisi.',
+                'deskripsi.required' => 'Deskripsi wajib diisi.',
+                'tanggal_terbit.required' => 'Tanggal terbit wajib diisi.',
+                'tanggal_terbit.date' => 'Format tanggal tidak valid.',
+                'gambar.required' => 'Gambar wajib diunggah.',
+                'gambar.image' => 'File harus berupa gambar.',
+                'gambar.mimes' => 'Gambar harus berformat: jpeg, png, jpg, gif, atau webp.',
+                'gambar.max' => 'Ukuran gambar maksimal 2MB.',
+            ]);
 
-        $path = null;
-        if ($request->hasFile('gambar')) {
-            // Simpan gambar di 'public/infografis' dan dapatkan path-nya
-            $path = $request->file('gambar')->store('infografis', 'public');
+            $filename = null;
+            if ($request->hasFile('gambar')) {
+                // Create directory if it doesn't exist
+                $uploadPath = public_path('images/infografis');
+                if (!File::exists($uploadPath)) {
+                    File::makeDirectory($uploadPath, 0755, true);
+                }
+
+                // Generate unique filename
+                $file = $request->file('gambar');
+                $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+                
+                // Move file to public/images/infografis
+                $file->move($uploadPath, $filename);
+            }
+            
+            $infografis = Infografis::create([
+                'judul' => $request->judul,
+                'deskripsi' => $request->deskripsi,
+                'tanggal_terbit' => $request->tanggal_terbit,
+                'gambar' => $filename, // Store only filename, not full path
+            ]);
+
+            return redirect()->route('admin.infografis.index')
+                ->with('success', "Infografis '{$infografis->judul}' berhasil dibuat.");
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()
+                ->withErrors($e->errors())
+                ->withInput()
+                ->with('error', 'Terdapat kesalahan dalam pengisian form.');
+
+        } catch (\Exception $e) {
+            \Log::error('Error creating infografis: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'input' => $request->except(['gambar'])
+            ]);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat menyimpan infografis. Silakan coba lagi.');
         }
-        
-        Infografis::create([
-            'judul' => $request->judul,
-            'deskripsi' => $request->deskripsi,
-            'tanggal_terbit' => $request->tanggal_terbit,
-            'gambar' => $path,
-        ]);
-
-        return redirect()->route('admin.infografis.index')
-            ->with('success', 'Infografis berhasil dibuat.');
     }
 
     /**
@@ -97,7 +135,8 @@ class InfografisController extends Controller
                 'judul' => $infografi->judul,
                 'deskripsi' => $infografi->deskripsi,
                 'tanggal_terbit' => $infografi->tanggal_terbit->format('Y-m-d'),
-                'gambar_url' => $infografi->gambar ? Storage::url($infografi->gambar) : null,
+                // Updated to use public/images/infografis path
+                'gambar_url' => $infografi->gambar ? asset('images/infografis/' . $infografi->gambar) : null,
             ]
         ]);
     }
@@ -107,34 +146,70 @@ class InfografisController extends Controller
      */
     public function update(Request $request, Infografis $infografi)
     {
-        $request->validate([
-            'judul' => 'required|string|max:255',
-            'deskripsi' => 'required|string',
-            'tanggal_terbit' => 'required|date',
-            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-        ]);
-        
-        $path = $infografi->gambar;
+        try {
+            $request->validate([
+                'judul' => 'required|string|max:255',
+                'deskripsi' => 'required|string',
+                'tanggal_terbit' => 'required|date',
+                'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            ], [
+                'judul.required' => 'Judul wajib diisi.',
+                'deskripsi.required' => 'Deskripsi wajib diisi.',
+                'tanggal_terbit.required' => 'Tanggal terbit wajib diisi.',
+                'tanggal_terbit.date' => 'Format tanggal tidak valid.',
+                'gambar.image' => 'File harus berupa gambar.',
+                'gambar.mimes' => 'Gambar harus berformat: jpeg, png, jpg, gif, atau webp.',
+                'gambar.max' => 'Ukuran gambar maksimal 2MB.',
+            ]);
+            
+            $filename = $infografi->gambar;
 
-        // Cek jika ada file gambar baru yang diunggah
-        if ($request->hasFile('gambar')) {
-            // Hapus gambar lama jika ada
-            if ($path) {
-                Storage::disk('public')->delete($path);
+            // Cek jika ada file gambar baru yang diunggah
+            if ($request->hasFile('gambar')) {
+                // Create directory if it doesn't exist
+                $uploadPath = public_path('images/infografis');
+                if (!File::exists($uploadPath)) {
+                    File::makeDirectory($uploadPath, 0755, true);
+                }
+
+                // Delete old image if exists
+                if ($filename && File::exists($uploadPath . '/' . $filename)) {
+                    File::delete($uploadPath . '/' . $filename);
+                }
+
+                // Generate unique filename and move new file
+                $file = $request->file('gambar');
+                $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+                $file->move($uploadPath, $filename);
             }
-            // Simpan gambar baru
-            $path = $request->file('gambar')->store('infografis', 'public');
+
+            $infografi->update([
+                'judul' => $request->judul,
+                'deskripsi' => $request->deskripsi,
+                'tanggal_terbit' => $request->tanggal_terbit,
+                'gambar' => $filename, // Store only filename, not full path
+            ]);
+
+            return redirect()->route('admin.infografis.index')
+                ->with('success', "Infografis '{$infografi->judul}' berhasil diperbarui.");
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()
+                ->withErrors($e->errors())
+                ->withInput()
+                ->with('error', 'Terdapat kesalahan dalam pengisian form.');
+
+        } catch (\Exception $e) {
+            \Log::error('Error updating infografis: ' . $e->getMessage(), [
+                'infografis_id' => $infografi->id,
+                'trace' => $e->getTraceAsString(),
+                'input' => $request->except(['gambar'])
+            ]);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat memperbarui infografis. Silakan coba lagi.');
         }
-
-        $infografi->update([
-            'judul' => $request->judul,
-            'deskripsi' => $request->deskripsi,
-            'tanggal_terbit' => $request->tanggal_terbit,
-            'gambar' => $path,
-        ]);
-
-        return redirect()->route('admin.infografis.index')
-            ->with('success', 'Infografis berhasil diperbarui.');
     }
 
     /**
@@ -162,10 +237,13 @@ class InfografisController extends Controller
                     ->with('error', 'Infografis tidak ditemukan.');
             }
             
-            // Hapus file gambar dari storage sebelum menghapus record dari database
+            // Hapus file gambar dari public/images/infografis sebelum menghapus record dari database
             if ($infografi->gambar) {
-                Storage::disk('public')->delete($infografi->gambar);
-                \Log::info('Deleted associated image file: ' . $infografi->gambar);
+                $imagePath = public_path('images/infografis/' . $infografi->gambar);
+                if (File::exists($imagePath)) {
+                    File::delete($imagePath);
+                    \Log::info('Deleted associated image file: ' . $infografi->gambar);
+                }
             }
             
             $deleted = $infografi->delete();

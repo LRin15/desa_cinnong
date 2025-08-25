@@ -68,34 +68,6 @@ export default function DetailInfografis({ auth, infografis }: DetailInfografisP
                             />
                             <figcaption className="mt-3 text-center text-sm text-gray-500">{infografis.judul}</figcaption>
                         </figure>
-
-                        {/* Informasi Tambahan */}
-                        <div className="mt-12 rounded-lg border border-orange-200 bg-orange-50 p-6">
-                            <h3 className="mb-3 text-lg font-semibold text-orange-900">Tentang Infografis Ini</h3>
-                            <p className="leading-relaxed text-orange-800">
-                                Infografis ini disediakan oleh Pemerintah Desa Cinnong sebagai bagian dari upaya transparansi dan penyampaian
-                                informasi kepada masyarakat. Data dan visualisasi dalam infografis ini telah diverifikasi dan dapat digunakan sebagai
-                                referensi.
-                            </p>
-                        </div>
-
-                        {/* Tombol Navigasi */}
-                        <div className="mt-10 flex items-center justify-between border-t border-gray-200 pt-8">
-                            <Link
-                                href={route('infografis.desa')}
-                                className="inline-flex items-center rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700 focus:ring-2 focus:ring-orange-200 focus:outline-none"
-                            >
-                                <ArrowLeft className="mr-2 h-4 w-4" />
-                                Lihat Infografis Lainnya
-                            </Link>
-
-                            <button
-                                onClick={() => window.print()}
-                                className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 focus:ring-2 focus:ring-orange-200 focus:outline-none"
-                            >
-                                Cetak Infografis
-                            </button>
-                        </div>
                     </article>
                 </div>
             </div>

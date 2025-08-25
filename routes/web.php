@@ -38,7 +38,7 @@ Route::get('/', function () {
             'tanggal_terbit' => $berita->tanggal_terbit->format('d F Y'),
             'kutipan' => Str::limit($berita->kutipan, 100),
             // 👇 TAMBAHKAN BARIS INI 👇
-            'gambar' => $berita->gambar ? Storage::url($berita->gambar) : null,
+            'gambar' => $berita->gambar ? asset('images/berita/' . $berita->gambar) : null,
         ]);
 
     return Inertia::render('Beranda', [

@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Berita;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\File;
 
 class BeritaController extends Controller
 {
@@ -35,7 +35,8 @@ class BeritaController extends Controller
             'judul' => $item->judul,
             'kategori' => $item->kategori,
             'tanggal_terbit' => $item->tanggal_terbit->format('d F Y'),
-            'gambar' => $item->gambar ? Storage::url($item->gambar) : null,
+            // Updated to use public/images/berita path
+            'gambar' => $item->gambar ? asset('images/berita/' . $item->gambar) : null,
         ]);
 
         // Append query parameters to pagination links
@@ -90,9 +91,20 @@ class BeritaController extends Controller
                 'gambar.max' => 'Ukuran gambar maksimal 2MB.',
             ]);
 
-            $path = null;
+            $filename = null;
             if ($request->hasFile('gambar')) {
-                $path = $request->file('gambar')->store('berita', 'public');
+                // Create directory if it doesn't exist
+                $uploadPath = public_path('images/berita');
+                if (!File::exists($uploadPath)) {
+                    File::makeDirectory($uploadPath, 0755, true);
+                }
+
+                // Generate unique filename
+                $file = $request->file('gambar');
+                $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+                
+                // Move file to public/images/infografis
+                $file->move($uploadPath, $filename);
             }
 
             $berita = Berita::create([
@@ -102,7 +114,7 @@ class BeritaController extends Controller
                 'kutipan' => $validatedData['kutipan'],
                 'isi' => $validatedData['isi'],
                 'tanggal_terbit' => $validatedData['tanggal_terbit'],
-                'gambar' => $path,
+                'gambar' => $filename, // Store only filename, not full path
             ]);
 
             return redirect()->route('admin.berita.index')
@@ -139,7 +151,8 @@ class BeritaController extends Controller
                 'kutipan' => $beritum->kutipan,
                 'isi' => $beritum->isi,
                 'tanggal_terbit' => $beritum->tanggal_terbit->format('Y-m-d'),
-                'gambar_url' => $beritum->gambar ? Storage::url($beritum->gambar) : null,
+                // Updated to use public/images/berita path
+                'gambar_url' => $beritum->gambar ? asset('images/berita/' . $beritum->gambar) : null,
             ]
         ]);
     }
@@ -171,13 +184,23 @@ class BeritaController extends Controller
                 'gambar.max' => 'Ukuran gambar maksimal 2MB.',
             ]);
 
-            $path = $beritum->gambar;
+            $filename = $beritum->gambar;
             if ($request->hasFile('gambar')) {
-                // Delete old image if exists
-                if ($path && Storage::disk('public')->exists($path)) {
-                    Storage::disk('public')->delete($path);
+                // Create directory if it doesn't exist
+                $uploadPath = public_path('images/berita');
+                if (!File::exists($uploadPath)) {
+                    File::makeDirectory($uploadPath, 0755, true);
                 }
-                $path = $request->file('gambar')->store('berita', 'public');
+
+                // Delete old image if exists
+                if ($filename && File::exists($uploadPath . '/' . $filename)) {
+                    File::delete($uploadPath . '/' . $filename);
+                }
+
+                // Generate unique filename and move new file
+                $file = $request->file('gambar');
+                $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+                $file->move($uploadPath, $filename);
             }
 
             $beritum->update([
@@ -187,7 +210,7 @@ class BeritaController extends Controller
                 'kutipan' => $validatedData['kutipan'],
                 'isi' => $validatedData['isi'],
                 'tanggal_terbit' => $validatedData['tanggal_terbit'],
-                'gambar' => $path,
+                'gambar' => $filename, // Store only filename, not full path
             ]);
 
             return redirect()->route('admin.berita.index')
@@ -237,10 +260,13 @@ class BeritaController extends Controller
                     ->with('error', 'Berita tidak ditemukan.');
             }
             
-            // Hapus file gambar dari storage sebelum menghapus record dari database
+            // Hapus file gambar dari public/images/berita sebelum menghapus record dari database
             if ($beritum->gambar) {
-                Storage::disk('public')->delete($beritum->gambar);
-                \Log::info('Deleted associated image file: ' . $beritum->gambar);
+                $imagePath = public_path('images/berita/' . $beritum->gambar);
+                if (File::exists($imagePath)) {
+                    File::delete($imagePath);
+                    \Log::info('Deleted associated image file: ' . $beritum->gambar);
+                }
             }
             
             $deleted = $beritum->delete();

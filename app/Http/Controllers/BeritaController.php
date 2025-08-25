@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Berita;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -30,8 +29,8 @@ class BeritaController extends Controller
                 'slug' => $berita->slug,
                 'kategori' => $berita->kategori,
                 'kutipan' => $berita->kutipan,
-                // Gunakan Storage::url() yang konsisten dengan dashboard admin
-                'gambar' => $berita->gambar ? Storage::url($berita->gambar) : null,
+                // Updated to use public/images/berita path
+                'gambar' => $berita->gambar ? asset('images/berita/' . $berita->gambar) : null,
                 'tanggal_terbit' => $berita->tanggal_terbit->format('d F Y'), // Format tanggal di backend
             ]);
 
@@ -60,8 +59,8 @@ class BeritaController extends Controller
                 'kategori' => $berita->kategori,
                 'isi' => $berita->isi, // Kirim konten lengkapnya
                 'kutipan' => $berita->kutipan,
-                // Konsisten menggunakan Storage::url()
-                'gambar' => $berita->gambar ? Storage::url($berita->gambar) : null,
+                // Updated to use public/images/berita path
+                'gambar' => $berita->gambar ? asset('images/berita/' . $berita->gambar) : null,
                 'tanggal_terbit' => $berita->tanggal_terbit->format('d F Y'),
             ],
         ]);
