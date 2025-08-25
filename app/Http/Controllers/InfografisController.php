@@ -21,7 +21,7 @@ class InfografisController extends Controller
         $infografisList = Infografis::when($search, function ($query, $search) {
                 return $query->where('judul', 'like', '%' . $search . '%');
             })
-            ->latest('tanggal_terbit') // Urutkan dari yang terbaru
+            ->orderBy('tanggal_terbit', 'desc') // Urutkan dari yang terbaru
             ->paginate(5) // Ambil 5 item per halaman
             ->withQueryString() // Pertahankan parameter search di pagination
             ->through(fn ($infografis) => [
@@ -30,7 +30,7 @@ class InfografisController extends Controller
                 'deskripsi' => $infografis->deskripsi,
                 // Gunakan Storage::url() yang sama dengan dashboard admin
                 'gambar' => $infografis->gambar ? Storage::url($infografis->gambar) : null,
-                // Format tanggal langsung dari backend
+                // Format tanggal menggunakan Carbon dari casting datetime
                 'tanggal_terbit' => $infografis->tanggal_terbit->format('d F Y'),
             ]);
 
@@ -44,9 +44,14 @@ class InfografisController extends Controller
 
     /**
      * Menampilkan halaman detail untuk satu infografis.
+     * Menggunakan route model binding dengan parameter id
      */
-    public function show(Infografis $infografis): Response
+    public function show(int $id): Response
     {
+        // Cari infografis berdasarkan ID
+        // firstOrFail() akan otomatis menampilkan halaman 404 jika ID tidak ditemukan
+        $infografis = Infografis::findOrFail($id);
+
         return Inertia::render('DetailInfografis', [
             'infografis' => [
                 'id' => $infografis->id,

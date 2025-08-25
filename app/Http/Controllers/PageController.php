@@ -37,9 +37,9 @@ class PageController extends Controller
 
         // Ambil semua data dari sheet
         $sheetData = Sheets::spreadsheet($spreadsheetId)->sheet($sheetName)->get();
-        
+        // dd($sheetData);
         // Header berada di baris pertama dari data yang diambil (index 0)
-        $header = array_shift($sheetData);
+        $header = $sheetData->pull(0);
 
         // Inisialisasi variabel untuk dikirim ke frontend
         $dusunList = [];
