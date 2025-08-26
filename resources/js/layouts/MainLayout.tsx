@@ -1,7 +1,7 @@
 // resources/js/layouts/MainLayout.tsx
 import { Link } from '@inertiajs/react';
-import { ExternalLink, Facebook, Instagram, Mail, MapPin, Phone, Twitter } from 'lucide-react';
-import { ReactNode } from 'react';
+import { ExternalLink, Facebook, Instagram, Mail, MapPin, Menu, Phone, Twitter, X } from 'lucide-react';
+import { ReactNode, useState } from 'react';
 
 // Definisi tipe untuk user
 interface User {
@@ -22,132 +22,201 @@ interface MainLayoutProps {
 }
 
 export default function MainLayout({ auth, children }: MainLayoutProps) {
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    const toggleMobileMenu = () => {
+        setMobileMenuOpen(!mobileMenuOpen);
+    };
+
+    const closeMobileMenu = () => {
+        setMobileMenuOpen(false);
+    };
+
     return (
         <div className="flex min-h-screen flex-col bg-gray-100">
             {/* Navigasi dengan hex codes */}
-            <nav className="border-b border-gray-100 bg-[#ea580c]">
+            <nav className="relative z-50 border-b border-gray-100 bg-[#ea580c]">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex h-16 justify-between">
-                        {/* Logo dan Menu Navigasi Kiri */}
-                        <div className="flex items-center space-x-8">
-                            <Link href={route('beranda')} className="text-lg font-bold text-[#ffffff]">
+                    <div className="flex h-14 items-center justify-between sm:h-16">
+                        {/* Logo */}
+                        <div className="flex items-center">
+                            <Link
+                                href={route('beranda')}
+                                className="truncate text-base font-bold text-[#ffffff] sm:text-lg"
+                                onClick={closeMobileMenu}
+                            >
                                 Desa Cinnong
                             </Link>
-                            <div className="hidden space-x-6 sm:flex">
-                                <Link href={route('beranda')} className="text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]">
-                                    Beranda
-                                </Link>
-                                <Link href={route('profil.desa')} className="text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]">
-                                    Profil Desa
-                                </Link>
-                                <Link href={route('data.desa')} className="text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]">
-                                    Data Desa
-                                </Link>
-                                <Link
-                                    href={route('infografis.desa')}
-                                    className="text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]"
-                                >
-                                    Infografis
-                                </Link>
-                                <Link href={route('berita')} className="text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]">
-                                    Berita
-                                </Link>
-                            </div>
                         </div>
 
-                        {/* Tombol Masuk/Keluar di Kanan */}
-                        <div className="flex items-center space-x-4">
-                            {auth?.user ? (
-                                // Jika Pengguna SUDAH Login
-                                <div className="flex items-center space-x-4">
-                                    <span className="hidden font-medium text-white sm:block">Selamat datang, {auth.user.name}</span>
+                        {/* Desktop Navigation */}
+                        <div className="hidden items-center space-x-6 lg:flex">
+                            <Link
+                                href={route('beranda')}
+                                className="text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]"
+                            >
+                                Beranda
+                            </Link>
+                            <Link
+                                href={route('profil.desa')}
+                                className="text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]"
+                            >
+                                Profil Desa
+                            </Link>
+                            <Link
+                                href={route('data.desa')}
+                                className="text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]"
+                            >
+                                Data Desa
+                            </Link>
+                            <Link
+                                href={route('infografis.desa')}
+                                className="text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]"
+                            >
+                                Infografis
+                            </Link>
+                            <Link
+                                href={route('berita')}
+                                className="text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]"
+                            >
+                                Berita
+                            </Link>
+                        </div>
 
-                                    {/* === AKTIFKAN TAUTAN INI === */}
+                        {/* Desktop Auth Buttons */}
+                        <div className="hidden items-center space-x-3 sm:flex">
+                            {auth?.user ? (
+                                <div className="flex items-center space-x-3">
+                                    <span className="hidden max-w-32 truncate text-sm font-medium text-white md:block">Hai, {auth.user.name}</span>
                                     <Link
                                         href={route('dashboard')}
-                                        className="text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]"
+                                        className="px-2 text-xs font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff] sm:text-sm"
                                     >
                                         Dashboard
                                     </Link>
-
                                     <Link
                                         href={route('logout')}
                                         method="post"
                                         as="button"
-                                        className="rounded-md bg-[#d97706] px-4 py-2 text-sm font-medium text-white transition duration-150 ease-in-out hover:bg-[#b45309]"
+                                        className="rounded-md bg-[#d97706] px-3 py-1.5 text-xs font-medium text-white transition duration-150 ease-in-out hover:bg-[#b45309] sm:text-sm"
                                     >
                                         Keluar
                                     </Link>
                                 </div>
                             ) : (
-                                // Jika Pengguna BELUM Login (Guest) - Hanya tombol Masuk
-                                <div className="flex items-center">
-                                    <Link
-                                        href={route('login')}
-                                        className="rounded-md bg-[#f97316] px-4 py-2 text-sm font-medium text-white shadow-sm transition duration-150 ease-in-out hover:bg-[#c2410c]"
-                                    >
-                                        Masuk
-                                    </Link>
-                                </div>
+                                <Link
+                                    href={route('login')}
+                                    className="rounded-md bg-[#f97316] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition duration-150 ease-in-out hover:bg-[#c2410c] sm:text-sm"
+                                >
+                                    Masuk
+                                </Link>
                             )}
                         </div>
 
-                        {/* Mobile Menu Button (Optional - bisa ditambahkan nanti) */}
-                        <div className="flex items-center sm:hidden">{/* Tombol hamburger untuk mobile bisa ditambahkan di sini */}</div>
+                        {/* Mobile Menu Button */}
+                        <div className="flex items-center sm:hidden lg:hidden">
+                            <button
+                                onClick={toggleMobileMenu}
+                                className="inline-flex items-center justify-center rounded-md p-2 text-[#fed7aa] transition-colors hover:bg-white/10 hover:text-white focus:ring-2 focus:ring-white focus:outline-none focus:ring-inset"
+                                aria-expanded={mobileMenuOpen}
+                                aria-label="Toggle menu"
+                            >
+                                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                {/* Mobile Navigation Menu (Hidden by default) */}
-                <div className="border-t border-orange-600/20 sm:hidden">
-                    <div className="space-y-1 px-4 py-3">
+                {/* Mobile Navigation Menu */}
+                <div className={`${mobileMenuOpen ? 'block' : 'hidden'} border-t border-orange-600/20 bg-[#ea580c] sm:hidden lg:hidden`}>
+                    <div className="max-h-96 space-y-1 overflow-y-auto px-4 py-3">
+                        {/* Mobile Auth Info */}
+                        {auth?.user && (
+                            <div className="mb-2 border-b border-orange-600/20 px-3 py-2">
+                                <span className="text-sm font-medium text-white">Selamat datang, {auth.user.name}</span>
+                            </div>
+                        )}
+
+                        {/* Mobile Navigation Links */}
                         <Link
                             href={route('beranda')}
-                            className="block rounded-md px-3 py-2 text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
+                            onClick={closeMobileMenu}
+                            className="block rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
                         >
                             Beranda
                         </Link>
                         <Link
                             href={route('profil.desa')}
-                            className="block rounded-md px-3 py-2 text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
+                            onClick={closeMobileMenu}
+                            className="block rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
                         >
                             Profil Desa
                         </Link>
                         <Link
                             href={route('data.desa')}
-                            className="block rounded-md px-3 py-2 text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
+                            onClick={closeMobileMenu}
+                            className="block rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
                         >
                             Data Desa
                         </Link>
                         <Link
                             href={route('infografis.desa')}
-                            className="block rounded-md px-3 py-2 text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
+                            onClick={closeMobileMenu}
+                            className="block rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
                         >
                             Infografis
                         </Link>
+                        <Link
+                            href={route('berita')}
+                            onClick={closeMobileMenu}
+                            className="block rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
+                        >
+                            Berita
+                        </Link>
 
-                        {/* Mobile Auth Buttons - Hanya tombol Masuk */}
-                        {!auth?.user && (
-                            <div className="border-t border-orange-600/20 pt-2">
+                        {/* Mobile Auth Buttons */}
+                        <div className="mt-3 space-y-2 border-t border-orange-600/20 pt-3">
+                            {auth?.user ? (
+                                <>
+                                    <Link
+                                        href={route('dashboard')}
+                                        onClick={closeMobileMenu}
+                                        className="block rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
+                                    >
+                                        Dashboard
+                                    </Link>
+                                    <Link
+                                        href={route('logout')}
+                                        method="post"
+                                        as="button"
+                                        onClick={closeMobileMenu}
+                                        className="block w-full rounded-md px-3 py-3 text-left text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
+                                    >
+                                        Keluar
+                                    </Link>
+                                </>
+                            ) : (
                                 <Link
                                     href={route('login')}
-                                    className="block rounded-md px-3 py-2 text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
+                                    onClick={closeMobileMenu}
+                                    className="block rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
                                 >
                                     Masuk
                                 </Link>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
             </nav>
 
             {/* Main Content */}
-            <main className="flex-1">{children}</main>
+            <main className="min-h-0 flex-1">{children}</main>
 
             {/* Footer */}
             <footer className="bg-[#ea580c] text-white">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     {/* Main Footer Content */}
-                    <div className="grid grid-cols-1 gap-8 py-12 md:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-6 py-8 sm:grid-cols-2 sm:gap-8 sm:py-12 lg:grid-cols-3">
                         {/* About Section */}
                         <div className="space-y-4">
                             <h3 className="text-lg font-bold">Desa Cinnong</h3>
@@ -158,21 +227,24 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                             <div className="flex space-x-3">
                                 <a
                                     href="#"
-                                    className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+                                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 active:bg-white/30 sm:h-8 sm:w-8"
+                                    aria-label="Facebook"
                                 >
-                                    <Facebook className="h-4 w-4" />
+                                    <Facebook className="h-5 w-5 sm:h-4 sm:w-4" />
                                 </a>
                                 <a
                                     href="#"
-                                    className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+                                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 active:bg-white/30 sm:h-8 sm:w-8"
+                                    aria-label="Instagram"
                                 >
-                                    <Instagram className="h-4 w-4" />
+                                    <Instagram className="h-5 w-5 sm:h-4 sm:w-4" />
                                 </a>
                                 <a
                                     href="#"
-                                    className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+                                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 active:bg-white/30 sm:h-8 sm:w-8"
+                                    aria-label="Twitter"
                                 >
-                                    <Twitter className="h-4 w-4" />
+                                    <Twitter className="h-5 w-5 sm:h-4 sm:w-4" />
                                 </a>
                             </div>
                         </div>
@@ -180,29 +252,44 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                         {/* Quick Links */}
                         <div className="space-y-4">
                             <h3 className="text-lg font-bold">Menu Utama</h3>
-                            <ul className="space-y-2 text-sm">
+                            <ul className="space-y-3 text-sm sm:space-y-2">
                                 <li>
-                                    <Link href={route('beranda')} className="text-orange-100 transition-colors hover:text-white">
+                                    <Link
+                                        href={route('beranda')}
+                                        className="block py-1 text-orange-100 transition-colors hover:text-white active:text-white"
+                                    >
                                         Beranda
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link href={route('profil.desa')} className="text-orange-100 transition-colors hover:text-white">
+                                    <Link
+                                        href={route('profil.desa')}
+                                        className="block py-1 text-orange-100 transition-colors hover:text-white active:text-white"
+                                    >
                                         Profil Desa
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link href={route('data.desa')} className="text-orange-100 transition-colors hover:text-white">
+                                    <Link
+                                        href={route('data.desa')}
+                                        className="block py-1 text-orange-100 transition-colors hover:text-white active:text-white"
+                                    >
                                         Data Desa
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link href={route('infografis.desa')} className="text-orange-100 transition-colors hover:text-white">
+                                    <Link
+                                        href={route('infografis.desa')}
+                                        className="block py-1 text-orange-100 transition-colors hover:text-white active:text-white"
+                                    >
                                         Infografis
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link href={route('berita')} className="text-orange-100 transition-colors hover:text-white">
+                                    <Link
+                                        href={route('berita')}
+                                        className="block py-1 text-orange-100 transition-colors hover:text-white active:text-white"
+                                    >
                                         Berita
                                     </Link>
                                 </li>
@@ -210,13 +297,13 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                         </div>
 
                         {/* Contact Info */}
-                        <div className="space-y-4">
+                        <div className="space-y-4 sm:col-span-2 lg:col-span-1">
                             <h3 className="text-lg font-bold">Kontak Kami</h3>
-                            <div className="space-y-3 text-sm">
+                            <div className="space-y-4 text-sm sm:space-y-3">
                                 <div className="flex items-start space-x-3">
-                                    <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-orange-200" />
+                                    <MapPin className="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-200 sm:h-4 sm:w-4" />
                                     <div>
-                                        <p className="text-orange-100">
+                                        <p className="leading-relaxed text-orange-100">
                                             Desa Cinnong
                                             <br />
                                             Kecamatan Sibulue
@@ -227,35 +314,44 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                         </p>
                                     </div>
                                 </div>
-                                <div className="flex items-center space-x-3">
-                                    <Phone className="h-4 w-4 flex-shrink-0 text-orange-200" />
-                                    <span className="text-orange-100">+62 812-3456-7890</span>
-                                </div>
-                                <div className="flex items-center space-x-3">
-                                    <Mail className="h-4 w-4 flex-shrink-0 text-orange-200" />
-                                    <span className="text-orange-100">desa.cinnong@bone.go.id</span>
-                                </div>
+                                <a
+                                    href="tel:+6281234567890"
+                                    className="flex items-center space-x-3 text-orange-100 transition-colors hover:text-white active:text-white"
+                                >
+                                    <Phone className="h-5 w-5 flex-shrink-0 text-orange-200 sm:h-4 sm:w-4" />
+                                    <span>+62 812-3456-7890</span>
+                                </a>
+                                <a
+                                    href="mailto:desa.cinnong@bone.go.id"
+                                    className="flex items-center space-x-3 text-orange-100 transition-colors hover:text-white active:text-white"
+                                >
+                                    <Mail className="h-5 w-5 flex-shrink-0 text-orange-200 sm:h-4 sm:w-4" />
+                                    <span className="break-all">desa.cinnong@bone.go.id</span>
+                                </a>
                             </div>
                         </div>
                     </div>
 
                     {/* Bottom Footer */}
-                    <div className="border-t border-orange-600/30 py-6">
-                        <div className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0">
-                            <div className="text-center text-sm text-orange-100 md:text-left">
+                    <div className="border-t border-orange-600/30 py-4 sm:py-6">
+                        <div className="flex flex-col items-center justify-between space-y-4 text-center sm:text-left lg:flex-row lg:space-y-0">
+                            <div className="text-xs text-orange-100 sm:text-sm">
                                 <p>© 2025 Desa Cinnong. Sistem Informasi Desa.</p>
-                                <p>Dibuat dengan ❤️ untuk transparansi dan kemudahan akses informasi.</p>
+                                <p className="mt-1">Dibuat dengan ❤️ untuk transparansi dan kemudahan akses informasi.</p>
                             </div>
-                            <div className="flex items-center space-x-4 text-sm">
-                                <a href="#" className="text-orange-100 transition-colors hover:text-white">
+                            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs sm:text-sm">
+                                <a href="#" className="text-orange-100 transition-colors hover:text-white active:text-white">
                                     Kebijakan Privasi
                                 </a>
-                                <span className="text-orange-300">•</span>
-                                <a href="#" className="text-orange-100 transition-colors hover:text-white">
+                                <span className="hidden text-orange-300 sm:inline">•</span>
+                                <a href="#" className="text-orange-100 transition-colors hover:text-white active:text-white">
                                     Syarat & Ketentuan
                                 </a>
-                                <span className="text-orange-300">•</span>
-                                <a href="#" className="flex items-center space-x-1 text-orange-100 transition-colors hover:text-white">
+                                <span className="hidden text-orange-300 sm:inline">•</span>
+                                <a
+                                    href="#"
+                                    className="flex items-center space-x-1 text-orange-100 transition-colors hover:text-white active:text-white"
+                                >
                                     <span>Situs Web Resmi</span>
                                     <ExternalLink className="h-3 w-3" />
                                 </a>

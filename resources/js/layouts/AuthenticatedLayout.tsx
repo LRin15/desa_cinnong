@@ -76,10 +76,6 @@ export default function AuthenticatedLayout({ auth, children, title }: Authentic
                         <button onClick={() => setSidebarOpen(true)} className="sm:hidden">
                             <Menu className="h-6 w-6" />
                         </button>
-                        <div className="text-xl font-semibold text-gray-800">{title}</div>
-                        <div className="hidden sm:block">
-                            <span className="font-medium text-gray-600">{auth.user.name}</span>
-                        </div>
                     </header>
                     <main className="flex-1 p-4 sm:p-6">{children}</main>
                 </div>

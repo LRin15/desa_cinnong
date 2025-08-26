@@ -37,7 +37,6 @@ Route::get('/', function () {
             'kategori' => $berita->kategori,
             'tanggal_terbit' => $berita->tanggal_terbit->format('d F Y'),
             'kutipan' => Str::limit($berita->kutipan, 100),
-            // 👇 TAMBAHKAN BARIS INI 👇
             'gambar' => $berita->gambar ? asset('images/berita/' . $berita->gambar) : null,
         ]);
 

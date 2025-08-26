@@ -45,29 +45,33 @@ export default function Beranda({ auth, beritaTerbaru }: BerandaProps) {
         <MainLayout auth={auth}>
             <Head title="Beranda" />
             <div className="min-h-screen">
-                {/* Hero Section */}
-                <section className="bg-gradient-to-br from-orange-50 to-orange-100 py-20">
-                    <div className="container mx-auto px-4">
+                {/* Hero Section - Mobile optimized */}
+                <section className="bg-gradient-to-br from-orange-50 to-orange-100 py-12 sm:py-16 lg:py-20">
+                    <div className="container mx-auto px-3 sm:px-4 lg:px-8">
                         <div className="mx-auto max-w-4xl text-center">
-                            <h1 className="mb-6 text-4xl font-bold text-gray-900 md:text-6xl">
+                            <h1 className="mb-4 text-3xl font-bold text-gray-900 sm:mb-6 sm:text-4xl md:text-5xl lg:text-6xl">
                                 Selamat Datang di
                                 <span className="block text-orange-600">Desa Cinnong</span>
                             </h1>
-                            <p className="mx-auto mb-8 max-w-2xl text-xl text-gray-700">
+                            <p className="mx-auto mb-6 max-w-2xl text-base text-gray-700 sm:mb-8 sm:text-lg lg:text-xl">
                                 Sistem informasi desa yang menyediakan data terkini tentang profil desa, statistik penduduk, dan informasi ekonomi
                                 untuk transparansi dan kemudahan akses.
                             </p>
-                            <div className="flex flex-col justify-center gap-4 sm:flex-row">
+
+                            {/* CTA Buttons - Mobile stacked */}
+                            <div className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
                                 <Link href={route('profil.desa')}>
-                                    <button className="flex w-full items-center justify-center rounded-lg bg-orange-600 px-6 py-3 text-lg font-medium text-white transition-colors hover:bg-orange-700 sm:w-auto">
-                                        <MapPin className="mr-2 h-5 w-5" />
-                                        Jelajahi Profil Desa
+                                    <button className="flex w-full items-center justify-center rounded-lg bg-orange-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-orange-700 sm:w-auto sm:px-6 sm:text-base lg:text-lg">
+                                        <MapPin className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                                        <span className="sm:hidden">Profil Desa</span>
+                                        <span className="hidden sm:inline">Jelajahi Profil Desa</span>
                                     </button>
                                 </Link>
                                 <Link href={route('data.desa')}>
-                                    <button className="flex w-full items-center justify-center rounded-lg border border-orange-600 px-6 py-3 text-lg font-medium text-orange-600 transition-colors hover:bg-orange-50 sm:w-auto">
-                                        <BarChart3 className="mr-2 h-5 w-5" />
-                                        Lihat Data Statistik
+                                    <button className="flex w-full items-center justify-center rounded-lg border border-orange-600 px-4 py-3 text-sm font-medium text-orange-600 transition-colors hover:bg-orange-50 sm:w-auto sm:px-6 sm:text-base lg:text-lg">
+                                        <BarChart3 className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                                        <span className="sm:hidden">Data Statistik</span>
+                                        <span className="hidden sm:inline">Lihat Data Statistik</span>
                                     </button>
                                 </Link>
                             </div>
@@ -75,95 +79,106 @@ export default function Beranda({ auth, beritaTerbaru }: BerandaProps) {
                     </div>
                 </section>
 
-                {/* Stats Section */}
-                <section className="bg-white py-16">
-                    <div className="container mx-auto px-4">
-                        <div className="mb-12 text-center">
-                            <h2 className="mb-4 text-3xl font-bold text-gray-900">Data Terkini Desa Cinnong</h2>
-                            <p className="text-gray-600">Informasi statistik dan demografis terbaru</p>
+                {/* Stats Section - Mobile grid optimization */}
+                <section className="bg-white py-12 sm:py-16">
+                    <div className="container mx-auto px-3 sm:px-4 lg:px-8">
+                        <div className="mb-8 text-center sm:mb-12">
+                            <h2 className="mb-2 text-2xl font-bold text-gray-900 sm:mb-4 sm:text-3xl">Data Terkini Desa Cinnong</h2>
+                            <p className="text-sm text-gray-600 sm:text-base">Informasi statistik dan demografis terbaru</p>
                         </div>
-                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-                            <div className="rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm">
-                                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
-                                    <Users className="h-6 w-6 text-orange-600" />
+
+                        {/* Mobile 2x2 grid, tablet 2x2, desktop 1x4 */}
+                        <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
+                            <div className="rounded-lg border border-gray-200 bg-white p-4 text-center shadow-sm sm:p-6">
+                                <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 sm:mb-3 sm:h-12 sm:w-12">
+                                    <Users className="h-5 w-5 text-orange-600 sm:h-6 sm:w-6" />
                                 </div>
-                                <div className="mb-1 text-2xl font-bold text-orange-600">1.868</div>
-                                <div className="text-sm text-gray-600">Total Penduduk</div>
+                                <div className="mb-1 text-xl font-bold text-orange-600 sm:text-2xl">1.868</div>
+                                <div className="text-xs text-gray-600 sm:text-sm">Total Penduduk</div>
                             </div>
-                            <div className="rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm">
-                                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
-                                    <Building2 className="h-6 w-6 text-orange-600" />
+                            <div className="rounded-lg border border-gray-200 bg-white p-4 text-center shadow-sm sm:p-6">
+                                <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 sm:mb-3 sm:h-12 sm:w-12">
+                                    <Building2 className="h-5 w-5 text-orange-600 sm:h-6 sm:w-6" />
                                 </div>
-                                <div className="mb-1 text-2xl font-bold text-orange-600">4</div>
-                                <div className="text-sm text-gray-600">Jumlah Dusun</div>
+                                <div className="mb-1 text-xl font-bold text-orange-600 sm:text-2xl">4</div>
+                                <div className="text-xs text-gray-600 sm:text-sm">Jumlah Dusun</div>
                             </div>
-                            <div className="rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm">
-                                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
-                                    <TrendingUp className="h-6 w-6 text-orange-600" />
+                            <div className="rounded-lg border border-gray-200 bg-white p-4 text-center shadow-sm sm:p-6">
+                                <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 sm:mb-3 sm:h-12 sm:w-12">
+                                    <TrendingUp className="h-5 w-5 text-orange-600 sm:h-6 sm:w-6" />
                                 </div>
-                                <div className="mb-1 text-2xl font-bold text-orange-600">6</div>
-                                <div className="text-sm text-gray-600">Sekolah</div>
+                                <div className="mb-1 text-xl font-bold text-orange-600 sm:text-2xl">6</div>
+                                <div className="text-xs text-gray-600 sm:text-sm">Sekolah</div>
                             </div>
-                            <div className="rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm">
-                                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
-                                    <Calendar className="h-6 w-6 text-orange-600" />
+                            <div className="rounded-lg border border-gray-200 bg-white p-4 text-center shadow-sm sm:p-6">
+                                <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 sm:mb-3 sm:h-12 sm:w-12">
+                                    <Calendar className="h-5 w-5 text-orange-600 sm:h-6 sm:w-6" />
                                 </div>
-                                <div className="mb-1 text-2xl font-bold text-orange-600">2025</div>
-                                <div className="text-sm text-gray-600">Data Terakhir</div>
+                                <div className="mb-1 text-xl font-bold text-orange-600 sm:text-2xl">2025</div>
+                                <div className="text-xs text-gray-600 sm:text-sm">Data Terakhir</div>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                {/* News/Updates Section - KONTEN DINAMIS DENGAN GAMBAR */}
-                <section className="bg-gray-50 py-16">
-                    <div className="container mx-auto px-4">
-                        <div className="mb-12 text-center">
-                            <h2 className="mb-4 text-3xl font-bold text-gray-900">Berita & Pengumuman Terbaru</h2>
-                            <p className="text-gray-600">Informasi terkini dari Desa Cinnong</p>
+                {/* News/Updates Section - Mobile card optimization */}
+                <section className="bg-gray-50 py-12 sm:py-16">
+                    <div className="container mx-auto px-3 sm:px-4 lg:px-8">
+                        <div className="mb-8 text-center sm:mb-12">
+                            <h2 className="mb-2 text-2xl font-bold text-gray-900 sm:mb-4 sm:text-3xl">Berita & Pengumuman Terbaru</h2>
+                            <p className="text-sm text-gray-600 sm:text-base">Informasi terkini dari Desa Cinnong</p>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {/* Mobile single column, tablet 2 col, desktop 3 col */}
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
                             {beritaTerbaru.map((berita) => (
                                 <Link
                                     key={berita.slug}
                                     href={route('berita.detail', berita.slug)}
-                                    className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-shadow duration-300 hover:shadow-lg"
+                                    className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:shadow-lg active:scale-[0.98]"
                                 >
-                                    {/* 👇 BAGIAN GAMBAR BARU 👇 */}
-                                    <div className="aspect-w-16 aspect-h-9">
+                                    {/* Image container with aspect ratio */}
+                                    <div className="relative aspect-video w-full overflow-hidden">
                                         {berita.gambar ? (
-                                            <img src={berita.gambar} alt={berita.judul} className="h-full w-full object-cover" />
+                                            <img
+                                                src={berita.gambar}
+                                                alt={berita.judul}
+                                                className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                                                loading="lazy"
+                                            />
                                         ) : (
                                             <div className="flex h-full w-full items-center justify-center bg-gray-200">
-                                                <Newspaper className="h-12 w-12 text-gray-400" />
+                                                <Newspaper className="h-8 w-8 text-gray-400 sm:h-12 sm:w-12" />
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* Bagian Teks */}
-                                    <div className="flex flex-1 flex-col p-6">
-                                        <div className="mb-3">
+                                    {/* Content with proper mobile spacing */}
+                                    <div className="flex flex-1 flex-col p-4 sm:p-6">
+                                        <div className="mb-2 sm:mb-3">
                                             <span
-                                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getCategoryClass(berita.kategori)}`}
+                                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium sm:px-2.5 sm:text-xs ${getCategoryClass(berita.kategori)}`}
                                             >
                                                 {berita.kategori}
                                             </span>
                                         </div>
-                                        <h3 className="mb-1 text-lg font-semibold text-gray-900">{berita.judul}</h3>
-                                        <p className="mb-3 text-sm text-gray-600">{berita.tanggal_terbit}</p>
+                                        <h3 className="mb-1 line-clamp-2 text-base font-semibold text-gray-900 sm:text-lg">{berita.judul}</h3>
+                                        <p className="mb-2 text-xs text-gray-600 sm:mb-3 sm:text-sm">{berita.tanggal_terbit}</p>
                                         <p className="line-clamp-3 flex-1 text-sm text-gray-600">{berita.kutipan}</p>
                                     </div>
                                 </Link>
                             ))}
                         </div>
-                        <div className="mt-12 text-center">
+
+                        {/* Mobile optimized CTA button */}
+                        <div className="mt-8 text-center sm:mt-12">
                             <Link
                                 href={route('berita')}
-                                className="inline-flex items-center justify-center rounded-lg bg-orange-600 px-6 py-3 text-lg font-medium text-white transition-colors hover:bg-orange-700"
+                                className="inline-flex w-full items-center justify-center rounded-lg bg-orange-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-orange-700 sm:w-auto sm:px-6 sm:text-base lg:text-lg"
                             >
-                                <Newspaper className="mr-2 h-5 w-5" />
-                                Lihat Semua Berita
+                                <Newspaper className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                                <span className="sm:hidden">Semua Berita</span>
+                                <span className="hidden sm:inline">Lihat Semua Berita</span>
                             </Link>
                         </div>
                     </div>

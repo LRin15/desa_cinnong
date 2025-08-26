@@ -2,6 +2,7 @@
 
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { ArrowLeft, FileText } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
 interface Infografis {
@@ -35,7 +36,6 @@ interface EditPageProps {
 }
 
 export default function Edit() {
-    // Add error handling for page props
     let pageProps: EditPageProps;
 
     try {
@@ -43,10 +43,10 @@ export default function Edit() {
     } catch (error) {
         console.error('Error getting page props:', error);
         return (
-            <div className="flex min-h-screen items-center justify-center">
+            <div className="flex min-h-screen items-center justify-center p-4">
                 <div className="text-center">
-                    <h1 className="text-2xl font-bold text-red-600">Error Loading Page</h1>
-                    <p className="mt-2 text-gray-600">Please check the console for details.</p>
+                    <h1 className="text-xl font-bold text-red-600 sm:text-2xl">Error Loading Page</h1>
+                    <p className="mt-2 text-sm text-gray-600 sm:text-base">Please check the console for details.</p>
                 </div>
             </div>
         );
@@ -54,13 +54,12 @@ export default function Edit() {
 
     const { auth, infografis, errors, flash } = pageProps;
 
-    // Safety checks
     if (!auth || !auth.user) {
         return (
-            <div className="flex min-h-screen items-center justify-center">
+            <div className="flex min-h-screen items-center justify-center p-4">
                 <div className="text-center">
-                    <h1 className="text-2xl font-bold text-red-600">Authentication Error</h1>
-                    <p className="mt-2 text-gray-600">User authentication data is missing.</p>
+                    <h1 className="text-xl font-bold text-red-600 sm:text-2xl">Authentication Error</h1>
+                    <p className="mt-2 text-sm text-gray-600 sm:text-base">User authentication data is missing.</p>
                 </div>
             </div>
         );
@@ -68,12 +67,15 @@ export default function Edit() {
 
     if (!infografis) {
         return (
-            <div className="flex min-h-screen items-center justify-center">
+            <div className="flex min-h-screen items-center justify-center p-4">
                 <div className="text-center">
-                    <h1 className="text-2xl font-bold text-red-600">Infografis Not Found</h1>
-                    <p className="mt-2 text-gray-600">The infografis data is missing.</p>
-                    <Link href={route('admin.infografis.index')} className="mt-4 text-orange-600 hover:text-orange-800">
-                        Back to Infografis List
+                    <h1 className="text-xl font-bold text-red-600 sm:text-2xl">Infografis Not Found</h1>
+                    <p className="mt-2 text-sm text-gray-600 sm:text-base">The infografis data is missing.</p>
+                    <Link
+                        href={route('admin.infografis.index')}
+                        className="mt-4 inline-block rounded-md bg-orange-600 px-4 py-2 text-sm text-white hover:bg-orange-700"
+                    >
+                        Kembali ke Daftar Infografis
                     </Link>
                 </div>
             </div>
@@ -94,7 +96,6 @@ export default function Edit() {
         _method: 'put' as const,
     });
 
-    // Merge server errors with form errors
     const allErrors = { ...errors, ...formErrors };
 
     const submit: FormEventHandler = (e) => {
@@ -103,97 +104,156 @@ export default function Edit() {
     };
 
     return (
-        <AuthenticatedLayout auth={auth} title={`Edit Infografis: ${infografis.judul}`}>
+        <AuthenticatedLayout auth={auth} title="Edit Infografis">
             <Head title={`Edit Infografis: ${infografis.judul}`} />
-            <div className="mx-auto max-w-2xl rounded-lg border bg-white p-6 shadow-sm">
-                {/* Flash Messages */}
-                {flash?.success && <div className="mb-6 rounded-md bg-green-100 p-4 text-green-700">{flash.success}</div>}
-                {flash?.error && <div className="mb-6 rounded-md bg-red-100 p-4 text-red-700">{flash.error}</div>}
-
-                <h2 className="text-xl font-semibold text-gray-700">Formulir Edit Infografis</h2>
-                <form onSubmit={submit} className="mt-6 space-y-4">
-                    <div>
-                        <label htmlFor="judul" className="block text-sm font-medium text-gray-700">
-                            Judul
-                        </label>
-                        <input
-                            id="judul"
-                            type="text"
-                            value={data.judul}
-                            onChange={(e) => setData('judul', e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500"
-                            required
-                        />
-                        {allErrors.judul && <p className="mt-2 text-sm text-red-600">{allErrors.judul}</p>}
-                    </div>
-
-                    <div>
-                        <label htmlFor="deskripsi" className="block text-sm font-medium text-gray-700">
-                            Deskripsi
-                        </label>
-                        <textarea
-                            id="deskripsi"
-                            value={data.deskripsi}
-                            onChange={(e) => setData('deskripsi', e.target.value)}
-                            rows={4}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500"
-                            required
-                        />
-                        {allErrors.deskripsi && <p className="mt-2 text-sm text-red-600">{allErrors.deskripsi}</p>}
-                    </div>
-
-                    <div>
-                        <label htmlFor="tanggal_terbit" className="block text-sm font-medium text-gray-700">
-                            Tanggal Terbit
-                        </label>
-                        <input
-                            id="tanggal_terbit"
-                            type="date"
-                            value={data.tanggal_terbit}
-                            onChange={(e) => setData('tanggal_terbit', e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500"
-                            required
-                        />
-                        {allErrors.tanggal_terbit && <p className="mt-2 text-sm text-red-600">{allErrors.tanggal_terbit}</p>}
-                    </div>
-
-                    <div>
-                        <label htmlFor="gambar" className="block text-sm font-medium text-gray-700">
-                            Ganti Gambar
-                        </label>
-                        {infografis.gambar_url && (
-                            <div className="mt-2">
-                                <p className="text-xs text-gray-500">Gambar saat ini:</p>
-                                <img src={infografis.gambar_url} alt="Gambar saat ini" className="mt-1 h-24 w-auto rounded-md border" />
-                            </div>
-                        )}
-                        <input
-                            id="gambar"
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => setData('gambar', e.target.files ? e.target.files[0] : null)}
-                            className="mt-2 block w-full text-sm text-gray-500 file:mr-4 file:rounded-full file:border-0 file:bg-orange-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-orange-700 hover:file:bg-orange-100"
-                        />
-                        <p className="mt-1 text-xs text-gray-500">Kosongkan jika tidak ingin mengganti gambar.</p>
-                        {allErrors.gambar && <p className="mt-2 text-sm text-red-600">{allErrors.gambar}</p>}
-                    </div>
-
-                    <div className="flex items-center justify-end space-x-4">
+            <div className="space-y-4 px-4 sm:space-y-6 sm:px-0">
+                {/* Header */}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3">
                         <Link
                             href={route('admin.infografis.index')}
-                            className="rounded-md px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-600 transition-colors hover:bg-gray-50 sm:h-10 sm:w-10"
+                            title="Kembali ke Daftar Infografis"
                         >
-                            Batal
+                            <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                         </Link>
-                        <button
-                            type="submit"
-                            disabled={processing}
-                            className="rounded-lg bg-orange-600 px-4 py-2 font-semibold text-white transition hover:bg-orange-700 disabled:opacity-50"
-                        >
-                            {processing ? 'Memperbarui...' : 'Perbarui'}
-                        </button>
+                        <div>
+                            <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">Edit Infografis</h1>
+                            <p className="mt-1 text-xs text-gray-500 sm:text-sm">Perbarui detail infografis di bawah</p>
+                        </div>
                     </div>
-                </form>
+                </div>
+
+                {/* Flash Messages */}
+                {flash?.success && (
+                    <div className="rounded-md border border-green-200 bg-green-50 p-3 sm:p-4">
+                        <p className="text-sm text-green-700 sm:text-base">{flash.success}</p>
+                    </div>
+                )}
+                {flash?.error && (
+                    <div className="rounded-md border border-red-200 bg-red-50 p-3 sm:p-4">
+                        <p className="text-sm text-red-700 sm:text-base">{flash.error}</p>
+                    </div>
+                )}
+
+                {/* Form Container */}
+                <div className="rounded-lg border bg-white shadow-sm">
+                    <div className="border-b border-gray-200 px-4 py-4 sm:px-6 sm:py-5">
+                        <h2 className="text-lg font-medium text-gray-900 sm:text-xl">Formulir Edit Infografis</h2>
+                        <p className="mt-1 text-xs text-gray-500 sm:text-sm">Pastikan informasi yang diperbarui sudah benar</p>
+                    </div>
+
+                    <form onSubmit={submit} className="p-4 sm:p-6">
+                        <div className="space-y-4 sm:space-y-6">
+                            {/* Judul and Tanggal - Responsive Grid */}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
+                                <div>
+                                    <label htmlFor="judul" className="block text-sm font-medium text-gray-700 sm:text-base">
+                                        Judul <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        id="judul"
+                                        type="text"
+                                        value={data.judul}
+                                        onChange={(e) => setData('judul', e.target.value)}
+                                        className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none sm:text-base"
+                                        required
+                                    />
+                                    {allErrors.judul && <p className="mt-2 text-sm text-red-600">{allErrors.judul}</p>}
+                                </div>
+                                <div>
+                                    <label htmlFor="tanggal_terbit" className="block text-sm font-medium text-gray-700 sm:text-base">
+                                        Tanggal Terbit <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        id="tanggal_terbit"
+                                        type="date"
+                                        value={data.tanggal_terbit}
+                                        onChange={(e) => setData('tanggal_terbit', e.target.value)}
+                                        className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none sm:text-base"
+                                        required
+                                    />
+                                    {allErrors.tanggal_terbit && <p className="mt-2 text-sm text-red-600">{allErrors.tanggal_terbit}</p>}
+                                </div>
+                            </div>
+
+                            {/* Deskripsi */}
+                            <div>
+                                <label htmlFor="deskripsi" className="block text-sm font-medium text-gray-700 sm:text-base">
+                                    Deskripsi <span className="text-red-500">*</span>
+                                </label>
+                                <textarea
+                                    id="deskripsi"
+                                    value={data.deskripsi}
+                                    onChange={(e) => setData('deskripsi', e.target.value)}
+                                    rows={4}
+                                    className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none sm:text-base"
+                                    required
+                                />
+                                {allErrors.deskripsi && <p className="mt-2 text-sm text-red-600">{allErrors.deskripsi}</p>}
+                            </div>
+
+                            {/* Gambar */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 sm:text-base">Gambar Infografis</label>
+                                {infografis.gambar_url && (
+                                    <div className="mt-2">
+                                        <p className="text-xs text-gray-500">Gambar saat ini:</p>
+                                        <img
+                                            src={infografis.gambar_url}
+                                            alt="Gambar saat ini"
+                                            className="mt-1 h-32 w-auto rounded-md border object-cover"
+                                        />
+                                    </div>
+                                )}
+                                <div className="mt-4 flex justify-center rounded-md border-2 border-dashed border-gray-300 px-6 py-8 transition-colors hover:border-gray-400">
+                                    <div className="space-y-2 text-center">
+                                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100">
+                                            <FileText className="h-6 w-6 text-gray-600" />
+                                        </div>
+                                        <div className="text-sm text-gray-600">
+                                            <label htmlFor="gambar" className="cursor-pointer font-medium text-orange-600 hover:text-orange-500">
+                                                Upload gambar baru
+                                            </label>
+                                            <p className="inline pl-1">atau drag and drop</p>
+                                        </div>
+                                        <p className="text-xs text-gray-500">PNG, JPG, GIF hingga 2MB. Kosongkan jika tidak ingin ganti.</p>
+                                    </div>
+                                </div>
+                                <input
+                                    id="gambar"
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => setData('gambar', e.target.files ? e.target.files[0] : null)}
+                                    className="sr-only"
+                                />
+                                {data.gambar && (
+                                    <div className="mt-2">
+                                        <p className="text-sm text-gray-600">File baru: {data.gambar.name}</p>
+                                    </div>
+                                )}
+                                {allErrors.gambar && <p className="mt-2 text-sm text-red-600">{allErrors.gambar}</p>}
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-gray-200 pt-6 sm:flex-row sm:justify-end">
+                            <Link
+                                href={route('admin.infografis.index')}
+                                className="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:w-auto"
+                            >
+                                Batal
+                            </Link>
+                            <button
+                                type="submit"
+                                disabled={processing}
+                                className="inline-flex justify-center rounded-md bg-orange-600 px-6 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                            >
+                                {processing ? 'Memperbarui...' : 'Perbarui Infografis'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </AuthenticatedLayout>
     );

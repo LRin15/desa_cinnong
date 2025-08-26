@@ -89,15 +89,16 @@ export default function Berita({ auth, beritaList, filters }: BeritaPageProps) {
             <Head title="Berita" />
 
             <div className="bg-white">
+                {/* Header Section - Mobile optimized */}
                 <section className="border-b border-gray-200 bg-gradient-to-br from-orange-50 to-orange-100">
-                    <div className="container mx-auto px-4 py-16 text-center">
-                        <h1 className="mb-4 text-4xl font-bold text-gray-900 md:text-5xl">Berita & Pengumuman</h1>
-                        <p className="mx-auto max-w-2xl text-lg text-gray-700">
+                    <div className="container mx-auto px-3 py-12 text-center sm:px-4 sm:py-16 lg:px-8">
+                        <h1 className="mb-3 text-3xl font-bold text-gray-900 sm:mb-4 sm:text-4xl md:text-5xl">Berita & Pengumuman</h1>
+                        <p className="mx-auto max-w-2xl text-base text-gray-700 sm:text-lg">
                             Ikuti perkembangan, kegiatan, dan informasi terbaru dari Pemerintah Desa Cinnong.
                         </p>
 
-                        {/* Search Form */}
-                        <div className="mx-auto mt-8 max-w-md">
+                        {/* Search Form - Mobile optimized */}
+                        <div className="mx-auto mt-6 max-w-md sm:mt-8">
                             <form onSubmit={handleSearch} className="relative">
                                 <div className="relative">
                                     <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -105,14 +106,14 @@ export default function Berita({ auth, beritaList, filters }: BeritaPageProps) {
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder="Cari berita berdasarkan judul..."
+                                        placeholder="Cari berita..."
                                         className="w-full rounded-lg border border-gray-300 bg-white py-3 pr-12 pl-10 text-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-200 focus:outline-none"
                                     />
                                     {searchQuery && (
                                         <button
                                             type="button"
                                             onClick={clearSearch}
-                                            className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                            className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
                                         >
                                             <X className="h-4 w-4" />
                                         </button>
@@ -120,23 +121,29 @@ export default function Berita({ auth, beritaList, filters }: BeritaPageProps) {
                                 </div>
                                 <button
                                     type="submit"
-                                    className="mt-2 w-full rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700 focus:ring-2 focus:ring-orange-200 focus:outline-none"
+                                    className="mt-2 w-full rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700 focus:ring-2 focus:ring-orange-200 focus:outline-none active:bg-orange-800"
                                 >
                                     Cari Berita
                                 </button>
                             </form>
                         </div>
 
-                        {/* Search Result Info */}
+                        {/* Search Result Info - Mobile friendly */}
                         {filters.search && (
-                            <div className="mt-4 text-sm text-gray-600">
+                            <div className="mt-3 text-sm text-gray-600 sm:mt-4">
                                 {beritaList.data.length > 0 ? (
                                     <p>
-                                        Ditemukan {beritaList.data.length} hasil untuk "<span className="font-semibold">{filters.search}</span>"
+                                        <span className="hidden sm:inline">Ditemukan </span>
+                                        <span className="font-semibold">{beritaList.data.length}</span>
+                                        <span className="hidden sm:inline"> hasil untuk "</span>
+                                        <span className="sm:hidden"> hasil: "</span>
+                                        <span className="font-semibold">{filters.search}</span>"
                                     </p>
                                 ) : (
                                     <p>
-                                        Tidak ditemukan hasil untuk "<span className="font-semibold">{filters.search}</span>"
+                                        <span className="hidden sm:inline">Tidak ditemukan hasil untuk "</span>
+                                        <span className="sm:hidden">Tidak ada hasil: "</span>
+                                        <span className="font-semibold">{filters.search}</span>"
                                     </p>
                                 )}
                             </div>
@@ -144,44 +151,55 @@ export default function Berita({ auth, beritaList, filters }: BeritaPageProps) {
                     </div>
                 </section>
 
-                <section className="py-16 sm:py-20">
-                    <div className="container mx-auto px-4">
+                {/* Content Section */}
+                <section className="py-12 sm:py-16 lg:py-20">
+                    <div className="container mx-auto px-3 sm:px-4 lg:px-8">
                         {beritaList.data.length > 0 ? (
-                            <div className="grid grid-cols-1 gap-x-6 gap-y-12 md:grid-cols-2 lg:grid-cols-3">
+                            /* Mobile single column, tablet 2 col, desktop 3 col */
+                            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
                                 {beritaList.data.map((news) => (
                                     <article
                                         key={news.id}
-                                        className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-shadow duration-300 hover:shadow-lg"
+                                        className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:shadow-lg active:scale-[0.98]"
                                     >
                                         <Link href={`/berita/${news.slug}`} className="block">
-                                            <img src={news.gambar} alt={news.judul} className="h-48 w-full object-cover" />
+                                            <div className="relative aspect-video overflow-hidden">
+                                                <img
+                                                    src={news.gambar}
+                                                    alt={news.judul}
+                                                    className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                                                    loading="lazy"
+                                                />
+                                            </div>
                                         </Link>
-                                        <div className="flex flex-1 flex-col justify-between p-6">
+                                        <div className="flex flex-1 flex-col justify-between p-4 sm:p-6">
                                             <div>
-                                                <div className="mb-3 flex items-center justify-between">
+                                                <div className="mb-2 flex items-center justify-between sm:mb-3">
                                                     <span
-                                                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getCategoryClass(news.kategori)}`}
+                                                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium sm:px-2.5 ${getCategoryClass(news.kategori)}`}
                                                     >
                                                         {news.kategori}
                                                     </span>
                                                 </div>
                                                 <Link href={`/berita/${news.slug}`} className="block">
-                                                    <h3 className="mb-2 text-xl leading-tight font-bold text-gray-900 transition-colors duration-200 hover:text-orange-600">
+                                                    <h3 className="mb-2 line-clamp-2 text-lg leading-tight font-bold text-gray-900 transition-colors duration-200 hover:text-orange-600 sm:text-xl">
                                                         {news.judul}
                                                     </h3>
                                                 </Link>
-                                                <p className="mb-4 line-clamp-3 text-base text-gray-600">{news.kutipan}</p>
+                                                <p className="mb-3 line-clamp-3 text-sm text-gray-600 sm:mb-4 sm:text-base">{news.kutipan}</p>
                                             </div>
-                                            <div className="mt-4 flex items-center justify-between">
-                                                <p className="flex items-center text-sm text-gray-500">
-                                                    <Calendar className="mr-2 h-4 w-4" />
+                                            <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                                                <p className="flex items-center text-xs text-gray-500 sm:text-sm">
+                                                    <Calendar className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                                                     {news.tanggal_terbit}
                                                 </p>
                                                 <Link
                                                     href={`/berita/${news.slug}`}
-                                                    className="flex items-center text-sm font-semibold text-orange-600 transition-colors duration-200 hover:text-orange-800"
+                                                    className="flex items-center justify-center rounded-md bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-600 transition-colors duration-200 hover:bg-orange-100 hover:text-orange-800 sm:justify-start sm:bg-transparent sm:px-0 sm:py-0 sm:text-sm"
                                                 >
-                                                    Baca Selengkapnya <ChevronsRight className="ml-1 h-4 w-4" />
+                                                    <span className="sm:hidden">Baca</span>
+                                                    <span className="hidden sm:inline">Baca Selengkapnya</span>
+                                                    <ChevronsRight className="ml-1 h-3 w-3 sm:h-4 sm:w-4" />
                                                 </Link>
                                             </div>
                                         </div>
@@ -189,14 +207,18 @@ export default function Berita({ auth, beritaList, filters }: BeritaPageProps) {
                                 ))}
                             </div>
                         ) : (
-                            <div className="text-center">
-                                <p className="text-xl text-gray-500">
+                            /* Empty state - Mobile optimized */
+                            <div className="py-12 text-center">
+                                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+                                    <Search className="h-8 w-8 text-gray-400" />
+                                </div>
+                                <p className="mb-4 text-lg text-gray-500 sm:text-xl">
                                     {filters.search ? 'Tidak ada berita yang sesuai dengan pencarian Anda.' : 'Belum ada berita yang diterbitkan.'}
                                 </p>
                                 {filters.search && (
                                     <button
                                         onClick={clearSearch}
-                                        className="mt-4 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700"
+                                        className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700 active:bg-orange-800"
                                     >
                                         Tampilkan Semua Berita
                                     </button>
@@ -204,18 +226,29 @@ export default function Berita({ auth, beritaList, filters }: BeritaPageProps) {
                             </div>
                         )}
 
-                        {/* Komponen Pagination Dinamis */}
+                        {/* Pagination - Mobile optimized */}
                         {beritaList.data.length > 0 && (
-                            <nav className="mt-16 flex items-center justify-center border-t border-gray-200 pt-8">
-                                <div className="flex flex-wrap justify-center gap-2">
-                                    {beritaList.links.map((link, index) => (
-                                        <Link
-                                            key={index}
-                                            href={link.url || '#'}
-                                            className={`inline-flex h-9 min-w-[36px] items-center justify-center rounded-md border px-3 text-sm font-medium transition-colors ${link.active ? 'border-orange-600 bg-orange-600 text-white' : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-100'} ${!link.url ? 'cursor-not-allowed opacity-50' : ''}`}
-                                            dangerouslySetInnerHTML={{ __html: link.label }}
-                                        />
-                                    ))}
+                            <nav className="mt-12 flex items-center justify-center border-t border-gray-200 pt-6 sm:mt-16 sm:pt-8">
+                                <div className="flex flex-wrap justify-center gap-1 sm:gap-2">
+                                    {beritaList.links.map((link, index) => {
+                                        // Simplify pagination on mobile - show only prev/next/current and nearby
+                                        const isFirst = index === 0;
+                                        const isLast = index === beritaList.links.length - 1;
+                                        const isActive = link.active;
+
+                                        return (
+                                            <Link
+                                                key={index}
+                                                href={link.url || '#'}
+                                                className={`inline-flex h-8 min-w-[32px] items-center justify-center rounded-md border px-2 text-sm font-medium transition-colors sm:h-9 sm:min-w-[36px] sm:px-3 ${
+                                                    isActive
+                                                        ? 'border-orange-600 bg-orange-600 text-white'
+                                                        : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-100 active:bg-gray-200'
+                                                } ${!link.url ? 'cursor-not-allowed opacity-50' : ''}`}
+                                                dangerouslySetInnerHTML={{ __html: link.label }}
+                                            />
+                                        );
+                                    })}
                                 </div>
                             </nav>
                         )}

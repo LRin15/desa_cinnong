@@ -2,7 +2,8 @@
 
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Link } from '@inertiajs/react';
-import { ArrowRight, Image as ImageIcon, Newspaper, PlusCircle, Users } from 'lucide-react';
+import { Activity, ArrowRight, Calendar, Image as ImageIcon, Newspaper, PlusCircle, TrendingUp, Users } from 'lucide-react';
+import { useState } from 'react';
 
 // Tipe untuk props halaman
 interface DashboardProps {
@@ -27,88 +28,210 @@ const StatCard = ({
     value,
     icon,
     colorClass,
+    bgClass,
     link,
 }: {
     title: string;
     value: number;
     icon: React.ReactNode;
     colorClass: string;
+    bgClass: string;
     link: string;
-}) => (
-    <div className="rounded-lg border bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between">
-            <div>
-                <p className="text-sm font-medium text-gray-500">{title}</p>
-                <p className="text-3xl font-bold text-gray-800">{value}</p>
+}) => {
+    const [isPressed, setIsPressed] = useState(false);
+
+    return (
+        <div
+            className={`rounded-lg border bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-md sm:p-6 ${
+                isPressed ? 'scale-95' : 'hover:scale-[1.02]'
+            }`}
+            onTouchStart={() => setIsPressed(true)}
+            onTouchEnd={() => setIsPressed(false)}
+            onMouseDown={() => setIsPressed(true)}
+            onMouseUp={() => setIsPressed(false)}
+            onMouseLeave={() => setIsPressed(false)}
+        >
+            <div className="mb-4 flex items-center justify-between">
+                <div className="flex-1">
+                    <p className="text-xs font-medium tracking-wider text-gray-500 uppercase sm:text-sm">{title}</p>
+                    <p className="mt-1 text-2xl font-bold text-gray-800 sm:text-3xl">{value}</p>
+                </div>
+                <div className={`flex h-12 w-12 items-center justify-center rounded-full sm:h-14 sm:w-14 ${bgClass} shadow-sm`}>{icon}</div>
             </div>
-            <div className={`flex h-12 w-12 items-center justify-center rounded-full ${colorClass}`}>{icon}</div>
+
+            <div className="flex items-center justify-between">
+                <div className="flex items-center text-xs text-gray-500 sm:text-sm">
+                    <TrendingUp className="mr-1 h-3 w-3 text-green-500 sm:h-4 sm:w-4" />
+                    <span>Total aktif</span>
+                </div>
+            </div>
+
+            <Link
+                href={link}
+                className={`-mx-1 mt-4 inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold transition-colors hover:bg-gray-50 ${colorClass}`}
+            >
+                <span>Kelola {title}</span>
+                <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
         </div>
-        <Link href={link} className="mt-4 inline-flex items-center text-sm font-semibold text-orange-600 hover:text-orange-800">
-            Kelola {title} <ArrowRight className="ml-1 h-4 w-4" />
+    );
+};
+
+// Komponen untuk quick action button
+const QuickActionButton = ({
+    href,
+    icon,
+    title,
+    bgColor,
+    hoverColor,
+}: {
+    href: string;
+    icon: React.ReactNode;
+    title: string;
+    bgColor: string;
+    hoverColor: string;
+}) => {
+    const [isPressed, setIsPressed] = useState(false);
+
+    return (
+        <Link
+            href={href}
+            className={`flex items-center justify-center rounded-lg p-4 text-white shadow-sm transition-all duration-200 hover:shadow-md sm:p-5 ${bgColor} ${hoverColor} ${
+                isPressed ? 'scale-95' : 'hover:scale-[1.02]'
+            }`}
+            onTouchStart={() => setIsPressed(true)}
+            onTouchEnd={() => setIsPressed(false)}
+            onMouseDown={() => setIsPressed(true)}
+            onMouseUp={() => setIsPressed(false)}
+            onMouseLeave={() => setIsPressed(false)}
+        >
+            <div className="flex flex-col items-center text-center sm:flex-row sm:text-left">
+                <div className="mb-2 sm:mr-3 sm:mb-0">{icon}</div>
+                <span className="text-sm leading-tight font-semibold sm:text-base">{title}</span>
+            </div>
         </Link>
-    </div>
-);
+    );
+};
 
 export default function Dashboard({ auth, stats }: DashboardProps) {
     return (
         <AuthenticatedLayout auth={auth} title="Dashboard">
-            <div className="space-y-8">
+            <div className="space-y-6 px-4 sm:space-y-8 sm:px-0">
                 {/* Bagian Header Sambutan */}
-                <div className="rounded-lg border-l-4 border-orange-500 bg-white p-6 shadow-sm">
-                    <h1 className="text-2xl font-bold text-gray-800">Selamat Datang, {auth.user.name}!</h1>
-                    <p className="mt-1 text-gray-600">Anda berada di pusat kendali Sistem Informasi Desa Cinnong.</p>
+                <div className="rounded-lg border-l-4 border-orange-500 bg-gradient-to-r from-white to-orange-50 p-4 shadow-sm sm:p-6">
+                    <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                            <h1 className="text-xl leading-tight font-bold text-gray-800 sm:text-2xl">Selamat Datang, {auth.user.name}!</h1>
+                            <p className="mt-1 text-sm leading-relaxed text-gray-600 sm:text-base">
+                                Anda berada di pusat kendali Sistem Informasi Desa Cinnong.
+                            </p>
+                        </div>
+                        <div className="hidden h-12 w-12 items-center justify-center rounded-full bg-orange-100 sm:flex">
+                            <Activity className="h-6 w-6 text-orange-600" />
+                        </div>
+                    </div>
+
+                    {/* Status indicator */}
+                    <div className="mt-4 flex items-center gap-4 text-xs sm:text-sm">
+                        <div className="flex items-center">
+                            <div className="mr-2 h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
+                            <span className="text-gray-600">Sistem Aktif</span>
+                        </div>
+                        <div className="flex items-center">
+                            <Calendar className="mr-2 h-4 w-4 text-gray-500" />
+                            <span className="text-gray-600">
+                                {new Date().toLocaleDateString('id-ID', {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                })}
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Grid Kartu Statistik */}
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
                     <StatCard
                         title="Berita"
                         value={stats.total_berita}
-                        icon={<Newspaper className="h-6 w-6 text-blue-600" />}
-                        colorClass="bg-blue-100"
+                        icon={<Newspaper className="h-6 w-6 text-blue-600 sm:h-7 sm:w-7" />}
+                        colorClass="text-blue-600 hover:text-blue-700"
+                        bgClass="bg-blue-100"
                         link={route('admin.berita.index')}
                     />
                     <StatCard
                         title="Infografis"
                         value={stats.total_infografis}
-                        icon={<ImageIcon className="h-6 w-6 text-green-600" />}
-                        colorClass="bg-green-100"
+                        icon={<ImageIcon className="h-6 w-6 text-green-600 sm:h-7 sm:w-7" />}
+                        colorClass="text-green-600 hover:text-green-700"
+                        bgClass="bg-green-100"
                         link={route('admin.infografis.index')}
                     />
                     <StatCard
                         title="Pengguna"
                         value={stats.total_pengguna}
-                        icon={<Users className="h-6 w-6 text-purple-600" />}
-                        colorClass="bg-purple-100"
+                        icon={<Users className="h-6 w-6 text-purple-600 sm:h-7 sm:w-7" />}
+                        colorClass="text-purple-600 hover:text-purple-700"
+                        bgClass="bg-purple-100"
                         link={route('admin.users.index')}
                     />
                 </div>
 
                 {/* Bagian Aksi Cepat */}
-                <div className="rounded-lg border bg-white p-6 shadow-sm">
-                    <h2 className="text-xl font-bold text-gray-800">Aksi Cepat</h2>
-                    <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        <Link
+                <div className="rounded-lg border bg-white p-4 shadow-sm sm:p-6">
+                    <div className="mb-4 sm:mb-6">
+                        <h2 className="text-lg font-bold text-gray-800 sm:text-xl">Aksi Cepat</h2>
+                        <p className="mt-1 text-sm text-gray-600">Tambahkan konten baru dengan mudah</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+                        <QuickActionButton
                             href={route('admin.berita.create')}
-                            className="flex items-center justify-center rounded-md bg-orange-600 p-4 text-white transition hover:bg-orange-700"
-                        >
-                            <PlusCircle className="mr-2 h-5 w-5" />
-                            <span className="font-semibold">Tambah Berita Baru</span>
-                        </Link>
-                        <Link
+                            icon={<PlusCircle className="h-5 w-5 sm:h-6 sm:w-6" />}
+                            title="Tambah Berita Baru"
+                            bgColor="bg-orange-600"
+                            hoverColor="hover:bg-orange-700"
+                        />
+                        <QuickActionButton
                             href={route('admin.infografis.create')}
-                            className="flex items-center justify-center rounded-md bg-orange-600 p-4 text-white transition hover:bg-orange-700"
-                        >
-                            <PlusCircle className="mr-2 h-5 w-5" />
-                            <span className="font-semibold">Tambah Infografis Baru</span>
-                        </Link>
-                        <Link
+                            icon={<PlusCircle className="h-5 w-5 sm:h-6 sm:w-6" />}
+                            title="Tambah Infografis Baru"
+                            bgColor="bg-green-600"
+                            hoverColor="hover:bg-green-700"
+                        />
+                        <QuickActionButton
                             href={route('admin.users.create')}
-                            className="flex items-center justify-center rounded-md bg-gray-600 p-4 text-white transition hover:bg-gray-700"
-                        >
-                            <PlusCircle className="mr-2 h-5 w-5" />
-                            <span className="font-semibold">Tambah Pengguna Baru</span>
-                        </Link>
+                            icon={<PlusCircle className="h-5 w-5 sm:h-6 sm:w-6" />}
+                            title="Tambah Pengguna Baru"
+                            bgColor="bg-gray-600"
+                            hoverColor="hover:bg-gray-700"
+                        />
+                    </div>
+                </div>
+
+                {/* Summary Section */}
+                <div className="rounded-lg border bg-gradient-to-br from-gray-50 to-white p-4 shadow-sm sm:p-6">
+                    <h2 className="mb-4 text-lg font-bold text-gray-800 sm:text-xl">Ringkasan Aktivitas</h2>
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <div className="rounded-lg bg-white p-4 text-center shadow-sm">
+                            <div className="text-2xl font-bold text-blue-600 sm:text-3xl">{stats.total_berita + stats.total_infografis}</div>
+                            <div className="mt-1 text-xs text-gray-600 sm:text-sm">Total Konten</div>
+                        </div>
+
+                        <div className="rounded-lg bg-white p-4 text-center shadow-sm">
+                            <div className="text-2xl font-bold text-green-600 sm:text-3xl">
+                                {Math.round((stats.total_berita + stats.total_infografis) / 7)}
+                            </div>
+                            <div className="mt-1 text-xs text-gray-600 sm:text-sm">Konten/Minggu</div>
+                        </div>
+
+                        <div className="rounded-lg bg-white p-4 text-center shadow-sm">
+                            <div className="text-2xl font-bold text-purple-600 sm:text-3xl">{stats.total_pengguna}</div>
+                            <div className="mt-1 text-xs text-gray-600 sm:text-sm">Admin Aktif</div>
+                        </div>
                     </div>
                 </div>
             </div>
