@@ -6,12 +6,16 @@ Project ini menggunakan **Laravel** sebagai backend, **React (Inertia.js)** untu
 
 Pastikan sudah terinstall di sistem kamu:
 
-- PHP >= 8.1
-- Composer
-- Node.js & npm (atau Yarn/Pnpm)
-- MySQL / MariaDB (jika menggunakan database)
+- PHP >= 8.1 https://www.apachefriends.org/index.html
+- Composer https://getcomposer.org/
+- Node.js & npm (atau Yarn/Pnpm) https://nodejs.org/en/
+- MySQL / MariaDB (jika menggunakan database) https://www.apachefriends.org/index.html
 
----
+Setelah install, pastikan php dikenali di terminal:
+
+Tambahkan path php ke Environment Variables → Path.
+
+## Misalnya C:\xampp\php atau C:\laragon\bin\php\php-8.2.12
 
 ## ⚙️ Instalasi & Setup
 
