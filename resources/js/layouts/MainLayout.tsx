@@ -1,6 +1,6 @@
 // resources/js/layouts/MainLayout.tsx
 import { Link } from '@inertiajs/react';
-import { ExternalLink, Facebook, Instagram, Mail, MapPin, Menu, Phone, Twitter, X } from 'lucide-react';
+import { ExternalLink, Mail, MapPin, Menu, X } from 'lucide-react';
 import { ReactNode, useState } from 'react';
 
 // Definisi tipe untuk user
@@ -224,29 +224,6 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                 Sistem informasi desa yang menyediakan data terkini tentang profil desa, statistik penduduk, dan informasi ekonomi
                                 untuk transparansi dan kemudahan akses.
                             </p>
-                            <div className="flex space-x-3">
-                                <a
-                                    href="#"
-                                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 active:bg-white/30 sm:h-8 sm:w-8"
-                                    aria-label="Facebook"
-                                >
-                                    <Facebook className="h-5 w-5 sm:h-4 sm:w-4" />
-                                </a>
-                                <a
-                                    href="#"
-                                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 active:bg-white/30 sm:h-8 sm:w-8"
-                                    aria-label="Instagram"
-                                >
-                                    <Instagram className="h-5 w-5 sm:h-4 sm:w-4" />
-                                </a>
-                                <a
-                                    href="#"
-                                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 active:bg-white/30 sm:h-8 sm:w-8"
-                                    aria-label="Twitter"
-                                >
-                                    <Twitter className="h-5 w-5 sm:h-4 sm:w-4" />
-                                </a>
-                            </div>
                         </div>
 
                         {/* Quick Links */}
@@ -315,18 +292,11 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                     </div>
                                 </div>
                                 <a
-                                    href="tel:+6281234567890"
-                                    className="flex items-center space-x-3 text-orange-100 transition-colors hover:text-white active:text-white"
-                                >
-                                    <Phone className="h-5 w-5 flex-shrink-0 text-orange-200 sm:h-4 sm:w-4" />
-                                    <span>+62 812-3456-7890</span>
-                                </a>
-                                <a
                                     href="mailto:desa.cinnong@bone.go.id"
                                     className="flex items-center space-x-3 text-orange-100 transition-colors hover:text-white active:text-white"
                                 >
                                     <Mail className="h-5 w-5 flex-shrink-0 text-orange-200 sm:h-4 sm:w-4" />
-                                    <span className="break-all">desa.cinnong@bone.go.id</span>
+                                    <span className="break-all">Cinnongsib@gmail.com</span>
                                 </a>
                             </div>
                         </div>

@@ -164,7 +164,7 @@ export default function ProfilDesa() {
                             </h3>
                         </div>
                         <div className="mb-4 flex justify-center sm:mb-6">
-                            <div className="w-full max-w-3xl rounded-lg bg-gray-50 p-3 sm:p-4">
+                            <div className="w-full max-w-3xl space-y-4 rounded-lg bg-gray-50 p-3 sm:space-y-6 sm:p-4">
                                 <img
                                     src="/images/struktur.png"
                                     alt="Foto bersama tim pemerintahan Desa Cinnong"
@@ -172,9 +172,21 @@ export default function ProfilDesa() {
                                     style={{ maxHeight: '400px', objectFit: 'contain' }}
                                     onClick={() => openImageModal('/images/struktur.png')}
                                 />
-                                <p className="mt-3 text-center text-xs text-gray-600 sm:text-sm">
-                                    Tim Pemerintahan Desa Cinnong periode 2023-2030 (Ketuk untuk memperbesar)
-                                </p>
+                                <img
+                                    src="/images/struktur2.png"
+                                    alt="Foto bersama tim pemerintahan Desa Cinnong"
+                                    className="h-auto w-full cursor-pointer rounded-lg shadow-md transition-shadow hover:shadow-lg"
+                                    style={{ maxHeight: '400px', objectFit: 'contain' }}
+                                    onClick={() => openImageModal('/images/struktur2.png')}
+                                />
+                                <img
+                                    src="/images/struktur3.png"
+                                    alt="Foto bersama tim pemerintahan Desa Cinnong"
+                                    className="h-auto w-full cursor-pointer rounded-lg shadow-md transition-shadow hover:shadow-lg"
+                                    style={{ maxHeight: '400px', objectFit: 'contain' }}
+                                    onClick={() => openImageModal('/images/struktur3.png')}
+                                />
+                                <p className="mt-3 text-center text-xs text-gray-600 sm:text-sm">Tim Pemerintahan Desa Cinnong</p>
                             </div>
                         </div>
                     </div>
@@ -201,48 +213,98 @@ export default function ProfilDesa() {
                                     </div>
                                     <h4 className="text-base font-bold text-gray-900 sm:text-lg">IRFAN, S.Kom</h4>
                                     <p className="text-sm font-semibold text-orange-700 sm:text-base">Kepala Desa</p>
-                                    <p className="mt-1 text-xs text-gray-600 sm:text-sm">Periode 2023-2030</p>
                                 </div>
 
                                 {/* Staff Lainnya */}
-                                <div className="rounded-lg bg-gray-50 p-4 text-center transition-colors hover:bg-gray-100">
-                                    <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-gray-600 to-gray-700 shadow-md sm:h-18 sm:w-18">
-                                        <span className="text-base font-bold text-white sm:text-lg">SD</span>
+                                <div className="rounded-lg border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100 p-4 text-center sm:col-span-2 sm:p-6 lg:col-span-1">
+                                    <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-white shadow-lg sm:h-24 sm:w-24">
+                                        <img
+                                            src="/images/herlina.png"
+                                            alt="HERLINA, S.Sos - Sekretaris Desa"
+                                            className="h-full w-full cursor-pointer object-cover"
+                                            onClick={() => openImageModal('/images/herlina.png')}
+                                        />
                                     </div>
                                     <h4 className="text-sm font-semibold text-gray-900 sm:text-base">HERLINA, S.Sos</h4>
                                     <p className="text-xs text-gray-600 sm:text-sm">Sekretaris Desa</p>
                                 </div>
 
-                                <div className="rounded-lg bg-gray-50 p-4 text-center transition-colors hover:bg-gray-100">
-                                    <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-700 shadow-md sm:h-18 sm:w-18">
-                                        <span className="text-base font-bold text-white sm:text-lg">KU</span>
+                                <div className="rounded-lg border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100 p-4 text-center sm:col-span-2 sm:p-6 lg:col-span-1">
+                                    <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-white shadow-lg sm:h-24 sm:w-24">
+                                        <img
+                                            src="/images/suriati.png"
+                                            alt="SURIATI - Bendahara"
+                                            className="h-full w-full cursor-pointer object-cover"
+                                            onClick={() => openImageModal('/images/suriati.png')}
+                                        />
+                                    </div>
+                                    <h4 className="text-sm font-semibold text-gray-900 sm:text-base">SURIATI</h4>
+                                    <p className="text-xs text-gray-600 sm:text-sm">Bendahara</p>
+                                </div>
+
+                                <div className="rounded-lg border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100 p-4 text-center sm:col-span-2 sm:p-6 lg:col-span-1">
+                                    <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-white shadow-lg sm:h-24 sm:w-24">
+                                        <img
+                                            src="/images/irwati.png"
+                                            alt="IRMAWATI, SP.d - Kaur Keuangan"
+                                            className="h-full w-full cursor-pointer object-cover"
+                                            onClick={() => openImageModal('/images/irwati.png')}
+                                        />
                                     </div>
                                     <h4 className="text-sm font-semibold text-gray-900 sm:text-base">IRMAWATI, SP.d</h4>
                                     <p className="text-xs text-gray-600 sm:text-sm">Kaur Keuangan</p>
                                 </div>
 
-                                <div className="rounded-lg bg-gray-50 p-4 text-center transition-colors hover:bg-gray-100">
-                                    <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-green-600 to-green-700 shadow-md sm:h-18 sm:w-18">
-                                        <span className="text-base font-bold text-white sm:text-lg">UP</span>
+                                <div className="rounded-lg border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100 p-4 text-center sm:col-span-2 sm:p-6 lg:col-span-1">
+                                    <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-white shadow-lg sm:h-24 sm:w-24">
+                                        <img
+                                            src="/images/marvina.png"
+                                            alt="MARVINA - Kaur Umum & Perencanaan"
+                                            className="h-full w-full cursor-pointer object-cover"
+                                            onClick={() => openImageModal('/images/marvina.png')}
+                                        />
                                     </div>
                                     <h4 className="text-sm font-semibold text-gray-900 sm:text-base">MARVINA</h4>
                                     <p className="text-xs text-gray-600 sm:text-sm">Kaur Umum & Perencanaan</p>
                                 </div>
 
-                                <div className="rounded-lg bg-gray-50 p-4 text-center transition-colors hover:bg-gray-100">
-                                    <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-purple-700 shadow-md sm:h-18 sm:w-18">
-                                        <span className="text-base font-bold text-white sm:text-lg">KP</span>
+                                <div className="rounded-lg border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100 p-4 text-center sm:col-span-2 sm:p-6 lg:col-span-1">
+                                    <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-white shadow-lg sm:h-24 sm:w-24">
+                                        <img
+                                            src="/images/nasir.png"
+                                            alt="NASIR NGATTA - Kasi Pemerintahan"
+                                            className="h-full w-full cursor-pointer object-cover"
+                                            onClick={() => openImageModal('/images/nasir.png')}
+                                        />
                                     </div>
                                     <h4 className="text-sm font-semibold text-gray-900 sm:text-base">NASIR NGATTA</h4>
                                     <p className="text-xs text-gray-600 sm:text-sm">Kasi Pemerintahan</p>
                                 </div>
 
-                                <div className="rounded-lg bg-gray-50 p-4 text-center transition-colors hover:bg-gray-100">
-                                    <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-red-700 shadow-md sm:h-18 sm:w-18">
-                                        <span className="text-base font-bold text-white sm:text-lg">KK</span>
+                                <div className="rounded-lg border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100 p-4 text-center sm:col-span-2 sm:p-6 lg:col-span-1">
+                                    <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-white shadow-lg sm:h-24 sm:w-24">
+                                        <img
+                                            src="/images/ardi.png"
+                                            alt="ARDI - Kasi Kesejahteraan"
+                                            className="h-full w-full cursor-pointer object-cover"
+                                            onClick={() => openImageModal('/images/ardi.png')}
+                                        />
                                     </div>
                                     <h4 className="text-sm font-semibold text-gray-900 sm:text-base">ARDI JUMADIL</h4>
                                     <p className="text-xs text-gray-600 sm:text-sm">Kasi Kesejahteraan</p>
+                                </div>
+
+                                <div className="rounded-lg border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100 p-4 text-center sm:col-span-2 sm:p-6 lg:col-span-1">
+                                    <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-white shadow-lg sm:h-24 sm:w-24">
+                                        <img
+                                            src="/images/herianti.png"
+                                            alt="HERIANTI - Operator Desa"
+                                            className="h-full w-full cursor-pointer object-cover"
+                                            onClick={() => openImageModal('/images/herianti.png')}
+                                        />
+                                    </div>
+                                    <h4 className="text-sm font-semibold text-gray-900 sm:text-base">HERIANTI</h4>
+                                    <p className="text-xs text-gray-600 sm:text-sm">Operator Desa</p>
                                 </div>
                             </div>
                         </div>
@@ -250,25 +312,25 @@ export default function ProfilDesa() {
                 </div>
             </div>
 
-            {/* Image Modal */}
+            {/* Fixed Image Modal */}
             {selectedImage && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4" onClick={closeImageModal}>
-                    <div className="relative max-h-full max-w-full">
+                    <div className="relative flex h-full w-full items-center justify-center">
                         <img
                             src={selectedImage}
                             alt="Gambar diperbesar"
-                            className="max-h-full max-w-full rounded-lg shadow-2xl"
+                            className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain shadow-2xl"
                             onClick={(e) => e.stopPropagation()}
                         />
                         <button
                             onClick={closeImageModal}
-                            className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white transition-colors hover:bg-black/70 sm:top-4 sm:right-4 sm:h-10 sm:w-10"
+                            className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-xl text-white transition-colors hover:bg-black/70"
                         >
                             ×
                         </button>
-                        <p className="absolute right-2 bottom-2 left-2 rounded bg-black/50 p-2 text-center text-xs text-white sm:text-sm">
+                        <div className="absolute right-4 bottom-4 left-4 rounded bg-black/50 p-3 text-center text-sm text-white">
                             Ketuk di luar gambar untuk menutup
-                        </p>
+                        </div>
                     </div>
                 </div>
             )}
