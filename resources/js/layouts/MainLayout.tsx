@@ -81,6 +81,14 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                             >
                                 Berita
                             </Link>
+                            <Link
+                                href={route('publikasi.index')}
+                                className="text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]"
+                                preserveScroll={false}
+                                preserveState={false}
+                            >
+                                Publikasi
+                            </Link>
                         </div>
 
                         {/* Desktop Auth Buttons */}
@@ -116,10 +124,13 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                         {/* Mobile Menu Button */}
                         <div className="flex items-center sm:hidden lg:hidden">
                             <button
+                                type="button"
                                 onClick={toggleMobileMenu}
                                 className="inline-flex items-center justify-center rounded-md p-2 text-[#fed7aa] transition-colors hover:bg-white/10 hover:text-white focus:ring-2 focus:ring-white focus:outline-none focus:ring-inset"
                                 aria-expanded={mobileMenuOpen}
                                 aria-label="Toggle menu"
+                                id="mobile-menu-button"
+                                name="mobile-menu-button"
                             >
                                 {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                             </button>
@@ -172,6 +183,15 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                             className="block rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
                         >
                             Berita
+                        </Link>
+                        <Link
+                            href={route('publikasi.index')}
+                            onClick={closeMobileMenu}
+                            className="block rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
+                            preserveScroll={false}
+                            preserveState={false}
+                        >
+                            Publikasi
                         </Link>
 
                         {/* Mobile Auth Buttons */}
@@ -270,6 +290,16 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                         Berita
                                     </Link>
                                 </li>
+                                <li>
+                                    <Link
+                                        href={route('publikasi.index')}
+                                        className="block py-1 text-orange-100 transition-colors hover:text-white active:text-white"
+                                        preserveScroll={false}
+                                        preserveState={false}
+                                    >
+                                        Publikasi
+                                    </Link>
+                                </li>
                             </ul>
                         </div>
 
@@ -292,7 +322,7 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                     </div>
                                 </div>
                                 <a
-                                    href="mailto:desa.cinnong@bone.go.id"
+                                    href="mailto:Cinnongsib@gmail.com"
                                     className="flex items-center space-x-3 text-orange-100 transition-colors hover:text-white active:text-white"
                                 >
                                     <Mail className="h-5 w-5 flex-shrink-0 text-orange-200 sm:h-4 sm:w-4" />

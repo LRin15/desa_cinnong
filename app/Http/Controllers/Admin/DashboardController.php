@@ -8,6 +8,7 @@ use App\Models\Infografis;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Models\Publikasi;
 
 class DashboardController extends Controller
 {
@@ -20,6 +21,7 @@ class DashboardController extends Controller
         $stats = [
             'total_berita' => Berita::count(),
             'total_infografis' => Infografis::count(),
+            'total_publikasi' => Publikasi::count(),
             'total_pengguna' => User::count(),
         ];
 

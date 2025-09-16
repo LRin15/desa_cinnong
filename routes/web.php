@@ -10,6 +10,7 @@ use App\Http\Controllers\BeritaController;
 use App\Http\Controllers\InfografisController;
 use App\Models\Berita;
 use Illuminate\Support\Str;
+use App\Http\Controllers\PublikasiController;
 
 // Rute Utama
 Route::get('/', [PageController::class, 'beranda'])->name('beranda');
@@ -20,6 +21,10 @@ Route::get('/infografis/{infografis}', [InfografisController::class, 'show'])->n
 Route::get('/berita', [BeritaController::class, 'index'])->name('berita');
 Route::get('/berita/{slug}', [BeritaController::class, 'show'])->name('berita.detail');
 
+// Route publikasi - pastikan ini ada dan benar
+Route::get('/publikasi', [PublikasiController::class, 'index'])->name('publikasi.index');
+Route::get('/publikasi/{publikasi}/download', [PublikasiController::class, 'download'])->name('publikasi.download');
+
 // Rute otentikasi (jika diperlukan nanti)
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -27,24 +32,16 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::get('/', function () {
-    $beritaTerbaru = Berita::latest('tanggal_terbit')
-        ->take(3)
-        ->get()
-        ->map(fn ($berita) => [
-            'judul' => $berita->judul,
-            'slug' => $berita->slug,
-            'kategori' => $berita->kategori,
-            'tanggal_terbit' => $berita->tanggal_terbit->format('d F Y'),
-            'kutipan' => Str::limit($berita->kutipan, 100),
-            'gambar' => $berita->gambar ? asset('images/berita/' . $berita->gambar) : null,
-        ]);
-
-    return Inertia::render('Beranda', [
-        'beritaTerbaru' => $beritaTerbaru,
-    ]);
-
-})->name('beranda');
+// Debug: tampilkan semua route
+Route::get('/debug-routes', function() {
+    return collect(Route::getRoutes())->map(function($route) {
+        return [
+            'uri' => $route->uri(),
+            'name' => $route->getName(),
+            'methods' => $route->methods()
+        ];
+    });
+});
 
 require __DIR__.'/auth.php';
 require __DIR__.'/settings.php';

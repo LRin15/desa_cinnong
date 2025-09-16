@@ -1,7 +1,7 @@
 // resources/js/Pages/ProfilDesa.tsx
 import MainLayout from '@/layouts/MainLayout';
 import { Head } from '@inertiajs/react';
-import { Calendar, ChevronDown, ChevronUp, Eye, MapPin, Target, Users } from 'lucide-react';
+import { Calendar, Eye, MapPin, Target, Users } from 'lucide-react';
 import { useState } from 'react';
 
 export default function ProfilDesa() {
@@ -96,22 +96,13 @@ export default function ProfilDesa() {
                                     Pada tahun yang sama pucuk kepemimpinan diambil alih oleh H. Muh. Anshar sebagai Kepala Desa Cinnong sampai tahun
                                     2010.
                                 </p>
-                                <div className={`transition-all duration-300 ${showFullHistory ? 'max-h-none' : 'max-h-0 overflow-hidden'}`}>
-                                    <p className="mb-4 text-sm leading-relaxed text-gray-700 sm:text-base">
-                                        Pada tahun 2010 diadakan Pemilihan Kepala Desa tongkat estafet kepemimpinan berpindah kepada Irfan, S.Kom
-                                        selaku Kepala Desa Cinnong sampai pada tahun 2016 dan kembali memimpin desa Cinnong setelah terpilih kedua
-                                        kalinya pada Pemilihan serentak Kepala Desa tahap II untuk memimpin Desa Cinnong sampai pada tahun 2022, yang
-                                        kemudian kembali memimpin setelah terpilih yang ketiga kalinya pada Pemilihan kepala desa serentak gel. II
-                                        untuk memimpin desa Cinnong Periode 2023-2030.
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={toggleHistory}
-                                    className="mt-2 flex items-center space-x-2 text-sm font-medium text-orange-600 transition-colors hover:text-orange-700 sm:text-base"
-                                >
-                                    <span>{showFullHistory ? 'Tutup' : 'Selengkapnya'}</span>
-                                    {showFullHistory ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                </button>
+                                <p className="mb-4 text-sm leading-relaxed text-gray-700 sm:text-base">
+                                    Pada tahun 2010 diadakan Pemilihan Kepala Desa tongkat estafet kepemimpinan berpindah kepada Irfan, S.Kom selaku
+                                    Kepala Desa Cinnong sampai pada tahun 2016 dan kembali memimpin desa Cinnong setelah terpilih kedua kalinya pada
+                                    Pemilihan serentak Kepala Desa tahap II untuk memimpin Desa Cinnong sampai pada tahun 2022, yang kemudian kembali
+                                    memimpin setelah terpilih yang ketiga kalinya pada Pemilihan kepala desa serentak gel. II untuk memimpin desa
+                                    Cinnong Periode 2023-2030.
+                                </p>
                             </div>
                         </div>
 
@@ -125,8 +116,8 @@ export default function ProfilDesa() {
                             </div>
                             <div>
                                 <p className="mb-4 rounded-lg border-l-4 border-orange-500 bg-orange-50 p-3 text-sm leading-relaxed text-gray-700 italic sm:mb-6 sm:p-4 sm:text-base">
-                                    "Menjadikan Desa Cinnong sebagai desa mandiri, sejahtera, dan berkelanjutan dengan mengedepankan nilai-nilai
-                                    kearifan lokal dan inovasi teknologi."
+                                    "MENINGKATKAN MUTU KESEJAHTERAAN MASYARAKAT DESA CINNONG UNTUK MENCAPAI TARAF KEHIDUPAN YANG LEBIH BAIK DAN LAYAK
+                                    SEHINGGA MENJADI DESA YANG MAJU DAN MANDIRI."
                                 </p>
 
                                 <h4 className="mb-3 flex items-center space-x-2 text-base font-semibold text-gray-900 sm:text-lg">
@@ -136,19 +127,36 @@ export default function ProfilDesa() {
                                 <ul className="space-y-2 text-sm text-gray-700 sm:space-y-3 sm:text-base">
                                     <li className="flex items-start space-x-2">
                                         <span className="mt-1 flex-shrink-0 font-bold text-orange-500">•</span>
-                                        <span>Meningkatkan kesejahteraan masyarakat melalui pemberdayaan ekonomi</span>
+                                        <span>Meningkatkan Profesionalisme Pelayanan Publik</span>
                                     </li>
                                     <li className="flex items-start space-x-2">
                                         <span className="mt-1 flex-shrink-0 font-bold text-orange-500">•</span>
-                                        <span>Mengembangkan potensi wisata dan budaya lokal</span>
+                                        <span>
+                                            Meningkatkan Pengelolaan Jalan desa, Jalan Dusun, Sarana Hunian Pemukiman yang Layak Huni, Peningkatan
+                                            Sarana Air Bersih, Saluran Air Pertanian, Sarana Keagamaan, Pendidikan dan Kesehatan serta Infrastruktur
+                                            lainnya
+                                        </span>
                                     </li>
                                     <li className="flex items-start space-x-2">
                                         <span className="mt-1 flex-shrink-0 font-bold text-orange-500">•</span>
-                                        <span>Menerapkan tata kelola pemerintahan yang transparan</span>
+                                        <span>
+                                            Meningkatkan Sarana Kesehatan, Kebersihan desa serta mengusahakan Jaminan Kesehatan Masyarakat melalui
+                                            program pemerintah
+                                        </span>
                                     </li>
                                     <li className="flex items-start space-x-2">
                                         <span className="mt-1 flex-shrink-0 font-bold text-orange-500">•</span>
-                                        <span>Melestarikan lingkungan hidup</span>
+                                        <span>
+                                            Meningkatkan kesejahteraan masyarakat desa dengan mewujudkan Badan Usaha Milik Desa (BUMDes) dan program
+                                            lain untuk membuka lapangan kerja bagi masyarakat desa, serta meningkatkan produksi rumah tangga kecil
+                                        </span>
+                                    </li>
+                                    <li className="flex items-start space-x-2">
+                                        <span className="mt-1 flex-shrink-0 font-bold text-orange-500">•</span>
+                                        <span>
+                                            Memberdayakan lembaga yang ada dan mengoptimalkan kegiatan pemuda dan olah raga guna menekan tingkat
+                                            kenakalan remaja
+                                        </span>
                                     </li>
                                 </ul>
                             </div>

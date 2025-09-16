@@ -2,10 +2,10 @@
 
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Link } from '@inertiajs/react';
-import { Activity, ArrowRight, Calendar, Image as ImageIcon, Newspaper, PlusCircle, TrendingUp, Users } from 'lucide-react';
+import { Activity, ArrowRight, Calendar, FileText, Image as ImageIcon, Newspaper, PlusCircle, TrendingUp, Users } from 'lucide-react';
 import { useState } from 'react';
 
-// Tipe untuk props halaman
+// Types for page props
 interface DashboardProps {
     auth: {
         user: {
@@ -17,12 +17,13 @@ interface DashboardProps {
     stats: {
         total_berita: number;
         total_infografis: number;
+        total_publikasi: number;
         total_pengguna: number;
     };
     [key: string]: unknown;
 }
 
-// Komponen untuk kartu statistik
+// Component for statistics cards
 const StatCard = ({
     title,
     value,
@@ -77,7 +78,7 @@ const StatCard = ({
     );
 };
 
-// Komponen untuk quick action button
+// Component for quick action button
 const QuickActionButton = ({
     href,
     icon,
@@ -117,7 +118,7 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
     return (
         <AuthenticatedLayout auth={auth} title="Dashboard">
             <div className="space-y-6 px-4 sm:space-y-8 sm:px-0">
-                {/* Bagian Header Sambutan */}
+                {/* Welcome Header Section */}
                 <div className="rounded-lg border-l-4 border-orange-500 bg-gradient-to-r from-white to-orange-50 p-4 shadow-sm sm:p-6">
                     <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -151,8 +152,8 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                     </div>
                 </div>
 
-                {/* Grid Kartu Statistik */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
+                {/* Statistics Cards Grid - Now includes Publications */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
                     <StatCard
                         title="Berita"
                         value={stats.total_berita}
@@ -170,6 +171,14 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                         link={route('admin.infografis.index')}
                     />
                     <StatCard
+                        title="Publikasi"
+                        value={stats.total_publikasi}
+                        icon={<FileText className="h-6 w-6 text-orange-600 sm:h-7 sm:w-7" />}
+                        colorClass="text-orange-600 hover:text-orange-700"
+                        bgClass="bg-orange-100"
+                        link={route('admin.publikasi.index')}
+                    />
+                    <StatCard
                         title="Pengguna"
                         value={stats.total_pengguna}
                         icon={<Users className="h-6 w-6 text-purple-600 sm:h-7 sm:w-7" />}
@@ -179,20 +188,20 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                     />
                 </div>
 
-                {/* Bagian Aksi Cepat */}
+                {/* Quick Actions Section */}
                 <div className="rounded-lg border bg-white p-4 shadow-sm sm:p-6">
                     <div className="mb-4 sm:mb-6">
                         <h2 className="text-lg font-bold text-gray-800 sm:text-xl">Aksi Cepat</h2>
                         <p className="mt-1 text-sm text-gray-600">Tambahkan konten baru dengan mudah</p>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
                         <QuickActionButton
                             href={route('admin.berita.create')}
                             icon={<PlusCircle className="h-5 w-5 sm:h-6 sm:w-6" />}
                             title="Tambah Berita Baru"
-                            bgColor="bg-orange-600"
-                            hoverColor="hover:bg-orange-700"
+                            bgColor="bg-blue-600"
+                            hoverColor="hover:bg-blue-700"
                         />
                         <QuickActionButton
                             href={route('admin.infografis.create')}
@@ -200,6 +209,13 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                             title="Tambah Infografis Baru"
                             bgColor="bg-green-600"
                             hoverColor="hover:bg-green-700"
+                        />
+                        <QuickActionButton
+                            href={route('admin.publikasi.create')}
+                            icon={<PlusCircle className="h-5 w-5 sm:h-6 sm:w-6" />}
+                            title="Tambah Publikasi Baru"
+                            bgColor="bg-orange-600"
+                            hoverColor="hover:bg-orange-700"
                         />
                         <QuickActionButton
                             href={route('admin.users.create')}
@@ -211,26 +227,97 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                     </div>
                 </div>
 
-                {/* Summary Section */}
+                {/* Enhanced Summary Section */}
                 <div className="rounded-lg border bg-gradient-to-br from-gray-50 to-white p-4 shadow-sm sm:p-6">
                     <h2 className="mb-4 text-lg font-bold text-gray-800 sm:text-xl">Ringkasan Aktivitas</h2>
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <div className="rounded-lg bg-white p-4 text-center shadow-sm">
-                            <div className="text-2xl font-bold text-blue-600 sm:text-3xl">{stats.total_berita + stats.total_infografis}</div>
+                            <div className="text-2xl font-bold text-blue-600 sm:text-3xl">
+                                {stats.total_berita + stats.total_infografis + stats.total_publikasi}
+                            </div>
                             <div className="mt-1 text-xs text-gray-600 sm:text-sm">Total Konten</div>
                         </div>
 
                         <div className="rounded-lg bg-white p-4 text-center shadow-sm">
                             <div className="text-2xl font-bold text-green-600 sm:text-3xl">
-                                {Math.round((stats.total_berita + stats.total_infografis) / 7)}
+                                {Math.round((stats.total_berita + stats.total_infografis + stats.total_publikasi) / 7)}
                             </div>
                             <div className="mt-1 text-xs text-gray-600 sm:text-sm">Konten/Minggu</div>
                         </div>
 
                         <div className="rounded-lg bg-white p-4 text-center shadow-sm">
+                            <div className="text-2xl font-bold text-orange-600 sm:text-3xl">{stats.total_publikasi}</div>
+                            <div className="mt-1 text-xs text-gray-600 sm:text-sm">Dokumen Publik</div>
+                        </div>
+
+                        <div className="rounded-lg bg-white p-4 text-center shadow-sm">
                             <div className="text-2xl font-bold text-purple-600 sm:text-3xl">{stats.total_pengguna}</div>
                             <div className="mt-1 text-xs text-gray-600 sm:text-sm">Admin Aktif</div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Content Distribution Chart - Visual representation */}
+                <div className="rounded-lg border bg-white p-4 shadow-sm sm:p-6">
+                    <h2 className="mb-4 text-lg font-bold text-gray-800 sm:text-xl">Distribusi Konten</h2>
+
+                    <div className="space-y-4">
+                        {/* Berita */}
+                        <div className="flex items-center">
+                            <div className="flex w-20 items-center text-sm font-medium text-gray-700">
+                                <Newspaper className="mr-2 h-4 w-4 text-blue-600" />
+                                Berita
+                            </div>
+                            <div className="mx-4 flex-1">
+                                <div className="h-3 overflow-hidden rounded-full bg-gray-200">
+                                    <div
+                                        className="h-full bg-blue-600 transition-all duration-300"
+                                        style={{
+                                            width: `${(stats.total_berita / Math.max(stats.total_berita + stats.total_infografis + stats.total_publikasi, 1)) * 100}%`,
+                                        }}
+                                    ></div>
+                                </div>
+                            </div>
+                            <div className="w-8 text-right text-sm font-semibold text-gray-800">{stats.total_berita}</div>
+                        </div>
+
+                        {/* Infografis */}
+                        <div className="flex items-center">
+                            <div className="flex w-20 items-center text-sm font-medium text-gray-700">
+                                <ImageIcon className="mr-2 h-4 w-4 text-green-600" />
+                                Infografis
+                            </div>
+                            <div className="mx-4 flex-1">
+                                <div className="h-3 overflow-hidden rounded-full bg-gray-200">
+                                    <div
+                                        className="h-full bg-green-600 transition-all duration-300"
+                                        style={{
+                                            width: `${(stats.total_infografis / Math.max(stats.total_berita + stats.total_infografis + stats.total_publikasi, 1)) * 100}%`,
+                                        }}
+                                    ></div>
+                                </div>
+                            </div>
+                            <div className="w-8 text-right text-sm font-semibold text-gray-800">{stats.total_infografis}</div>
+                        </div>
+
+                        {/* Publikasi */}
+                        <div className="flex items-center">
+                            <div className="flex w-20 items-center text-sm font-medium text-gray-700">
+                                <FileText className="mr-2 h-4 w-4 text-orange-600" />
+                                Publikasi
+                            </div>
+                            <div className="mx-4 flex-1">
+                                <div className="h-3 overflow-hidden rounded-full bg-gray-200">
+                                    <div
+                                        className="h-full bg-orange-600 transition-all duration-300"
+                                        style={{
+                                            width: `${(stats.total_publikasi / Math.max(stats.total_berita + stats.total_infografis + stats.total_publikasi, 1)) * 100}%`,
+                                        }}
+                                    ></div>
+                                </div>
+                            </div>
+                            <div className="w-8 text-right text-sm font-semibold text-gray-800">{stats.total_publikasi}</div>
                         </div>
                     </div>
                 </div>
