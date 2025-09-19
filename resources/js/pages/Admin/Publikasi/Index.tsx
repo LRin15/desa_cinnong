@@ -4,7 +4,7 @@ import Pagination from '@/components/Pagination';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Calendar, File as FileIcon, FileSpreadsheet, FileText, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface PublikasiItem {
     id: number;
@@ -83,9 +83,19 @@ export default function Index() {
 
     // Search state
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
+    const isInitialMount = useRef(true);
 
     // Debounced search
     useEffect(() => {
+        // Jika ini adalah render pertama, jangan lakukan apa-apa,
+        // cukup tandai bahwa render pertama sudah selesai.
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            return;
+        }
+
+        // Untuk render selanjutnya (saat searchTerm/selectedKategori berubah),
+        // jalankan logika debounce.
         const timeoutId = setTimeout(() => {
             handleSearch();
         }, 500);

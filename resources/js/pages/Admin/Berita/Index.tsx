@@ -4,7 +4,7 @@ import Pagination from '@/components/Pagination';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Calendar, FileText, Filter, ImageIcon, Pencil, Plus, Search, Tag, Trash2, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface BeritaItem {
     id: number;
@@ -52,6 +52,7 @@ interface BeritaIndexPageProps {
 export default function Index() {
     const [viewMode, setViewMode] = useState<'table' | 'card'>('card');
     const [showFilters, setShowFilters] = useState(false);
+    const isInitialMount = useRef(true);
 
     // Add error handling and debugging
     let pageProps;
@@ -77,6 +78,15 @@ export default function Index() {
 
     // Debounced search
     useEffect(() => {
+        // Jika ini adalah render pertama, jangan lakukan apa-apa,
+        // cukup tandai bahwa render pertama sudah selesai.
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            return;
+        }
+
+        // Untuk render selanjutnya (saat searchTerm/selectedKategori berubah),
+        // jalankan logika debounce.
         const timeoutId = setTimeout(() => {
             handleSearch();
         }, 500);

@@ -184,7 +184,7 @@ export default function Create() {
                                             </label>
                                             <p className="inline pl-1">atau drag and drop</p>
                                         </div>
-                                        <p className="text-xs text-gray-500">PDF, DOC, DOCX, XLS, XLSX hingga 5MB</p>
+                                        <p className="text-xs text-gray-500">PDF, DOC, DOCX, XLS, XLSX hingga 2MB</p>
                                     </div>
                                 </div>
                                 <input

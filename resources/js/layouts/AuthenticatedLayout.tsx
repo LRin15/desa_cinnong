@@ -1,7 +1,7 @@
 // resources/js/layouts/AuthenticatedLayout.tsx
 
 import { Head, Link } from '@inertiajs/react';
-import { FileText, Grid, Image as ImageIcon, LogOut, Menu, Newspaper, Users, X } from 'lucide-react';
+import { FileText, Grid, Home, Image as ImageIcon, LogOut, Menu, Newspaper, Users, X } from 'lucide-react';
 import { ReactNode, useState } from 'react';
 
 // Tipe untuk data pengguna
@@ -58,11 +58,25 @@ export default function AuthenticatedLayout({ auth, children, title }: Authentic
                                 {item.name}
                             </Link>
                         ))}
+
+                        {/* Divider */}
+                        <div className="mx-4 my-2 border-t border-gray-600"></div>
+
+                        {/* Tombol Kembali ke Halaman Utama */}
+                        <Link
+                            href={route('beranda')}
+                            className="flex items-center px-6 py-3 text-sm font-medium text-gray-300 transition-colors duration-200 hover:bg-gray-700 hover:text-white"
+                        >
+                            <Home className="mr-3 h-5 w-5" />
+                            Kembali ke Halaman Utama
+                        </Link>
+
+                        {/* Tombol Logout */}
                         <Link
                             href={route('logout')}
                             method="post"
                             as="button"
-                            className="flex w-full items-center px-6 py-3 text-left text-sm font-medium text-gray-300 transition-colors duration-200 hover:bg-gray-700 hover:text-white"
+                            className="flex w-full items-center px-6 py-3 text-left text-sm font-medium text-red-300 transition-colors duration-200 hover:bg-red-600 hover:text-white"
                         >
                             <LogOut className="mr-3 h-5 w-5" />
                             Keluar

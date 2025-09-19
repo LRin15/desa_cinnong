@@ -106,7 +106,7 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                         href={route('logout')}
                                         method="post"
                                         as="button"
-                                        className="rounded-md bg-[#d97706] px-3 py-1.5 text-xs font-medium text-white transition duration-150 ease-in-out hover:bg-[#b45309] sm:text-sm"
+                                        className="rounded-md bg-[#f97316] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition duration-150 ease-in-out hover:bg-[#c2410c] sm:text-sm"
                                     >
                                         Keluar
                                     </Link>
@@ -236,20 +236,20 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
             <footer className="bg-[#ea580c] text-white">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     {/* Main Footer Content */}
-                    <div className="grid grid-cols-1 gap-6 py-8 sm:grid-cols-2 sm:gap-8 sm:py-12 lg:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-4 py-6 sm:grid-cols-2 sm:gap-6 sm:py-8 lg:grid-cols-3">
                         {/* About Section */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold">Desa Cinnong</h3>
-                            <p className="text-sm leading-relaxed text-orange-100">
+                        <div className="space-y-3">
+                            <h3 className="text-xl font-bold">Desa Cinnong</h3>
+                            <p className="text-base leading-relaxed text-orange-100">
                                 Sistem informasi desa yang menyediakan data terkini tentang profil desa, statistik penduduk, dan informasi ekonomi
                                 untuk transparansi dan kemudahan akses.
                             </p>
                         </div>
 
                         {/* Quick Links */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold">Menu Utama</h3>
-                            <ul className="space-y-3 text-sm sm:space-y-2">
+                        <div className="space-y-3">
+                            <h3 className="text-xl font-bold">Menu Utama</h3>
+                            <ul className="space-y-2 text-base">
                                 <li>
                                     <Link
                                         href={route('beranda')}
@@ -304,11 +304,11 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                         </div>
 
                         {/* Contact Info */}
-                        <div className="space-y-4 sm:col-span-2 lg:col-span-1">
-                            <h3 className="text-lg font-bold">Kontak Kami</h3>
-                            <div className="space-y-4 text-sm sm:space-y-3">
+                        <div className="space-y-3 sm:col-span-2 lg:col-span-1">
+                            <h3 className="text-xl font-bold">Kontak Kami</h3>
+                            <div className="space-y-3 text-base">
                                 <div className="flex items-start space-x-3">
-                                    <MapPin className="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-200 sm:h-4 sm:w-4" />
+                                    <MapPin className="mt-1 h-5 w-5 flex-shrink-0 text-orange-200" />
                                     <div>
                                         <p className="leading-relaxed text-orange-100">
                                             Desa Cinnong
@@ -325,7 +325,7 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                     href="mailto:Cinnongsib@gmail.com"
                                     className="flex items-center space-x-3 text-orange-100 transition-colors hover:text-white active:text-white"
                                 >
-                                    <Mail className="h-5 w-5 flex-shrink-0 text-orange-200 sm:h-4 sm:w-4" />
+                                    <Mail className="h-5 w-5 flex-shrink-0 text-orange-200" />
                                     <span className="break-all">Cinnongsib@gmail.com</span>
                                 </a>
                             </div>
@@ -333,21 +333,13 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                     </div>
 
                     {/* Bottom Footer */}
-                    <div className="border-t border-orange-600/30 py-4 sm:py-6">
-                        <div className="flex flex-col items-center justify-between space-y-4 text-center sm:text-left lg:flex-row lg:space-y-0">
-                            <div className="text-xs text-orange-100 sm:text-sm">
+                    <div className="border-t border-orange-600/30 py-3 sm:py-4">
+                        <div className="flex flex-col items-center justify-between space-y-2 text-center sm:text-left lg:flex-row lg:space-y-0">
+                            <div className="text-sm text-orange-100">
                                 <p>© 2025 Desa Cinnong. Sistem Informasi Desa.</p>
                                 <p className="mt-1">Dibuat dengan ❤️ untuk transparansi dan kemudahan akses informasi.</p>
                             </div>
-                            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs sm:text-sm">
-                                <a href="#" className="text-orange-100 transition-colors hover:text-white active:text-white">
-                                    Kebijakan Privasi
-                                </a>
-                                <span className="hidden text-orange-300 sm:inline">•</span>
-                                <a href="#" className="text-orange-100 transition-colors hover:text-white active:text-white">
-                                    Syarat & Ketentuan
-                                </a>
-                                <span className="hidden text-orange-300 sm:inline">•</span>
+                            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm">
                                 <a
                                     href="#"
                                     className="flex items-center space-x-1 text-orange-100 transition-colors hover:text-white active:text-white"
