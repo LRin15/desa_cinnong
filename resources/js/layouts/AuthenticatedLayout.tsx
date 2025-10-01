@@ -1,16 +1,14 @@
 // resources/js/layouts/AuthenticatedLayout.tsx
 
 import { Head, Link } from '@inertiajs/react';
-import { FileText, Grid, Home, Image as ImageIcon, LogOut, Menu, Newspaper, Users, X } from 'lucide-react';
+import { FileText, Grid, Home, Image as ImageIcon, LogOut, Menu, MessageSquare, Newspaper, Users, X } from 'lucide-react';
 import { ReactNode, useState } from 'react';
 
-// Tipe untuk data pengguna
 interface User {
     name: string;
     email: string;
 }
 
-// Tipe untuk props layout
 interface AuthenticatedLayoutProps {
     auth: { user: User };
     header?: ReactNode;
@@ -26,6 +24,7 @@ export default function AuthenticatedLayout({ auth, children, title }: Authentic
         { name: 'Kelola Berita', href: route('admin.berita.index'), icon: Newspaper, current: route().current('admin.berita.*') },
         { name: 'Kelola Infografis', href: route('admin.infografis.index'), icon: ImageIcon, current: route().current('admin.infografis.*') },
         { name: 'Kelola Publikasi', href: route('admin.publikasi.index'), icon: FileText, current: route().current('admin.publikasi.*') },
+        { name: 'Kelola Pengaduan', href: route('admin.pengaduan.index'), icon: MessageSquare, current: route().current('admin.pengaduan.*') },
         { name: 'Kelola Pengguna', href: route('admin.users.index'), icon: Users, current: route().current('admin.users.*') },
     ];
 

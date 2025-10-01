@@ -2,10 +2,9 @@
 
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Link } from '@inertiajs/react';
-import { Activity, ArrowRight, Calendar, FileText, Image as ImageIcon, Newspaper, PlusCircle, TrendingUp, Users } from 'lucide-react';
+import { Activity, ArrowRight, Calendar, FileText, Image as ImageIcon, MessageSquare, Newspaper, PlusCircle, TrendingUp, Users } from 'lucide-react';
 import { useState } from 'react';
 
-// Types for page props
 interface DashboardProps {
     auth: {
         user: {
@@ -19,11 +18,14 @@ interface DashboardProps {
         total_infografis: number;
         total_publikasi: number;
         total_pengguna: number;
+        total_pengaduan: number;
+        pengaduan_belum_diproses: number;
+        pengaduan_sedang_diproses: number;
+        pengaduan_selesai: number;
     };
     [key: string]: unknown;
 }
 
-// Component for statistics cards
 const StatCard = ({
     title,
     value,
@@ -78,7 +80,6 @@ const StatCard = ({
     );
 };
 
-// Component for quick action button
 const QuickActionButton = ({
     href,
     icon,
@@ -132,7 +133,6 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                         </div>
                     </div>
 
-                    {/* Status indicator */}
                     <div className="mt-4 flex items-center gap-4 text-xs sm:text-sm">
                         <div className="flex items-center">
                             <div className="mr-2 h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
@@ -152,8 +152,8 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                     </div>
                 </div>
 
-                {/* Statistics Cards Grid - Now includes Publications */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
+                {/* Statistics Cards Grid */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-5">
                     <StatCard
                         title="Berita"
                         value={stats.total_berita}
@@ -179,6 +179,14 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                         link={route('admin.publikasi.index')}
                     />
                     <StatCard
+                        title="Pengaduan"
+                        value={stats.total_pengaduan}
+                        icon={<MessageSquare className="h-6 w-6 text-red-600 sm:h-7 sm:w-7" />}
+                        colorClass="text-red-600 hover:text-red-700"
+                        bgClass="bg-red-100"
+                        link={route('admin.pengaduan.index')}
+                    />
+                    <StatCard
                         title="Pengguna"
                         value={stats.total_pengguna}
                         icon={<Users className="h-6 w-6 text-purple-600 sm:h-7 sm:w-7" />}
@@ -186,6 +194,40 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                         bgClass="bg-purple-100"
                         link={route('admin.users.index')}
                     />
+                </div>
+
+                {/* Pengaduan Status Cards */}
+                <div className="rounded-lg border bg-white p-4 shadow-sm sm:p-6">
+                    <h2 className="mb-4 text-lg font-bold text-gray-800 sm:text-xl">Status Pengaduan Masyarakat</h2>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <div className="rounded-lg border-l-4 border-red-500 bg-red-50 p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-red-600">Belum Diproses</p>
+                                    <p className="mt-1 text-2xl font-bold text-red-700">{stats.pengaduan_belum_diproses}</p>
+                                </div>
+                                <MessageSquare className="h-8 w-8 text-red-500" />
+                            </div>
+                        </div>
+                        <div className="rounded-lg border-l-4 border-yellow-500 bg-yellow-50 p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-yellow-600">Sedang Diproses</p>
+                                    <p className="mt-1 text-2xl font-bold text-yellow-700">{stats.pengaduan_sedang_diproses}</p>
+                                </div>
+                                <MessageSquare className="h-8 w-8 text-yellow-500" />
+                            </div>
+                        </div>
+                        <div className="rounded-lg border-l-4 border-green-500 bg-green-50 p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-green-600">Selesai</p>
+                                    <p className="mt-1 text-2xl font-bold text-green-700">{stats.pengaduan_selesai}</p>
+                                </div>
+                                <MessageSquare className="h-8 w-8 text-green-500" />
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Quick Actions Section */}
@@ -258,12 +300,11 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                     </div>
                 </div>
 
-                {/* Content Distribution Chart - Visual representation */}
+                {/* Content Distribution Chart */}
                 <div className="rounded-lg border bg-white p-4 shadow-sm sm:p-6">
                     <h2 className="mb-4 text-lg font-bold text-gray-800 sm:text-xl">Distribusi Konten</h2>
 
                     <div className="space-y-4">
-                        {/* Berita */}
                         <div className="flex items-center">
                             <div className="flex w-20 items-center text-sm font-medium text-gray-700">
                                 <Newspaper className="mr-2 h-4 w-4 text-blue-600" />
@@ -282,7 +323,6 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                             <div className="w-8 text-right text-sm font-semibold text-gray-800">{stats.total_berita}</div>
                         </div>
 
-                        {/* Infografis */}
                         <div className="flex items-center">
                             <div className="flex w-20 items-center text-sm font-medium text-gray-700">
                                 <ImageIcon className="mr-2 h-4 w-4 text-green-600" />
@@ -301,7 +341,6 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                             <div className="w-8 text-right text-sm font-semibold text-gray-800">{stats.total_infografis}</div>
                         </div>
 
-                        {/* Publikasi */}
                         <div className="flex items-center">
                             <div className="flex w-20 items-center text-sm font-medium text-gray-700">
                                 <FileText className="mr-2 h-4 w-4 text-orange-600" />

@@ -11,6 +11,7 @@ use App\Http\Controllers\InfografisController;
 use App\Models\Berita;
 use Illuminate\Support\Str;
 use App\Http\Controllers\PublikasiController;
+use App\Http\Controllers\PengaduanController;
 
 // Rute Utama
 Route::get('/', [PageController::class, 'beranda'])->name('beranda');
@@ -20,6 +21,9 @@ Route::get('/infografis', [InfografisController::class, 'index'])->name('infogra
 Route::get('/infografis/{infografis}', [InfografisController::class, 'show'])->name('infografis.detail');
 Route::get('/berita', [BeritaController::class, 'index'])->name('berita');
 Route::get('/berita/{slug}', [BeritaController::class, 'show'])->name('berita.detail');
+
+// Rute untuk menerima data form pengaduan
+Route::post('/pengaduan', [PengaduanController::class, 'store'])->name('pengaduan.store');
 
 // Route publikasi - pastikan ini ada dan benar
 Route::get('/publikasi', [PublikasiController::class, 'index'])->name('publikasi.index');
