@@ -6,6 +6,7 @@ Project ini menggunakan **Laravel** sebagai backend, **React (Inertia.js)** untu
 
 Pastikan sudah terinstall di sistem kamu:
 
+- Git Bash https://git-scm.com/downloads
 - Virtual Studio Code https://code.visualstudio.com/download
 - PHP >= 8.1 https://www.apachefriends.org/index.html
 - Composer https://getcomposer.org/
