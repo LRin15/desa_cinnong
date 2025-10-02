@@ -6,6 +6,7 @@ Project ini menggunakan **Laravel** sebagai backend, **React (Inertia.js)** untu
 
 Pastikan sudah terinstall di sistem kamu:
 
+- Virtual Studio Code https://code.visualstudio.com/download
 - PHP >= 8.1 https://www.apachefriends.org/index.html
 - Composer https://getcomposer.org/
 - Node.js & npm (atau Yarn/Pnpm) https://nodejs.org/en/
@@ -15,7 +16,9 @@ Setelah install, pastikan php dikenali di terminal:
 
 Tambahkan path php ke Environment Variables → Path.
 
-## Misalnya C:\xampp\php atau C:\laragon\bin\php\php-8.2.12
+Misalnya C:\xampp\php atau C:\laragon\bin\php\php-8.2.12
+
+Kemudian buka xampp/php/php.ini lalu ubah ;extension=zip menjadi extension=zip
 
 ## ⚙️ Instalasi & Setup
 

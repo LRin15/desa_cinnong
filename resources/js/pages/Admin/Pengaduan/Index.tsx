@@ -56,6 +56,8 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
     const [selectedStatus, setSelectedStatus] = useState(filters.status || '');
     const [selectedPengaduan, setSelectedPengaduan] = useState<Pengaduan | null>(null);
     const [showFilters, setShowFilters] = useState(false);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [confirmData, setConfirmData] = useState<{ item: Pengaduan; newStatus: string } | null>(null);
     const isInitialMount = useRef(true);
 
     // Debounced search
@@ -109,21 +111,35 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
         );
     };
 
-    const handleStatusChange = (id: number, newStatus: string) => {
-        if (confirm('Apakah Anda yakin ingin mengubah status pengaduan ini?')) {
-            router.put(
-                route('admin.pengaduan.update-status', id),
-                {
-                    status: newStatus,
-                    search: searchTerm,
-                    status_filter: selectedStatus,
+    const handleStatusChange = (item: Pengaduan, newStatus: string) => {
+        setConfirmData({ item, newStatus });
+        setShowConfirmModal(true);
+    };
+
+    const confirmStatusChange = () => {
+        if (!confirmData) return;
+
+        router.put(
+            route('admin.pengaduan.update-status', confirmData.item.id),
+            {
+                status: confirmData.newStatus,
+                search: searchTerm,
+                status_filter: selectedStatus,
+            },
+            {
+                preserveState: false,
+                preserveScroll: false,
+                onSuccess: () => {
+                    setShowConfirmModal(false);
+                    setConfirmData(null);
                 },
-                {
-                    preserveState: false,
-                    preserveScroll: false,
-                },
-            );
-        }
+            },
+        );
+    };
+
+    const cancelStatusChange = () => {
+        setShowConfirmModal(false);
+        setConfirmData(null);
     };
 
     const getStatusBadge = (status: string) => {
@@ -184,7 +200,7 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
                 {item.status !== 'selesai' && (
                     <select
                         value={item.status}
-                        onChange={(e) => handleStatusChange(item.id, e.target.value)}
+                        onChange={(e) => handleStatusChange(item, e.target.value)}
                         className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-xs focus:border-orange-500 focus:outline-none"
                     >
                         <option value="belum_diproses">Belum Diproses</option>
@@ -412,7 +428,7 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
                                                             {item.status !== 'selesai' && (
                                                                 <select
                                                                     value={item.status}
-                                                                    onChange={(e) => handleStatusChange(item.id, e.target.value)}
+                                                                    onChange={(e) => handleStatusChange(item, e.target.value)}
                                                                     className="rounded-md border border-gray-300 px-2 py-1 text-xs focus:border-orange-500 focus:outline-none"
                                                                 >
                                                                     <option value="belum_diproses">Belum Diproses</option>
@@ -439,6 +455,58 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
                     </div>
                 )}
             </div>
+
+            {/* Confirmation Modal */}
+            {showConfirmModal && confirmData && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-md rounded-lg bg-white shadow-xl">
+                        <div className="border-b p-4 sm:p-6">
+                            <h3 className="text-lg font-semibold text-gray-900 sm:text-xl">Konfirmasi Perubahan Status</h3>
+                        </div>
+
+                        <div className="space-y-4 p-4 sm:p-6">
+                            <p className="text-sm text-gray-700 sm:text-base">Apakah Anda yakin ingin mengubah status pengaduan ini?</p>
+
+                            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 sm:p-4">
+                                <div className="mb-3 flex items-center justify-between">
+                                    <span className="text-xs font-medium text-gray-600 sm:text-sm">Dari:</span>
+                                    {getStatusBadge(confirmData.item.status)}
+                                </div>
+                                <div className="flex items-center justify-between border-t border-gray-200 pt-3">
+                                    <span className="text-xs font-medium text-gray-600 sm:text-sm">Menjadi:</span>
+                                    {getStatusBadge(confirmData.newStatus)}
+                                </div>
+                            </div>
+
+                            <div className="space-y-2 rounded-lg border border-orange-100 bg-orange-50 p-3 sm:p-4">
+                                <div>
+                                    <span className="text-xs font-medium text-gray-700">Pengadu:</span>
+                                    <p className="mt-0.5 text-sm font-semibold text-gray-900">{confirmData.item.nama}</p>
+                                </div>
+                                <div>
+                                    <span className="text-xs font-medium text-gray-700">Judul:</span>
+                                    <p className="mt-0.5 text-sm text-gray-900">{confirmData.item.judul}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 border-t bg-gray-50 p-4 sm:p-6">
+                            <button
+                                onClick={cancelStatusChange}
+                                className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:text-base"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={confirmStatusChange}
+                                className="flex-1 rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-orange-700 sm:text-base"
+                            >
+                                Ya, Ubah Status
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Detail Modal */}
             {selectedPengaduan && (

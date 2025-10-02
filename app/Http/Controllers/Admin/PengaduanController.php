@@ -39,6 +39,11 @@ class PengaduanController extends Controller
                 'search' => $request->search,
                 'status' => $request->status,
             ],
+            // Explicitly pass flash messages
+            'flash' => [
+                'success' => session('success'),
+                'error' => session('error'),
+            ],
         ]);
     }
 
@@ -47,25 +52,44 @@ class PengaduanController extends Controller
      */
     public function updateStatus(Request $request, Pengaduan $pengaduan)
     {
-        $validated = $request->validate([
-            'status' => 'required|in:belum_diproses,sedang_diproses,selesai',
-        ]);
+        try {
+            $validated = $request->validate([
+                'status' => 'required|in:belum_diproses,sedang_diproses,selesai',
+            ]);
 
-        $pengaduan->update([
-            'status' => $validated['status'],
-        ]);
+            $statusLabels = [
+                'belum_diproses' => 'Belum Diproses',
+                'sedang_diproses' => 'Sedang Diproses',
+                'selesai' => 'Selesai',
+            ];
 
-        // Preserve filters saat redirect
-        $queryParams = [];
-        if ($request->has('search') && $request->search) {
-            $queryParams['search'] = $request->search;
+            $pengaduan->update([
+                'status' => $validated['status'],
+            ]);
+
+            // Preserve filters saat redirect
+            $queryParams = [];
+            if ($request->has('search') && $request->search) {
+                $queryParams['search'] = $request->search;
+            }
+            if ($request->has('status_filter') && $request->status_filter) {
+                $queryParams['status'] = $request->status_filter;
+            }
+
+            $statusLabel = $statusLabels[$validated['status']] ?? $validated['status'];
+
+            return redirect()->route('admin.pengaduan.index', $queryParams)
+                ->with('success', "Status pengaduan dari '{$pengaduan->nama}' berhasil diubah menjadi '{$statusLabel}'.");
+
+        } catch (\Exception $e) {
+            \Log::error('Error updating pengaduan status: ' . $e->getMessage(), [
+                'pengaduan_id' => $pengaduan->id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()
+                ->with('error', 'Terjadi kesalahan saat mengubah status pengaduan. Silakan coba lagi.');
         }
-        if ($request->has('status_filter') && $request->status_filter) {
-            $queryParams['status'] = $request->status_filter;
-        }
-
-        return redirect()->route('admin.pengaduan.index', $queryParams)
-            ->with('success', 'Status pengaduan berhasil diperbarui!');
     }
 
     /**
@@ -73,9 +97,35 @@ class PengaduanController extends Controller
      */
     public function destroy(Pengaduan $pengaduan)
     {
-        $pengaduan->delete();
+        \Log::info('=== DESTROY PENGADUAN METHOD CALLED ===');
+        \Log::info('Pengaduan to delete: ' . $pengaduan->id . ' - ' . $pengaduan->judul);
+        
+        try {
+            $pengaduanNama = $pengaduan->nama;
+            $pengaduanJudul = $pengaduan->judul;
+            
+            if (!$pengaduan->exists) {
+                \Log::error('Pengaduan does not exist in database: ' . $pengaduan->id);
+                return redirect()->route('admin.pengaduan.index')
+                    ->with('error', 'Pengaduan tidak ditemukan.');
+            }
+            
+            $deleted = $pengaduan->delete();
+            
+            \Log::info('Delete result: ' . ($deleted ? 'SUCCESS' : 'FAILED'));
+            \Log::info('Pengaduan deleted successfully: ' . $pengaduan->id);
 
-        return redirect()->route('admin.pengaduan.index')
-            ->with('success', 'Pengaduan berhasil dihapus!');
+            return redirect()->route('admin.pengaduan.index')
+                ->with('success', "Pengaduan dari '{$pengaduanNama}' dengan judul '{$pengaduanJudul}' berhasil dihapus.");
+
+        } catch (\Exception $e) {
+            \Log::error('=== ERROR DELETING PENGADUAN ===');
+            \Log::error('Pengaduan ID: ' . $pengaduan->id);
+            \Log::error('Error: ' . $e->getMessage());
+            \Log::error('Trace: ' . $e->getTraceAsString());
+
+            return redirect()->route('admin.pengaduan.index')
+                ->with('error', 'Terjadi kesalahan saat menghapus pengaduan: ' . $e->getMessage());
+        }
     }
 }

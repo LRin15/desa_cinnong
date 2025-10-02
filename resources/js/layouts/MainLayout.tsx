@@ -1,6 +1,6 @@
 // resources/js/layouts/MainLayout.tsx
 import { Link, useForm } from '@inertiajs/react';
-import { ExternalLink, Mail, MapPin, Menu, MessageSquare, X } from 'lucide-react';
+import { CheckCircle, ExternalLink, Mail, MapPin, Menu, MessageSquare, X } from 'lucide-react';
 import { ReactNode, useState } from 'react';
 
 interface User {
@@ -21,6 +21,7 @@ interface MainLayoutProps {
 export default function MainLayout({ auth, children }: MainLayoutProps) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [complaintModalOpen, setComplaintModalOpen] = useState(false);
+    const [successModalOpen, setSuccessModalOpen] = useState(false);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         nama: '',
@@ -48,12 +49,16 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
         reset();
     };
 
+    const closeSuccessModal = () => {
+        setSuccessModalOpen(false);
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         post(route('pengaduan.store'), {
             onSuccess: () => {
                 closeComplaintModal();
-                alert('Pengaduan Anda telah berhasil dikirim. Terima kasih!');
+                setSuccessModalOpen(true);
             },
         });
     };
@@ -338,6 +343,32 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Success Modal */}
+            {successModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-md rounded-lg bg-white shadow-xl">
+                        <div className="p-6 text-center sm:p-8">
+                            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                                <CheckCircle className="h-10 w-10 text-green-600" />
+                            </div>
+
+                            <h3 className="mb-2 text-xl font-bold text-gray-900 sm:text-2xl">Pengaduan Berhasil Dikirim!</h3>
+
+                            <p className="mb-6 text-sm text-gray-600 sm:text-base">
+                                Terima kasih telah mengirimkan pengaduan Anda. Tim kami akan segera meninjau dan menindaklanjuti pengaduan Anda.
+                            </p>
+
+                            <button
+                                onClick={closeSuccessModal}
+                                className="mt-6 w-full rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-orange-700 sm:text-base"
+                            >
+                                Tutup
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
