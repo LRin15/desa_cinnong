@@ -240,19 +240,6 @@ export default function ProfilDesa() {
                                 <div className="rounded-lg border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100 p-4 text-center sm:col-span-2 sm:p-6 lg:col-span-1">
                                     <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-white shadow-lg sm:h-24 sm:w-24">
                                         <img
-                                            src="/images/suriati.png"
-                                            alt="SURIATI - Bendahara"
-                                            className="h-full w-full cursor-pointer object-cover"
-                                            onClick={() => openImageModal('/images/suriati.png')}
-                                        />
-                                    </div>
-                                    <h4 className="text-sm font-semibold text-gray-900 sm:text-base">SURIATI</h4>
-                                    <p className="text-xs text-gray-600 sm:text-sm">Bendahara</p>
-                                </div>
-
-                                <div className="rounded-lg border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100 p-4 text-center sm:col-span-2 sm:p-6 lg:col-span-1">
-                                    <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-white shadow-lg sm:h-24 sm:w-24">
-                                        <img
                                             src="/images/irwati.png"
                                             alt="IRMAWATI, SP.d - Kaur Keuangan"
                                             className="h-full w-full cursor-pointer object-cover"
@@ -261,6 +248,19 @@ export default function ProfilDesa() {
                                     </div>
                                     <h4 className="text-sm font-semibold text-gray-900 sm:text-base">IRMAWATI, SP.d</h4>
                                     <p className="text-xs text-gray-600 sm:text-sm">Kaur Keuangan</p>
+                                </div>
+
+                                <div className="rounded-lg border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100 p-4 text-center sm:col-span-2 sm:p-6 lg:col-span-1">
+                                    <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-white shadow-lg sm:h-24 sm:w-24">
+                                        <img
+                                            src="/images/suriati.png"
+                                            alt="SURIATI - Bendahara"
+                                            className="h-full w-full cursor-pointer object-cover"
+                                            onClick={() => openImageModal('/images/suriati.png')}
+                                        />
+                                    </div>
+                                    <h4 className="text-sm font-semibold text-gray-900 sm:text-base">SURIANTI S.Sos</h4>
+                                    <p className="text-xs text-gray-600 sm:text-sm">Staf Kaur Keuangan</p>
                                 </div>
 
                                 <div className="rounded-lg border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100 p-4 text-center sm:col-span-2 sm:p-6 lg:col-span-1">
