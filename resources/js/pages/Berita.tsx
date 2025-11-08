@@ -5,7 +5,6 @@ import { Head, Link, router } from '@inertiajs/react';
 import { Calendar, ChevronsRight, Search, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-// 1. Definisikan tipe untuk satu item berita
 interface BeritaItem {
     id: number;
     judul: string;
@@ -16,7 +15,10 @@ interface BeritaItem {
     tanggal_terbit: string;
 }
 
-// 2. Definisikan tipe untuk props halaman (dengan struktur pagination yang benar)
+interface Setting {
+    [key: string]: string;
+}
+
 interface BeritaPageProps {
     auth?: any;
     beritaList: {
@@ -30,9 +32,9 @@ interface BeritaPageProps {
     filters: {
         search: string;
     };
+    settings: Setting;
 }
 
-// Fungsi untuk menentukan warna badge berdasarkan kategori
 const getCategoryClass = (category: string) => {
     switch (category) {
         case 'Pengumuman':
@@ -52,10 +54,12 @@ const getCategoryClass = (category: string) => {
     }
 };
 
-export default function Berita({ auth, beritaList, filters }: BeritaPageProps) {
+export default function Berita({ auth, beritaList, filters, settings }: BeritaPageProps) {
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
 
-    // Update local state when filters change (for back button)
+    // Ambil nama desa dari settings, fallback ke "Desa" jika tidak ada
+    const namaDesa = settings?.nama_desa || 'Desa';
+
     useEffect(() => {
         setSearchQuery(filters.search || '');
     }, [filters.search]);
@@ -86,18 +90,18 @@ export default function Berita({ auth, beritaList, filters }: BeritaPageProps) {
 
     return (
         <MainLayout auth={auth}>
-            <Head title="Berita" />
+            <Head title={`Berita - ${namaDesa}`} />
 
             <div className="bg-white">
-                {/* Header Section - Mobile optimized */}
+                {/* Header Section */}
                 <section className="border-b border-gray-200 bg-gradient-to-br from-orange-50 to-orange-100">
                     <div className="container mx-auto px-3 py-12 text-center sm:px-4 sm:py-16 lg:px-8">
                         <h1 className="mb-3 text-3xl font-bold text-gray-900 sm:mb-4 sm:text-4xl md:text-5xl">Berita & Pengumuman</h1>
                         <p className="mx-auto max-w-2xl text-base text-gray-700 sm:text-lg">
-                            Ikuti perkembangan, kegiatan, dan informasi terbaru dari Pemerintah Desa Cinnong.
+                            Ikuti perkembangan, kegiatan, dan informasi terbaru dari Pemerintah {namaDesa}.
                         </p>
 
-                        {/* Search Form - Mobile optimized */}
+                        {/* Search Form */}
                         <div className="mx-auto mt-6 max-w-md sm:mt-8">
                             <form onSubmit={handleSearch} className="relative">
                                 <div className="relative">
@@ -128,7 +132,7 @@ export default function Berita({ auth, beritaList, filters }: BeritaPageProps) {
                             </form>
                         </div>
 
-                        {/* Search Result Info - Mobile friendly */}
+                        {/* Search Result Info */}
                         {filters.search && (
                             <div className="mt-3 text-sm text-gray-600 sm:mt-4">
                                 {beritaList.data.length > 0 ? (
@@ -155,7 +159,6 @@ export default function Berita({ auth, beritaList, filters }: BeritaPageProps) {
                 <section className="py-12 sm:py-16 lg:py-20">
                     <div className="container mx-auto px-3 sm:px-4 lg:px-8">
                         {beritaList.data.length > 0 ? (
-                            /* Mobile single column, tablet 2 col, desktop 3 col */
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
                                 {beritaList.data.map((news) => (
                                     <article
@@ -207,7 +210,6 @@ export default function Berita({ auth, beritaList, filters }: BeritaPageProps) {
                                 ))}
                             </div>
                         ) : (
-                            /* Empty state - Mobile optimized */
                             <div className="py-12 text-center">
                                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
                                     <Search className="h-8 w-8 text-gray-400" />
@@ -226,14 +228,11 @@ export default function Berita({ auth, beritaList, filters }: BeritaPageProps) {
                             </div>
                         )}
 
-                        {/* Pagination - Mobile optimized */}
+                        {/* Pagination */}
                         {beritaList.data.length > 0 && (
                             <nav className="mt-12 flex items-center justify-center border-t border-gray-200 pt-6 sm:mt-16 sm:pt-8">
                                 <div className="flex flex-wrap justify-center gap-1 sm:gap-2">
                                     {beritaList.links.map((link, index) => {
-                                        // Simplify pagination on mobile - show only prev/next/current and nearby
-                                        const isFirst = index === 0;
-                                        const isLast = index === beritaList.links.length - 1;
                                         const isActive = link.active;
 
                                         return (

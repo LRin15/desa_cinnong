@@ -2,7 +2,19 @@
 
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Link } from '@inertiajs/react';
-import { Activity, ArrowRight, Calendar, FileText, Image as ImageIcon, MessageSquare, Newspaper, PlusCircle, TrendingUp, Users } from 'lucide-react';
+import {
+    Activity,
+    ArrowRight,
+    Building,
+    Calendar,
+    FileText,
+    Image as ImageIcon,
+    MessageSquare,
+    Newspaper,
+    PlusCircle,
+    TrendingUp,
+    Users,
+} from 'lucide-react';
 import { useState } from 'react';
 
 interface DashboardProps {
@@ -265,6 +277,13 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                             title="Tambah Pengguna Baru"
                             bgColor="bg-gray-600"
                             hoverColor="hover:bg-gray-700"
+                        />
+                        <QuickActionButton
+                            href={route('admin.profil.edit')}
+                            icon={<Building className="h-5 w-5 sm:h-6 sm:w-6" />}
+                            title="Kelola Profil Desa"
+                            bgColor="bg-teal-600"
+                            hoverColor="hover:bg-teal-700"
                         />
                     </div>
                 </div>

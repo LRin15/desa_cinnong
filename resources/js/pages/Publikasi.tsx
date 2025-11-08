@@ -12,6 +12,10 @@ interface PublikasiItem {
     ukuran_file: string;
 }
 
+interface Setting {
+    [key: string]: string;
+}
+
 interface PageProps {
     auth?: any;
     publikasiList: {
@@ -25,6 +29,7 @@ interface PageProps {
     filters: {
         search: string;
     };
+    settings: Setting;
 }
 
 const FileTypeIcon = ({ type }: { type: string }) => {
@@ -42,8 +47,11 @@ const FileTypeIcon = ({ type }: { type: string }) => {
     }
 };
 
-export default function Publikasi({ auth, publikasiList, filters }: PageProps) {
+export default function Publikasi({ auth, publikasiList, filters, settings }: PageProps) {
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
+
+    // Ambil nama desa dari settings, fallback ke "Desa" jika tidak ada
+    const namaDesa = settings?.nama_desa || 'Desa';
 
     // Update local state when filters change (for back button)
     useEffect(() => {
@@ -53,7 +61,7 @@ export default function Publikasi({ auth, publikasiList, filters }: PageProps) {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         router.get(
-            route('publikasi.index'), // atau '/publikasi' sesuai dengan route Anda
+            route('publikasi.index'),
             { search: searchQuery },
             {
                 preserveState: true,
@@ -65,7 +73,7 @@ export default function Publikasi({ auth, publikasiList, filters }: PageProps) {
     const clearSearch = () => {
         setSearchQuery('');
         router.get(
-            route('publikasi.index'), // atau '/publikasi' sesuai dengan route Anda
+            route('publikasi.index'),
             {},
             {
                 preserveState: true,
@@ -76,18 +84,18 @@ export default function Publikasi({ auth, publikasiList, filters }: PageProps) {
 
     return (
         <MainLayout auth={auth}>
-            <Head title="Publikasi Desa" />
+            <Head title={`Publikasi Dokumen - ${namaDesa}`} />
 
             <div className="bg-white">
-                {/* Header Section dengan Search - Mobile optimized */}
+                {/* Header Section dengan Search */}
                 <section className="border-b border-gray-200 bg-gradient-to-br from-orange-50 to-orange-100">
                     <div className="container mx-auto px-3 py-12 text-center sm:px-4 sm:py-16 lg:px-8">
                         <h1 className="mb-3 text-3xl font-bold text-gray-900 sm:mb-4 sm:text-4xl md:text-5xl">Publikasi Dokumen Desa</h1>
                         <p className="mx-auto max-w-2xl text-base text-gray-700 sm:text-lg">
-                            Akses dan unduh dokumen resmi dan informasi publik dari Desa Cinnong.
+                            Akses dan unduh dokumen resmi dan informasi publik dari {namaDesa}.
                         </p>
 
-                        {/* Search Form - Mobile optimized */}
+                        {/* Search Form */}
                         <div className="mx-auto mt-6 max-w-md sm:mt-8">
                             <form onSubmit={handleSearch} className="relative">
                                 <div className="relative">
@@ -118,7 +126,7 @@ export default function Publikasi({ auth, publikasiList, filters }: PageProps) {
                             </form>
                         </div>
 
-                        {/* Search Result Info - Mobile friendly */}
+                        {/* Search Result Info */}
                         {filters.search && (
                             <div className="mt-3 text-sm text-gray-600 sm:mt-4">
                                 {publikasiList.data.length > 0 ? (
@@ -178,7 +186,7 @@ export default function Publikasi({ auth, publikasiList, filters }: PageProps) {
                                     </div>
                                 ))
                             ) : (
-                                /* Empty state - Mobile optimized */
+                                /* Empty state */
                                 <div className="py-16 text-center">
                                     <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
                                         <FileIcon className="h-8 w-8 text-gray-400" />
@@ -201,7 +209,7 @@ export default function Publikasi({ auth, publikasiList, filters }: PageProps) {
                             )}
                         </div>
 
-                        {/* Pagination - Mobile optimized */}
+                        {/* Pagination */}
                         {publikasiList.data.length > 0 && publikasiList.links.length > 0 && (
                             <nav className="mt-12 flex items-center justify-center border-t border-gray-200 pt-8">
                                 <div className="flex flex-wrap justify-center gap-1 sm:gap-2">

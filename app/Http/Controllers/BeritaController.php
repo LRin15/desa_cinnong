@@ -4,6 +4,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Berita;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -15,6 +16,9 @@ class BeritaController extends Controller
      */
     public function index(Request $request): Response
     {
+        // Ambil nama desa dari settings
+        $settings = Setting::pluck('value', 'key');
+        
         $search = $request->get('search');
 
         $beritaList = Berita::when($search, function ($query, $search) {
@@ -29,9 +33,8 @@ class BeritaController extends Controller
                 'slug' => $berita->slug,
                 'kategori' => $berita->kategori,
                 'kutipan' => $berita->kutipan,
-                // Updated to use public/images/berita path
                 'gambar' => $berita->gambar ? asset('images/berita/' . $berita->gambar) : null,
-                'tanggal_terbit' => $berita->tanggal_terbit->format('d F Y'), // Format tanggal di backend
+                'tanggal_terbit' => $berita->tanggal_terbit->format('d F Y'),
             ]);
 
         return Inertia::render('Berita', [
@@ -39,6 +42,7 @@ class BeritaController extends Controller
             'filters' => [
                 'search' => $search,
             ],
+            'settings' => $settings,
         ]);
     }
 
@@ -47,8 +51,10 @@ class BeritaController extends Controller
      */
     public function show(string $slug): Response
     {
+        // Ambil nama desa dari settings
+        $settings = Setting::pluck('value', 'key');
+        
         // Cari satu berita berdasarkan slug-nya.
-        // firstOrFail() akan otomatis menampilkan halaman 404 jika slug tidak ditemukan.
         $berita = Berita::where('slug', $slug)->firstOrFail();
 
         return Inertia::render('DetailBerita', [
@@ -57,12 +63,12 @@ class BeritaController extends Controller
                 'judul' => $berita->judul,
                 'slug' => $berita->slug,
                 'kategori' => $berita->kategori,
-                'isi' => $berita->isi, // Kirim konten lengkapnya
+                'isi' => $berita->isi,
                 'kutipan' => $berita->kutipan,
-                // Updated to use public/images/berita path
                 'gambar' => $berita->gambar ? asset('images/berita/' . $berita->gambar) : null,
                 'tanggal_terbit' => $berita->tanggal_terbit->format('d F Y'),
             ],
+            'settings' => $settings,
         ]);
     }
 }

@@ -4,19 +4,33 @@ import MainLayout from '@/layouts/MainLayout';
 import { Head, Link } from '@inertiajs/react';
 import { BarChart3, Building2, Calendar, MapPin, Newspaper, TrendingUp, Users } from 'lucide-react';
 
-// Tipe data untuk satu item berita, sekarang dengan 'gambar'
+// Tipe data untuk satu item berita
 interface BeritaItem {
     slug: string;
     judul: string;
     kategori: string;
     tanggal_terbit: string;
     kutipan: string;
-    gambar: string | null; // URL gambar bisa jadi null
+    gambar: string | null;
+}
+
+// Tipe data untuk settings
+interface Settings {
+    nama_desa?: string;
+    stat1_label?: string;
+    stat1_value?: string;
+    stat2_label?: string;
+    stat2_value?: string;
+    stat3_label?: string;
+    stat3_value?: string;
+    data_terakhir?: string;
+    [key: string]: string | undefined;
 }
 
 // Tipe data untuk props halaman Beranda
 interface BerandaProps {
     beritaTerbaru: BeritaItem[];
+    settings: Settings;
     auth?: any;
 }
 
@@ -40,7 +54,56 @@ const getCategoryClass = (category: string) => {
     }
 };
 
-export default function Beranda({ auth, beritaTerbaru }: BerandaProps) {
+// Fungsi untuk menentukan icon berdasarkan label statistik
+const getStatIcon = (label: string) => {
+    const lowerLabel = label.toLowerCase();
+
+    if (lowerLabel.includes('penduduk') || lowerLabel.includes('jiwa') || lowerLabel.includes('warga')) {
+        return Users;
+    } else if (lowerLabel.includes('dusun') || lowerLabel.includes('rw') || lowerLabel.includes('rt') || lowerLabel.includes('wilayah')) {
+        return Building2;
+    } else if (
+        lowerLabel.includes('sekolah') ||
+        lowerLabel.includes('pendidikan') ||
+        lowerLabel.includes('kesehatan') ||
+        lowerLabel.includes('rumah sakit') ||
+        lowerLabel.includes('puskesmas') ||
+        lowerLabel.includes('posyandu')
+    ) {
+        return TrendingUp;
+    }
+
+    return BarChart3; // default icon
+};
+
+export default function Beranda({ auth, beritaTerbaru, settings }: BerandaProps) {
+    // Ambil nama desa dari settings atau gunakan default
+    const namaDesa = settings.nama_desa || 'Desa Cinnong';
+
+    // Siapkan data statistik
+    const stats = [
+        {
+            label: settings.stat1_label || 'Total Penduduk',
+            value: settings.stat1_value || '0',
+            icon: getStatIcon(settings.stat1_label || 'Total Penduduk'),
+        },
+        {
+            label: settings.stat2_label || 'Jumlah Dusun',
+            value: settings.stat2_value || '0',
+            icon: getStatIcon(settings.stat2_label || 'Jumlah Dusun'),
+        },
+        {
+            label: settings.stat3_label || 'Sekolah',
+            value: settings.stat3_value || '0',
+            icon: getStatIcon(settings.stat3_label || 'Sekolah'),
+        },
+        {
+            label: 'Data Terakhir',
+            value: settings.data_terakhir || new Date().getFullYear().toString(),
+            icon: Calendar,
+        },
+    ];
+
     return (
         <MainLayout auth={auth}>
             <Head title="Beranda" />
@@ -51,7 +114,7 @@ export default function Beranda({ auth, beritaTerbaru }: BerandaProps) {
                         <div className="mx-auto max-w-4xl text-center">
                             <h1 className="mb-4 text-3xl font-bold text-gray-900 sm:mb-6 sm:text-4xl md:text-5xl lg:text-6xl">
                                 Selamat Datang di
-                                <span className="block text-orange-600">Desa Cinnong</span>
+                                <span className="block text-orange-600">{namaDesa}</span>
                             </h1>
                             <p className="mx-auto mb-6 max-w-2xl text-base text-gray-700 sm:mb-8 sm:text-lg lg:text-xl">
                                 Sistem informasi desa yang menyediakan data terkini tentang profil desa, statistik penduduk, dan informasi ekonomi
@@ -60,7 +123,7 @@ export default function Beranda({ auth, beritaTerbaru }: BerandaProps) {
 
                             {/* CTA Buttons - Mobile stacked */}
                             <div className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
-                                <Link href={route('profil.desa')}>
+                                <Link href={route('profil.show')}>
                                     <button className="flex w-full items-center justify-center rounded-lg bg-orange-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-orange-700 sm:w-auto sm:px-6 sm:text-base lg:text-lg">
                                         <MapPin className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
                                         <span className="sm:hidden">Profil Desa</span>
@@ -83,40 +146,24 @@ export default function Beranda({ auth, beritaTerbaru }: BerandaProps) {
                 <section className="bg-white py-12 sm:py-16">
                     <div className="container mx-auto px-3 sm:px-4 lg:px-8">
                         <div className="mb-8 text-center sm:mb-12">
-                            <h2 className="mb-2 text-2xl font-bold text-gray-900 sm:mb-4 sm:text-3xl">Data Terkini Desa Cinnong</h2>
+                            <h2 className="mb-2 text-2xl font-bold text-gray-900 sm:mb-4 sm:text-3xl">Data Terkini {namaDesa}</h2>
                             <p className="text-sm text-gray-600 sm:text-base">Informasi statistik dan demografis terbaru</p>
                         </div>
 
                         {/* Mobile 2x2 grid, tablet 2x2, desktop 1x4 */}
                         <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
-                            <div className="rounded-lg border border-gray-200 bg-white p-4 text-center shadow-sm sm:p-6">
-                                <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 sm:mb-3 sm:h-12 sm:w-12">
-                                    <Users className="h-5 w-5 text-orange-600 sm:h-6 sm:w-6" />
-                                </div>
-                                <div className="mb-1 text-xl font-bold text-orange-600 sm:text-2xl">1.868</div>
-                                <div className="text-xs text-gray-600 sm:text-sm">Total Penduduk</div>
-                            </div>
-                            <div className="rounded-lg border border-gray-200 bg-white p-4 text-center shadow-sm sm:p-6">
-                                <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 sm:mb-3 sm:h-12 sm:w-12">
-                                    <Building2 className="h-5 w-5 text-orange-600 sm:h-6 sm:w-6" />
-                                </div>
-                                <div className="mb-1 text-xl font-bold text-orange-600 sm:text-2xl">4</div>
-                                <div className="text-xs text-gray-600 sm:text-sm">Jumlah Dusun</div>
-                            </div>
-                            <div className="rounded-lg border border-gray-200 bg-white p-4 text-center shadow-sm sm:p-6">
-                                <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 sm:mb-3 sm:h-12 sm:w-12">
-                                    <TrendingUp className="h-5 w-5 text-orange-600 sm:h-6 sm:w-6" />
-                                </div>
-                                <div className="mb-1 text-xl font-bold text-orange-600 sm:text-2xl">6</div>
-                                <div className="text-xs text-gray-600 sm:text-sm">Sekolah</div>
-                            </div>
-                            <div className="rounded-lg border border-gray-200 bg-white p-4 text-center shadow-sm sm:p-6">
-                                <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 sm:mb-3 sm:h-12 sm:w-12">
-                                    <Calendar className="h-5 w-5 text-orange-600 sm:h-6 sm:w-6" />
-                                </div>
-                                <div className="mb-1 text-xl font-bold text-orange-600 sm:text-2xl">2025</div>
-                                <div className="text-xs text-gray-600 sm:text-sm">Data Terakhir</div>
-                            </div>
+                            {stats.map((stat, index) => {
+                                const IconComponent = stat.icon;
+                                return (
+                                    <div key={index} className="rounded-lg border border-gray-200 bg-white p-4 text-center shadow-sm sm:p-6">
+                                        <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 sm:mb-3 sm:h-12 sm:w-12">
+                                            <IconComponent className="h-5 w-5 text-orange-600 sm:h-6 sm:w-6" />
+                                        </div>
+                                        <div className="mb-1 text-xl font-bold text-orange-600 sm:text-2xl">{stat.value}</div>
+                                        <div className="text-xs text-gray-600 sm:text-sm">{stat.label}</div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </section>
@@ -126,7 +173,7 @@ export default function Beranda({ auth, beritaTerbaru }: BerandaProps) {
                     <div className="container mx-auto px-3 sm:px-4 lg:px-8">
                         <div className="mb-8 text-center sm:mb-12">
                             <h2 className="mb-2 text-2xl font-bold text-gray-900 sm:mb-4 sm:text-3xl">Berita & Pengumuman Terbaru</h2>
-                            <p className="text-sm text-gray-600 sm:text-base">Informasi terkini dari Desa Cinnong</p>
+                            <p className="text-sm text-gray-600 sm:text-base">Informasi terkini dari {namaDesa}</p>
                         </div>
 
                         {/* Mobile single column, tablet 2 col, desktop 3 col */}

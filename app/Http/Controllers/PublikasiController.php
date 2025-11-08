@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Publikasi;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -14,6 +15,9 @@ class PublikasiController extends Controller
      */
     public function index(Request $request)
     {
+        // Ambil nama desa dari settings
+        $settings = Setting::pluck('value', 'key');
+        
         $publikasiList = Publikasi::query()
             ->when($request->search, fn($query, $search) => $query->where('judul', 'like', '%' . $search . '%'))
             ->latest('tanggal_publikasi')
@@ -31,6 +35,7 @@ class PublikasiController extends Controller
         return Inertia::render('Publikasi', [
             'publikasiList' => $publikasiList,
             'filters' => $request->only('search'),
+            'settings' => $settings,
         ]);
     }
 
@@ -47,8 +52,7 @@ class PublikasiController extends Controller
             abort(404, 'File tidak ditemukan.');
         }
         
-        // Kembalikan response download. Ini akan menghasilkan BinaryFileResponse
-        // yang sesuai dengan "janji" di atas.
+        // Kembalikan response download
         return response()->download($path, $publikasi->nama_asli_file);
     }
 }

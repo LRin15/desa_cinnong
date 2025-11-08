@@ -1,5 +1,5 @@
 // resources/js/layouts/MainLayout.tsx
-import { Link, useForm } from '@inertiajs/react';
+import { Link, useForm, usePage } from '@inertiajs/react';
 import { CheckCircle, ExternalLink, Mail, MapPin, Menu, MessageSquare, X } from 'lucide-react';
 import { ReactNode, useState } from 'react';
 
@@ -13,12 +13,25 @@ interface Auth {
     user: User | null;
 }
 
+interface VillageSettings {
+    nama_desa: string;
+    email: string;
+    telepon: string;
+    provinsi?: string;
+    kabupaten?: string;
+    kecamatan?: string;
+}
+
 interface MainLayoutProps {
     auth?: Auth;
     children: ReactNode;
+    villageSettings?: VillageSettings;
 }
 
 export default function MainLayout({ auth, children }: MainLayoutProps) {
+    // Ambil villageSettings dari shared props
+    const { villageSettings } = usePage<{ villageSettings: VillageSettings }>().props;
+
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [complaintModalOpen, setComplaintModalOpen] = useState(false);
     const [successModalOpen, setSuccessModalOpen] = useState(false);
@@ -63,6 +76,14 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
         });
     };
 
+    // Gunakan data dari villageSettings atau fallback ke nilai default
+    const namaDesa = villageSettings?.nama_desa || 'Desa Cinnong';
+    const emailDesa = villageSettings?.email || 'Cinnongsib@gmail.com';
+    const teleponDesa = villageSettings?.telepon || '';
+    const provinsi = villageSettings?.provinsi || 'Sulawesi Selatan';
+    const kabupaten = villageSettings?.kabupaten || 'Kabupaten Bone';
+    const kecamatan = villageSettings?.kecamatan || 'Kecamatan Sibulue';
+
     return (
         <div className="flex min-h-screen flex-col bg-gray-100">
             {/* Navigasi */}
@@ -75,7 +96,7 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                 className="truncate text-base font-bold text-[#ffffff] sm:text-lg"
                                 onClick={closeMobileMenu}
                             >
-                                Desa Cinnong
+                                {namaDesa}
                             </Link>
                         </div>
 
@@ -88,7 +109,7 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                 Beranda
                             </Link>
                             <Link
-                                href={route('profil.desa')}
+                                href={route('profil.show')}
                                 className="text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]"
                             >
                                 Profil Desa
@@ -181,7 +202,7 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                             Beranda
                         </Link>
                         <Link
-                            href={route('profil.desa')}
+                            href={route('profil.show')}
                             onClick={closeMobileMenu}
                             className="block rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
                         >
@@ -380,7 +401,7 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 gap-4 py-6 sm:grid-cols-2 sm:gap-6 sm:py-8 lg:grid-cols-3">
                         <div className="space-y-3">
-                            <h3 className="text-xl font-bold">Desa Cinnong</h3>
+                            <h3 className="text-xl font-bold">{namaDesa}</h3>
                             <p className="text-base leading-relaxed text-orange-100">
                                 Sistem informasi desa yang menyediakan data terkini tentang profil desa, statistik penduduk, dan informasi ekonomi
                                 untuk transparansi dan kemudahan akses.
@@ -396,7 +417,7 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link href={route('profil.desa')} className="block py-1 text-orange-100 transition-colors hover:text-white">
+                                    <Link href={route('profil.show')} className="block py-1 text-orange-100 transition-colors hover:text-white">
                                         Profil Desa
                                     </Link>
                                 </li>
@@ -430,23 +451,36 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                     <MapPin className="mt-1 h-5 w-5 flex-shrink-0 text-orange-200" />
                                     <div>
                                         <p className="leading-relaxed text-orange-100">
-                                            Desa Cinnong
+                                            {namaDesa}
                                             <br />
-                                            Kecamatan Sibulue
+                                            {kecamatan}
                                             <br />
-                                            Kabupaten Bone
+                                            {kabupaten}
                                             <br />
-                                            Sulawesi Selatan
+                                            {provinsi}
                                         </p>
                                     </div>
                                 </div>
                                 <a
-                                    href="mailto:Cinnongsib@gmail.com"
+                                    href={`mailto:${emailDesa}`}
                                     className="flex items-center space-x-3 text-orange-100 transition-colors hover:text-white"
                                 >
                                     <Mail className="h-5 w-5 flex-shrink-0 text-orange-200" />
-                                    <span className="break-all">Cinnongsib@gmail.com</span>
+                                    <span className="break-all">{emailDesa}</span>
                                 </a>
+                                {teleponDesa && (
+                                    <div className="flex items-center space-x-3 text-orange-100">
+                                        <svg className="h-5 w-5 flex-shrink-0 text-orange-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                                            />
+                                        </svg>
+                                        <span>{teleponDesa}</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -454,7 +488,7 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                     <div className="border-t border-orange-600/30 py-3 sm:py-4">
                         <div className="flex flex-col items-center justify-between space-y-2 text-center sm:text-left lg:flex-row lg:space-y-0">
                             <div className="text-sm text-orange-100">
-                                <p>© 2025 Desa Cinnong. Sistem Informasi Desa.</p>
+                                <p>© 2025 {namaDesa}. Sistem Informasi Desa.</p>
                                 <p className="mt-1">Dibuat dengan ❤️ untuk transparansi dan kemudahan akses informasi.</p>
                             </div>
                             <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm">

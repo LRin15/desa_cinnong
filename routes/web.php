@@ -12,10 +12,11 @@ use App\Models\Berita;
 use Illuminate\Support\Str;
 use App\Http\Controllers\PublikasiController;
 use App\Http\Controllers\PengaduanController;
+use App\Http\Controllers\Admin\ProfilDesaController;
 
 // Rute Utama
 Route::get('/', [PageController::class, 'beranda'])->name('beranda');
-Route::get('/profil-desa', [PageController::class, 'profilDesa'])->name('profil.desa');
+Route::get('/profil-desa', [ProfilDesaController::class, 'show'])->name('profil.show');
 Route::get('/data-desa', [DataDesaController::class, 'index'])->name('data.desa');
 Route::get('/infografis', [InfografisController::class, 'index'])->name('infografis.desa');
 Route::get('/infografis/{infografis}', [InfografisController::class, 'show'])->name('infografis.detail');

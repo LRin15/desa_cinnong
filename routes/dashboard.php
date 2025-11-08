@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\InfografisController;
 use App\Http\Controllers\Admin\PengaduanController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\PublikasiController as AdminPublikasiController;
+use App\Http\Controllers\Admin\ProfilDesaController;
 
 Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -14,6 +15,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::resource('infografis', InfografisController::class);
     Route::resource('berita', BeritaController::class);
     Route::resource('publikasi', AdminPublikasiController::class);
+    Route::get('/profil-desa/edit', [ProfilDesaController::class, 'edit'])->name('profil.edit');
+    Route::post('/profil-desa', [ProfilDesaController::class, 'update'])->name('profil.update');
     
     // Route untuk kelola pengaduan
     Route::get('/pengaduan', [PengaduanController::class, 'index'])->name('pengaduan.index');

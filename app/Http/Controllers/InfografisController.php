@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Infografis;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -14,6 +15,9 @@ class InfografisController extends Controller
      */
     public function index(Request $request): Response
     {
+        // Ambil nama desa dari settings
+        $settings = Setting::pluck('value', 'key');
+        
         $search = $request->get('search');
 
         // Ambil data infografis dari database dengan fitur pencarian
@@ -27,9 +31,7 @@ class InfografisController extends Controller
                 'id' => $infografis->id,
                 'judul' => $infografis->judul,
                 'deskripsi' => $infografis->deskripsi,
-                // Updated to use public/images/infografis path
                 'gambar' => $infografis->gambar ? asset('images/infografis/' . $infografis->gambar) : null,
-                // Format tanggal menggunakan Carbon dari casting datetime
                 'tanggal_terbit' => $infografis->tanggal_terbit->format('d F Y'),
             ]);
 
@@ -38,6 +40,7 @@ class InfografisController extends Controller
             'filters' => [
                 'search' => $search,
             ],
+            'settings' => $settings,
         ]);
     }
 
@@ -47,8 +50,10 @@ class InfografisController extends Controller
      */
     public function show(int $id): Response
     {
+        // Ambil nama desa dari settings
+        $settings = Setting::pluck('value', 'key');
+        
         // Cari infografis berdasarkan ID
-        // firstOrFail() akan otomatis menampilkan halaman 404 jika ID tidak ditemukan
         $infografis = Infografis::findOrFail($id);
 
         return Inertia::render('DetailInfografis', [
@@ -56,10 +61,10 @@ class InfografisController extends Controller
                 'id' => $infografis->id,
                 'judul' => $infografis->judul,
                 'deskripsi' => $infografis->deskripsi,
-                // Updated to use public/images/infografis path
                 'gambar' => $infografis->gambar ? asset('images/infografis/' . $infografis->gambar) : null,
                 'tanggal_terbit' => $infografis->tanggal_terbit->format('d F Y'),
             ],
+            'settings' => $settings,
         ]);
     }
 }

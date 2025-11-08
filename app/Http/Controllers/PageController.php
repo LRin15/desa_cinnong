@@ -7,11 +7,12 @@ use Inertia\Inertia;
 use App\Models\Infografis;
 use Revolution\Google\Sheets\Facades\Sheets;
 use App\Models\Berita;
+use App\Models\Setting;
 use Illuminate\Support\Str;
 
 class PageController extends Controller
 {
-public function beranda()
+    public function beranda()
     {
         $beritaTerbaru = Berita::latest('tanggal_terbit')
             ->take(3)
@@ -25,15 +26,23 @@ public function beranda()
                 'gambar' => $berita->gambar ? asset('images/berita/' . $berita->gambar) : null,
             ]);
 
+        // Ambil data settings untuk statistik dan nama desa
+        $settings = Setting::pluck('value', 'key')->toArray();
+
         return Inertia::render('Beranda', [
             'beritaTerbaru' => $beritaTerbaru,
+            'settings' => $settings,
         ]);
     }
     
     public function profilDesa()
     {
+        // Ambil data settings untuk profil desa
+        $settings = Setting::pluck('value', 'key')->toArray();
 
-        return Inertia::render('ProfilDesa');
+        return Inertia::render('ProfilDesa', [
+            'settings' => $settings,
+        ]);
     }
 
     public function infografisDesa()

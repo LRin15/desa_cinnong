@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Setting;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -39,6 +40,16 @@ class HandleInertiaRequests extends Middleware
     {
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
 
+        // Ambil data kontak desa dari settings
+        $villageSettings = Setting::whereIn('key', [
+            'nama_desa', 
+            'email', 
+            'telepon',
+            'provinsi',
+            'kabupaten',
+            'kecamatan'
+        ])->pluck('value', 'key');
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -51,6 +62,16 @@ class HandleInertiaRequests extends Middleware
                 'location' => $request->url(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            
+            // Tambahkan data kontak desa ke shared props
+            'villageSettings' => [
+                'nama_desa' => $villageSettings->get('nama_desa'),
+                'email' => $villageSettings->get('email'),
+                'telepon' => $villageSettings->get('telepon'),
+                'provinsi' => $villageSettings->get('provinsi'),
+                'kabupaten' => $villageSettings->get('kabupaten'),
+                'kecamatan' => $villageSettings->get('kecamatan'),
+            ],
         ];
     }
 }
