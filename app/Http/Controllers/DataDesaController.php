@@ -4,184 +4,42 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Revolution\Google\Sheets\Facades\Sheets;
+use App\Models\DynamicTable;
 
 class DataDesaController extends Controller
 {
     /**
-     * Menampilkan semua data agregat untuk Desa Cinnong.
+     * Menampilkan semua tabel dinamis untuk Desa Cinnong.
      */
     public function index(Request $request)
     {
-        $spreadsheetId = '1Ff5IO1ABom9kLrmjB6CiuzLX9Tw11jcpZYVtdGehCXA';
+        // Ambil semua tabel dinamis beserta datanya
+        $tables = DynamicTable::with('tableData')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($table) {
+                return [
+                    'id' => $table->id,
+                    'name' => $table->name,
+                    'table_name' => $table->table_name,
+                    'description' => $table->description,
+                    'columns' => $table->columns,
+                    'data' => $table->tableData->map(function ($row) {
+                        return [
+                            'id' => $row->id,
+                            'data' => $row->data,
+                            'created_at' => $row->created_at->format('d F Y H:i'),
+                        ];
+                    }),
+                    'columns_count' => count($table->columns),
+                    'data_count' => $table->tableData->count(),
+                    'created_at' => $table->created_at->format('d F Y'),
+                ];
+            });
 
-        // Buat URL untuk mengunduh spreadsheet
-        $spreadsheetUrl = "https://docs.google.com/spreadsheets/d/{$spreadsheetId}/export?format=xlsx";
-
-        // ===================================================================
-        // BAGIAN 1: DATA KEPENDUDUKAN
-        // ===================================================================
-        $sheetKependudukan = 'LAPORAN DATA KEPENDUDUKAN';
-        $sheetDataPenduduk = Sheets::spreadsheet($spreadsheetId)->sheet($sheetKependudukan)->get();
-        $headerPenduduk = $sheetDataPenduduk->shift();
-
-        $dusunList = [];
-        $bulanList = [];
-        $dataRekap = [];
-        $tahun = date('Y');
-
-        if ($headerPenduduk) {
-            foreach ($headerPenduduk as $col) {
-                if (!empty($col) && !in_array(strtoupper($col), ['NO.', 'DUSUN', 'L', 'P', 'J'])) {
-                    $bulanList[] = ucwords(strtolower($col));
-                }
-            }
-        }
-        
-        foreach ($sheetDataPenduduk as $row) {
-            if (empty($row[1]) || strtoupper($row[1]) === 'JUMLAH') continue;
-            
-            $dusunNama = $row[1];
-            $dusunList[] = $dusunNama;
-            $dataRekap[$dusunNama] = [];
-
-            foreach ($bulanList as $indexBulan => $namaBulan) {
-                $colIndexL = ($indexBulan * 3) + 2;
-                $colIndexP = $colIndexL + 1;
-                $jumlahL = isset($row[$colIndexL]) && is_numeric($row[$colIndexL]) ? (int) $row[$colIndexL] : 0;
-                $jumlahP = isset($row[$colIndexP]) && is_numeric($row[$colIndexP]) ? (int) $row[$colIndexP] : 0;
-                $dataRekap[$dusunNama][$indexBulan + 1] = [['jumlah_l' => $jumlahL, 'jumlah_p' => $jumlahP]];
-            }
-        }
-
-        // ===================================================================
-        // BAGIAN 1B: DATA DETAIL PER BULAN (JANUARI - DESEMBER)
-        // ===================================================================
-        $bulanSheets = [
-            'JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI',
-            'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'
-        ];
-        
-        $dataPerBulan = [];
-        
-        foreach ($bulanSheets as $namaBulan) {
-            try {
-                $sheetData = Sheets::spreadsheet($spreadsheetId)->sheet($namaBulan)->get();
-                $header = $sheetData->shift();
-                
-                $dataBulan = [];
-                foreach ($sheetData as $row) {
-                    if (empty($row[1]) || strtoupper($row[1]) === 'JUMLAH') continue;
-                    
-                    $dataBulan[] = [
-                        'no' => $row[0] ?? '-',
-                        'dusun' => $row[1] ?? 'Tidak Diketahui',
-                        'penduduk_awal_l' => $row[2] ?? 0,
-                        'penduduk_awal_p' => $row[3] ?? 0,
-                        'penduduk_awal_j' => $row[4] ?? 0,
-                        'lahir_l' => $row[5] ?? 0,
-                        'lahir_p' => $row[6] ?? 0,
-                        'lahir_j' => $row[7] ?? 0,
-                        'mati_l' => $row[8] ?? 0,
-                        'mati_p' => $row[9] ?? 0,
-                        'mati_j' => $row[10] ?? 0,
-                        'pendatang_l' => $row[11] ?? 0,
-                        'pendatang_p' => $row[12] ?? 0,
-                        'pendatang_j' => $row[13] ?? 0,
-                        'pindah_l' => $row[14] ?? 0,
-                        'pindah_p' => $row[15] ?? 0,
-                        'pindah_j' => $row[16] ?? 0,
-                        'penduduk_akhir_l' => $row[17] ?? 0,
-                        'penduduk_akhir_p' => $row[18] ?? 0,
-                        'penduduk_akhir_j' => $row[19] ?? 0,
-                        'ktp_l' => $row[20] ?? 0,
-                        'ktp_p' => $row[21] ?? 0,
-                        'ktp_j' => $row[22] ?? 0,
-                        'kk_l' => $row[23] ?? 0,
-                        'kk_p' => $row[24] ?? 0,
-                        'kk_j' => $row[25] ?? 0,
-                        'akta_l' => $row[26] ?? 0,
-                        'akta_p' => $row[27] ?? 0,
-                        'akta_j' => $row[28] ?? 0,
-                    ];
-                }
-                
-                $dataPerBulan[$namaBulan] = $dataBulan;
-            } catch (\Exception $e) {
-                $dataPerBulan[$namaBulan] = [];
-            }
-        }
-
-        // ===================================================================
-        // BAGIAN 2: DATA JUMLAH SEKOLAH
-        // ===================================================================
-        $sheetPendidikan = 'JUMLAH SEKOLAH MENURUT TINGKAT PENDIDIKAN';
-        $sheetDataPendidikan = Sheets::spreadsheet($spreadsheetId)->sheet($sheetPendidikan)->get();
-
-        $sheetDataPendidikan->shift();
-        $totalRowPendidikan = $sheetDataPendidikan->pop();
-
-        $dataPendidikan = [];
-        foreach ($sheetDataPendidikan as $row) {
-            if (empty($row[0]) && empty($row[1])) continue;
-            
-            $dataPendidikan[] = [
-                'no'      => $row[0] ?? '-', 
-                'tingkat' => $row[1] ?? 'Tidak Diketahui',
-                'negeri'  => $row[2] ?? '-', 
-                'swasta'  => $row[3] ?? '-', 
-                'jumlah'  => $row[4] ?? '-',
-            ];
-        }
-
-        $totalsPendidikan = [
-            'negeri'  => $totalRowPendidikan[2] ?? 0, 
-            'swasta'  => $totalRowPendidikan[3] ?? 0,
-            'jumlah'  => $totalRowPendidikan[4] ?? 0,
-        ];
-
-        // ===================================================================
-        // BAGIAN 3: DATA JUMLAH GURU
-        // ===================================================================
-        $sheetGuru = 'JUMLAH GURU MENURUT TINGKAT PENDIDIKAN';
-        $sheetDataGuru = Sheets::spreadsheet($spreadsheetId)->sheet($sheetGuru)->get();
-
-        $sheetDataGuru->shift();
-        $totalRowGuru = $sheetDataGuru->pop();
-
-        $dataGuru = [];
-        foreach ($sheetDataGuru as $row) {
-            if (empty($row[0]) && empty($row[1])) continue;
-
-            $dataGuru[] = [
-                'no'      => $row[0] ?? '-', 
-                'tingkat' => $row[1] ?? 'Tidak Diketahui',
-                'negeri'  => $row[2] ?? '-', 
-                'swasta'  => $row[3] ?? '-', 
-                'jumlah'  => $row[4] ?? '-',
-            ];
-        }
-
-        $totalsGuru = [
-            'negeri'  => $totalRowGuru[2] ?? 0, 
-            'swasta'  => $totalRowGuru[3] ?? 0,
-            'jumlah'  => $totalRowGuru[4] ?? 0,
-        ];
-
-        // ===================================================================
-        // KIRIM SEMUA DATA KE VIEW
-        // ===================================================================
         return Inertia::render('DataDesa', [
-            'dataRekap' => $dataRekap,
-            'dusunList' => $dusunList,
-            'bulanList' => $bulanList,
-            'tahun' => $tahun,
-            'dataPerBulan' => $dataPerBulan,
-            'dataPendidikan' => $dataPendidikan,
-            'totalsPendidikan' => $totalsPendidikan,
-            'dataGuru' => $dataGuru,
-            'totalsGuru' => $totalsGuru,
-            'spreadsheetUrl' => $spreadsheetUrl,
+            'tables' => $tables,
+            'tahun' => date('Y'),
         ]);
     }
 }

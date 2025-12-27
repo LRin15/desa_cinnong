@@ -7,6 +7,7 @@ import {
     ArrowRight,
     Building,
     Calendar,
+    Database,
     FileText,
     Image as ImageIcon,
     MessageSquare,
@@ -284,6 +285,13 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                             title="Kelola Profil Desa"
                             bgColor="bg-teal-600"
                             hoverColor="hover:bg-teal-700"
+                        />
+                        <QuickActionButton
+                            href={route('admin.dynamic-tables.index')}
+                            icon={<Database className="h-5 w-5 sm:h-6 sm:w-6" />}
+                            title="Kelola Tabel Data"
+                            bgColor="bg-purple-600"
+                            hoverColor="hover:bg-purple-700"
                         />
                     </div>
                 </div>
