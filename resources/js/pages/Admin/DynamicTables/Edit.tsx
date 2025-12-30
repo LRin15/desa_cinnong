@@ -2,15 +2,16 @@
 
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
-import { FormEventHandler } from 'react';
+import { ArrowLeft, ChevronDown, ChevronRight, Folder, Plus, Trash2 } from 'lucide-react';
+import { FormEventHandler, useState } from 'react';
 
 interface Column {
     name: string;
-    type: 'text' | 'number' | 'date' | 'select' | 'textarea';
+    type: 'text' | 'number' | 'date' | 'select' | 'textarea' | 'group';
     required: boolean;
     options?: string;
-    [key: string]: string | boolean | undefined;
+    subColumns?: Column[];
+    [key: string]: any;
 }
 
 interface TableData {
@@ -18,6 +19,8 @@ interface TableData {
     name: string;
     description: string | null;
     columns: Column[];
+    has_column_total?: boolean;
+    has_row_total?: boolean;
 }
 
 interface EditPageProps {
@@ -47,6 +50,7 @@ const COLUMN_TYPES = [
     { value: 'date', label: 'Tanggal' },
     { value: 'select', label: 'Pilihan (Dropdown)' },
     { value: 'textarea', label: 'Teks Panjang' },
+    { value: 'group', label: 'Grup (Sub Kolom)' },
 ];
 
 export default function Edit() {
@@ -106,31 +110,112 @@ export default function Edit() {
         name: string;
         description: string;
         columns: Column[];
+        has_column_total: boolean;
+        has_row_total: boolean;
         _method: string;
     }>({
         name: table.name || '',
         description: table.description || '',
         columns: table.columns || [{ name: '', type: 'text', required: false, options: '' }],
+        has_column_total: table.has_column_total || false,
+        has_row_total: table.has_row_total || false,
         _method: 'put',
+    });
+
+    const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
+        const expanded = new Set<string>();
+        const expandAll = (cols: Column[], path: number[] = []) => {
+            cols.forEach((col, idx) => {
+                const currentPath = [...path, idx];
+                if (col.type === 'group') {
+                    expanded.add(currentPath.join('-'));
+                    if (col.subColumns) {
+                        expandAll(col.subColumns, currentPath);
+                    }
+                }
+            });
+        };
+        expandAll(table.columns);
+        return expanded;
     });
 
     const allErrors = { ...errors, ...formErrors };
 
-    const addColumn = () => {
-        setData('columns', [...data.columns, { name: '', type: 'text', required: false, options: '' }]);
-    };
-
-    const removeColumn = (index: number) => {
-        if (data.columns.length > 1) {
-            const newColumns = data.columns.filter((_, i) => i !== index);
-            setData('columns', newColumns);
+    const toggleGroup = (path: string) => {
+        const newExpanded = new Set(expandedGroups);
+        if (newExpanded.has(path)) {
+            newExpanded.delete(path);
+        } else {
+            newExpanded.add(path);
         }
+        setExpandedGroups(newExpanded);
     };
 
-    const updateColumn = (index: number, field: keyof Column, value: any) => {
+    const addColumn = (path: number[] = []) => {
         const newColumns = [...data.columns];
-        newColumns[index] = { ...newColumns[index], [field]: value };
+        const newColumn: Column = { name: '', type: 'text', required: false, options: '' };
+
+        if (path.length === 0) {
+            newColumns.push(newColumn);
+        } else {
+            const parent = getColumnByPath(newColumns, path);
+            if (parent && parent.type === 'group') {
+                if (!parent.subColumns) parent.subColumns = [];
+                parent.subColumns.push(newColumn);
+            }
+        }
+
         setData('columns', newColumns);
+    };
+
+    const removeColumn = (path: number[]) => {
+        const newColumns = [...data.columns];
+
+        if (path.length === 1) {
+            if (newColumns.length > 1) {
+                newColumns.splice(path[0], 1);
+            }
+        } else {
+            const parentPath = path.slice(0, -1);
+            const parent = getColumnByPath(newColumns, parentPath);
+            if (parent && parent.subColumns && parent.subColumns.length > 1) {
+                parent.subColumns.splice(path[path.length - 1], 1);
+            }
+        }
+
+        setData('columns', newColumns);
+    };
+
+    const updateColumn = (path: number[], field: keyof Column, value: any) => {
+        const newColumns = [...data.columns];
+        const column = getColumnByPath(newColumns, path);
+
+        if (column) {
+            if (field === 'type') {
+                column[field] = value;
+                if (value === 'group') {
+                    column.subColumns = column.subColumns || [{ name: '', type: 'text', required: false, options: '' }];
+                    setExpandedGroups(new Set(expandedGroups).add(path.join('-')));
+                } else {
+                    delete column.subColumns;
+                }
+            } else {
+                column[field] = value;
+            }
+        }
+
+        setData('columns', newColumns);
+    };
+
+    const getColumnByPath = (columns: Column[], path: number[]): Column | null => {
+        let current: any = { subColumns: columns };
+
+        for (const index of path) {
+            if (!current.subColumns || !current.subColumns[index]) return null;
+            current = current.subColumns[index];
+        }
+
+        return current;
     };
 
     const submit: FormEventHandler = (e) => {
@@ -138,11 +223,118 @@ export default function Edit() {
         post(route('admin.dynamic-tables.update', table.id));
     };
 
+    const renderColumn = (column: Column, path: number[], level: number = 0) => {
+        const pathKey = path.join('-');
+        const isExpanded = expandedGroups.has(pathKey);
+        const canRemove = path.length === 1 ? data.columns.length > 1 : true;
+
+        return (
+            <div key={pathKey} className="space-y-3">
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4" style={{ marginLeft: `${level * 20}px` }}>
+                    <div className="mb-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            {column.type === 'group' && (
+                                <button type="button" onClick={() => toggleGroup(pathKey)} className="text-gray-600 hover:text-gray-800">
+                                    {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                </button>
+                            )}
+                            {column.type === 'group' && <Folder className="h-4 w-4 text-blue-600" />}
+                            <span className="text-sm font-medium text-gray-700">
+                                {level === 0 ? `Kolom ${path[0] + 1}` : column.name || 'Sub Kolom'}
+                            </span>
+                        </div>
+                        {canRemove && (
+                            <button
+                                type="button"
+                                onClick={() => removeColumn(path)}
+                                className="text-red-600 transition-colors hover:text-red-700"
+                                title="Hapus Kolom"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                            <label className="block text-xs font-medium text-gray-600">Nama Kolom</label>
+                            <input
+                                type="text"
+                                value={column.name}
+                                onChange={(e) => updateColumn(path, 'name', e.target.value)}
+                                className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-medium text-gray-600">Tipe Data</label>
+                            <select
+                                value={column.type}
+                                onChange={(e) => updateColumn(path, 'type', e.target.value)}
+                                className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
+                            >
+                                {COLUMN_TYPES.map((type) => (
+                                    <option key={type.value} value={type.value}>
+                                        {type.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {column.type === 'select' && (
+                            <div className="sm:col-span-2">
+                                <label className="block text-xs font-medium text-gray-600">Opsi Pilihan (pisahkan dengan koma)</label>
+                                <input
+                                    type="text"
+                                    value={column.options || ''}
+                                    onChange={(e) => updateColumn(path, 'options', e.target.value)}
+                                    className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
+                                    placeholder="Contoh: Pilihan 1, Pilihan 2, Pilihan 3"
+                                />
+                            </div>
+                        )}
+
+                        {column.type !== 'group' && (
+                            <div className="flex items-center sm:col-span-2">
+                                <input
+                                    type="checkbox"
+                                    checked={column.required}
+                                    onChange={(e) => updateColumn(path, 'required', e.target.checked)}
+                                    className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                                />
+                                <label className="ml-2 text-sm text-gray-700">Wajib diisi</label>
+                            </div>
+                        )}
+                    </div>
+
+                    {column.type === 'group' && (
+                        <div className="mt-3 border-t border-gray-200 pt-3">
+                            <button
+                                type="button"
+                                onClick={() => addColumn(path)}
+                                className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-100"
+                            >
+                                <Plus className="h-3 w-3" />
+                                Tambah Sub Kolom
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {column.type === 'group' && isExpanded && column.subColumns && (
+                    <div className="space-y-3">
+                        {column.subColumns.map((subCol, subIndex) => renderColumn(subCol, [...path, subIndex], level + 1))}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     return (
         <AuthenticatedLayout auth={auth} title="Edit Tabel">
             <Head title={`Edit Tabel: ${table.name}`} />
             <div className="space-y-4 px-4 sm:space-y-6 sm:px-0">
-                {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
                         <Link
@@ -159,7 +351,6 @@ export default function Edit() {
                     </div>
                 </div>
 
-                {/* Flash Messages */}
                 {flash?.success && (
                     <div className="rounded-md border border-green-200 bg-green-50 p-3 sm:p-4">
                         <p className="text-sm text-green-700 sm:text-base">{flash.success}</p>
@@ -171,7 +362,6 @@ export default function Edit() {
                     </div>
                 )}
 
-                {/* Warning Message */}
                 <div className="rounded-lg border bg-orange-50 p-4">
                     <p className="text-sm text-orange-800">
                         <strong>Perhatian:</strong> Mengubah struktur kolom dapat mempengaruhi data yang sudah ada. Pastikan perubahan tidak menghapus
@@ -179,7 +369,6 @@ export default function Edit() {
                     </p>
                 </div>
 
-                {/* Form Container */}
                 <div className="rounded-lg border bg-white shadow-sm">
                     <div className="border-b border-gray-200 px-4 py-4 sm:px-6 sm:py-5">
                         <h2 className="text-lg font-medium text-gray-900 sm:text-xl">Informasi Tabel</h2>
@@ -188,7 +377,6 @@ export default function Edit() {
 
                     <form onSubmit={submit} className="p-4 sm:p-6">
                         <div className="space-y-4 sm:space-y-6">
-                            {/* Nama Tabel */}
                             <div>
                                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 sm:text-base">
                                     Nama Tabel <span className="text-red-500">*</span>
@@ -204,7 +392,6 @@ export default function Edit() {
                                 {allErrors.name && <p className="mt-2 text-sm text-red-600">{allErrors.name}</p>}
                             </div>
 
-                            {/* Deskripsi */}
                             <div>
                                 <label htmlFor="description" className="block text-sm font-medium text-gray-700 sm:text-base">
                                     Deskripsi
@@ -219,7 +406,43 @@ export default function Edit() {
                                 {allErrors.description && <p className="mt-2 text-sm text-red-600">{allErrors.description}</p>}
                             </div>
 
-                            {/* Kolom Tabel */}
+                            {/* Total Options */}
+                            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                                <h3 className="mb-3 text-sm font-medium text-gray-900">Opsi Total Otomatis</h3>
+                                <div className="space-y-3">
+                                    <div className="flex items-start">
+                                        <input
+                                            type="checkbox"
+                                            id="has_column_total"
+                                            checked={data.has_column_total}
+                                            onChange={(e) => setData('has_column_total', e.target.checked)}
+                                            className="mt-1 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                                        />
+                                        <label htmlFor="has_column_total" className="ml-2">
+                                            <span className="text-sm font-medium text-gray-700">Tambah Kolom Total (Kanan)</span>
+                                            <p className="mt-1 text-xs text-gray-500">
+                                                Menambahkan kolom total otomatis di ujung kanan yang menjumlahkan semua kolom angka dalam setiap baris
+                                            </p>
+                                        </label>
+                                    </div>
+                                    <div className="flex items-start">
+                                        <input
+                                            type="checkbox"
+                                            id="has_row_total"
+                                            checked={data.has_row_total}
+                                            onChange={(e) => setData('has_row_total', e.target.checked)}
+                                            className="mt-1 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                                        />
+                                        <label htmlFor="has_row_total" className="ml-2">
+                                            <span className="text-sm font-medium text-gray-700">Tambah Baris Total (Bawah)</span>
+                                            <p className="mt-1 text-xs text-gray-500">
+                                                Menambahkan baris total otomatis di paling bawah yang menjumlahkan semua kolom angka
+                                            </p>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div>
                                 <div className="mb-3 flex items-center justify-between">
                                     <label className="block text-sm font-medium text-gray-700 sm:text-base">
@@ -227,7 +450,7 @@ export default function Edit() {
                                     </label>
                                     <button
                                         type="button"
-                                        onClick={addColumn}
+                                        onClick={() => addColumn()}
                                         className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-100"
                                     >
                                         <Plus className="h-4 w-4" />
@@ -235,84 +458,12 @@ export default function Edit() {
                                     </button>
                                 </div>
 
-                                <div className="space-y-4">
-                                    {data.columns.map((column, index) => (
-                                        <div key={index} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                                            <div className="mb-3 flex items-center justify-between">
-                                                <span className="text-sm font-medium text-gray-700">Kolom {index + 1}</span>
-                                                {data.columns.length > 1 && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeColumn(index)}
-                                                        className="text-red-600 transition-colors hover:text-red-700"
-                                                        title="Hapus Kolom"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                                <div>
-                                                    <label className="block text-xs font-medium text-gray-600">Nama Kolom</label>
-                                                    <input
-                                                        type="text"
-                                                        value={column.name}
-                                                        onChange={(e) => updateColumn(index, 'name', e.target.value)}
-                                                        className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
-                                                        required
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <label className="block text-xs font-medium text-gray-600">Tipe Data</label>
-                                                    <select
-                                                        value={column.type}
-                                                        onChange={(e) => updateColumn(index, 'type', e.target.value)}
-                                                        className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
-                                                    >
-                                                        {COLUMN_TYPES.map((type) => (
-                                                            <option key={type.value} value={type.value}>
-                                                                {type.label}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-
-                                                {column.type === 'select' && (
-                                                    <div className="sm:col-span-2">
-                                                        <label className="block text-xs font-medium text-gray-600">
-                                                            Opsi Pilihan (pisahkan dengan koma)
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            value={column.options || ''}
-                                                            onChange={(e) => updateColumn(index, 'options', e.target.value)}
-                                                            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
-                                                            placeholder="Contoh: Pilihan 1, Pilihan 2, Pilihan 3"
-                                                        />
-                                                    </div>
-                                                )}
-
-                                                <div className="flex items-center sm:col-span-2">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={column.required}
-                                                        onChange={(e) => updateColumn(index, 'required', e.target.checked)}
-                                                        className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                                                    />
-                                                    <label className="ml-2 text-sm text-gray-700">Wajib diisi</label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                <div className="space-y-4">{data.columns.map((column, index) => renderColumn(column, [index]))}</div>
 
                                 {allErrors.columns && <p className="mt-2 text-sm text-red-600">{allErrors.columns}</p>}
                             </div>
                         </div>
 
-                        {/* Action Buttons */}
                         <div className="mt-6 flex flex-col-reverse gap-3 border-t border-gray-200 pt-6 sm:flex-row sm:justify-end">
                             <Link
                                 href={route('admin.dynamic-tables.index')}

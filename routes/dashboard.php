@@ -29,14 +29,13 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         'dynamic-tables' => 'dynamicTable'
     ]);
 
-    // Cukup tambahkan route tambahan yang tidak dicover oleh resource
+    // Route tambahan untuk Dynamic Tables yang tidak dicover oleh resource
     Route::prefix('dynamic-tables/{dynamicTable}')->name('dynamic-tables.')->group(function () {
         Route::get('/insert', [DynamicTableController::class, 'showInsertForm'])->name('insert');
         Route::post('/insert', [DynamicTableController::class, 'insertData'])->name('insert-data');
+        Route::put('/data/{data}', [DynamicTableController::class, 'updateData'])->name('update-data');
         Route::delete('/data/{data}', [DynamicTableController::class, 'deleteData'])->name('delete-data');
     });
-
-    
 });
 
 // Add a redirect from /dashboard to /admin/dashboard for convenience

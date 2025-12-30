@@ -2,15 +2,16 @@
 
 import Pagination from '@/components/Pagination';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
-import { FormEventHandler, useState } from 'react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { ArrowLeft, Check, Edit2, Plus, Trash2, X } from 'lucide-react';
+import { useState } from 'react';
 
 interface Column {
     name: string;
-    type: 'text' | 'number' | 'date' | 'select' | 'textarea';
+    type: 'text' | 'number' | 'date' | 'select' | 'textarea' | 'group';
     required: boolean;
     options?: string;
+    subColumns?: Column[];
 }
 
 interface TableData {
@@ -18,6 +19,8 @@ interface TableData {
     name: string;
     description: string | null;
     columns: Column[];
+    has_column_total?: boolean;
+    has_row_total?: boolean;
 }
 
 interface DataRow {
@@ -78,7 +81,8 @@ export default function Insert() {
 
     const { auth, table, tableData, errors, flash } = pageProps;
 
-    const [showForm, setShowForm] = useState(false);
+    const [editingRowId, setEditingRowId] = useState<number | 'new' | null>(null);
+    const [editingData, setEditingData] = useState<Record<string, any>>({});
 
     if (!auth || !auth.user) {
         return (
@@ -108,48 +112,173 @@ export default function Insert() {
         );
     }
 
-    // Initialize form data based on columns
-    const initialData: Record<string, any> = {};
-    table.columns.forEach((col) => {
-        initialData[col.name] = '';
-    });
-
-    const {
-        data,
-        setData,
-        post,
-        processing,
-        reset,
-        errors: formErrors,
-    } = useForm<{
-        data: Record<string, any>; // Tipe eksplisit agar useForm tahu struktur data.
-    }>({
-        data: initialData,
-    });
-
-    type AllErrorsType = Record<string, string | undefined>;
-
-    const allErrors: AllErrorsType = {
-        ...errors,
-        ...formErrors,
+    const initializeFormData = (columns: Column[], prefix: string = ''): Record<string, any> => {
+        const formData: Record<string, any> = {};
+        columns.forEach((col) => {
+            const fieldName = prefix ? `${prefix}.${col.name}` : col.name;
+            if (col.type === 'group' && col.subColumns) {
+                Object.assign(formData, initializeFormData(col.subColumns, fieldName));
+            } else {
+                formData[fieldName] = '';
+            }
+        });
+        return formData;
     };
 
-    const handleSubmit: FormEventHandler = (e) => {
-        e.preventDefault();
-        post(route('admin.dynamic-tables.insert-data', table.id), {
-            onSuccess: () => {
-                reset();
-                setShowForm(false);
-            },
+    const flattenData = (obj: Record<string, any>, prefix: string = ''): Record<string, any> => {
+        const result: Record<string, any> = {};
+        for (const key in obj) {
+            const value = obj[key];
+            const newKey = prefix ? `${prefix}.${key}` : key;
+            if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                Object.assign(result, flattenData(value, newKey));
+            } else {
+                result[newKey] = value;
+            }
+        }
+        return result;
+    };
+
+    const unflattenData = (flatData: Record<string, any>): Record<string, any> => {
+        const result: Record<string, any> = {};
+
+        for (const key in flatData) {
+            const keys = key.split('.');
+            let current = result;
+
+            for (let i = 0; i < keys.length - 1; i++) {
+                if (!current[keys[i]]) {
+                    current[keys[i]] = {};
+                }
+                current = current[keys[i]];
+            }
+
+            current[keys[keys.length - 1]] = flatData[key];
+        }
+
+        return result;
+    };
+
+    // Calculate row total (sum of all number columns in a row)
+    const calculateRowTotal = (flatData: Record<string, any>, fields: Array<{ fieldName: string; column: Column }>) => {
+        let total = 0;
+        fields.forEach((field) => {
+            if (field.column.type === 'number') {
+                const value = parseFloat(flatData[field.fieldName] || 0);
+                if (!isNaN(value)) {
+                    total += value;
+                }
+            }
         });
+        return total;
+    };
+
+    // Calculate column total (sum of all rows for a specific column)
+    const calculateColumnTotal = (fieldName: string, dataArray: DataRow[]) => {
+        let total = 0;
+        dataArray.forEach((row) => {
+            const flatData = flattenData(row.data);
+            const value = parseFloat(flatData[fieldName] || 0);
+            if (!isNaN(value)) {
+                total += value;
+            }
+        });
+        return total;
+    };
+
+    const organizedHeaders: Array<{
+        type: 'regular' | 'group';
+        name: string;
+        fields: Array<{ fieldName: string; displayName: string; column: Column }>;
+    }> = [];
+
+    table.columns.forEach((col) => {
+        if (col.type === 'group' && col.subColumns) {
+            const groupFields = col.subColumns.map((subCol) => ({
+                fieldName: `${col.name}.${subCol.name}`,
+                displayName: subCol.name,
+                column: subCol,
+            }));
+            organizedHeaders.push({
+                type: 'group',
+                name: col.name,
+                fields: groupFields,
+            });
+        } else {
+            organizedHeaders.push({
+                type: 'regular',
+                name: col.name,
+                fields: [
+                    {
+                        fieldName: col.name,
+                        displayName: col.name,
+                        column: col,
+                    },
+                ],
+            });
+        }
+    });
+
+    // Get all fields in flat structure
+    const allFields = organizedHeaders.flatMap((h) => h.fields);
+
+    const dataArray = Array.isArray(tableData?.data) ? tableData.data : [];
+
+    const handleAddNew = () => {
+        const initialData = initializeFormData(table.columns);
+        setEditingData(initialData);
+        setEditingRowId('new');
+    };
+
+    const handleEdit = (row: DataRow) => {
+        const flatData = flattenData(row.data);
+        setEditingData(flatData);
+        setEditingRowId(row.id);
+    };
+
+    const handleCancel = () => {
+        setEditingRowId(null);
+        setEditingData({});
+    };
+
+    const handleSave = () => {
+        const nestedData = unflattenData(editingData);
+
+        if (editingRowId === 'new') {
+            router.post(
+                route('admin.dynamic-tables.insert-data', table.id),
+                { data: nestedData },
+                {
+                    onSuccess: () => {
+                        setEditingRowId(null);
+                        setEditingData({});
+                    },
+                    onError: (errors) => {
+                        console.error('Error saving data:', errors);
+                    },
+                },
+            );
+        } else if (editingRowId) {
+            router.put(
+                route('admin.dynamic-tables.update-data', { dynamicTable: table.id, data: editingRowId }),
+                { data: nestedData },
+                {
+                    onSuccess: () => {
+                        setEditingRowId(null);
+                        setEditingData({});
+                    },
+                    onError: (errors) => {
+                        console.error('Error updating data:', errors);
+                    },
+                },
+            );
+        }
     };
 
     const handleDelete = (row: DataRow) => {
         if (window.confirm('Apakah Anda yakin ingin menghapus data ini?')) {
             router.delete(route('admin.dynamic-tables.delete-data', { dynamicTable: table.id, data: row.id }), {
-                onSuccess: () => {
-                    // Success handled by flash messages
-                },
+                onSuccess: () => {},
                 onError: (errors) => {
                     console.error('Error deleting data:', errors);
                     alert('Terjadi kesalahan saat menghapus data. Silakan coba lagi.');
@@ -158,17 +287,25 @@ export default function Insert() {
         }
     };
 
-    const renderInput = (column: Column) => {
-        const value = data.data[column.name] || '';
+    const updateFieldValue = (fieldName: string, value: any) => {
+        setEditingData({ ...editingData, [fieldName]: value });
+    };
+
+    const renderCell = (fieldName: string, column: Column, value: any, isEditing: boolean) => {
+        if (!isEditing) {
+            return <span>{value || '-'}</span>;
+        }
+
+        const currentValue = editingData[fieldName] || '';
 
         switch (column.type) {
             case 'textarea':
                 return (
                     <textarea
-                        value={value}
-                        onChange={(e) => setData('data', { ...data.data, [column.name]: e.target.value })}
-                        className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
-                        rows={3}
+                        value={currentValue}
+                        onChange={(e) => updateFieldValue(fieldName, e.target.value)}
+                        className="w-full rounded border-gray-300 px-2 py-1 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                        rows={2}
                         required={column.required}
                     />
                 );
@@ -176,12 +313,12 @@ export default function Insert() {
                 const options = column.options ? column.options.split(',').map((opt) => opt.trim()) : [];
                 return (
                     <select
-                        value={value}
-                        onChange={(e) => setData('data', { ...data.data, [column.name]: e.target.value })}
-                        className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
+                        value={currentValue}
+                        onChange={(e) => updateFieldValue(fieldName, e.target.value)}
+                        className="w-full rounded border-gray-300 px-2 py-1 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
                         required={column.required}
                     >
-                        <option value="">Pilih {column.name}</option>
+                        <option value="">Pilih</option>
                         {options.map((opt, idx) => (
                             <option key={idx} value={opt}>
                                 {opt}
@@ -193,9 +330,9 @@ export default function Insert() {
                 return (
                     <input
                         type="date"
-                        value={value}
-                        onChange={(e) => setData('data', { ...data.data, [column.name]: e.target.value })}
-                        className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
+                        value={currentValue}
+                        onChange={(e) => updateFieldValue(fieldName, e.target.value)}
+                        className="w-full rounded border-gray-300 px-2 py-1 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
                         required={column.required}
                     />
                 );
@@ -203,9 +340,9 @@ export default function Insert() {
                 return (
                     <input
                         type="number"
-                        value={value}
-                        onChange={(e) => setData('data', { ...data.data, [column.name]: e.target.value })}
-                        className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
+                        value={currentValue}
+                        onChange={(e) => updateFieldValue(fieldName, e.target.value)}
+                        className="w-full rounded border-gray-300 px-2 py-1 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
                         required={column.required}
                     />
                 );
@@ -213,22 +350,19 @@ export default function Insert() {
                 return (
                     <input
                         type="text"
-                        value={value}
-                        onChange={(e) => setData('data', { ...data.data, [column.name]: e.target.value })}
-                        className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
+                        value={currentValue}
+                        onChange={(e) => updateFieldValue(fieldName, e.target.value)}
+                        className="w-full rounded border-gray-300 px-2 py-1 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
                         required={column.required}
                     />
                 );
         }
     };
 
-    const dataArray = Array.isArray(tableData?.data) ? tableData.data : [];
-
     return (
         <AuthenticatedLayout auth={auth} title={`Isi Data: ${table.name}`}>
             <Head title={`Isi Data: ${table.name}`} />
             <div className="space-y-4 px-4 sm:space-y-6 sm:px-0">
-                {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
                         <Link
@@ -245,15 +379,15 @@ export default function Insert() {
                     </div>
 
                     <button
-                        onClick={() => setShowForm(!showForm)}
-                        className="inline-flex items-center rounded-lg bg-orange-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-700 sm:px-4"
+                        onClick={handleAddNew}
+                        disabled={editingRowId !== null}
+                        className="inline-flex items-center rounded-lg bg-orange-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
                     >
                         <Plus className="mr-1 h-4 w-4 sm:mr-2 sm:h-5 sm:w-5" />
                         Tambah Data
                     </button>
                 </div>
 
-                {/* Flash Messages */}
                 {flash?.success && (
                     <div className="rounded-md border border-green-200 bg-green-50 p-3 sm:p-4">
                         <p className="text-sm text-green-700 sm:text-base">{flash.success}</p>
@@ -265,57 +399,6 @@ export default function Insert() {
                     </div>
                 )}
 
-                {/* Add Data Form */}
-                {showForm && (
-                    <div className="rounded-lg border bg-white shadow-sm">
-                        <div className="border-b border-gray-200 px-4 py-4 sm:px-6 sm:py-5">
-                            <div className="flex items-center justify-between">
-                                <h2 className="text-lg font-medium text-gray-900 sm:text-xl">Tambah Data Baru</h2>
-                                <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600" title="Tutup Form">
-                                    <Trash2 className="h-5 w-5" />
-                                </button>
-                            </div>
-                        </div>
-
-                        <form onSubmit={handleSubmit} className="p-4 sm:p-6">
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
-                                {table.columns.map((column, index) => (
-                                    <div key={index}>
-                                        <label className="block text-sm font-medium text-gray-700">
-                                            {column.name} {column.required && <span className="text-red-500">*</span>}
-                                        </label>
-                                        {renderInput(column)}
-                                        {allErrors[`data.${column.name}`] && (
-                                            <p className="mt-1 text-sm text-red-600">{allErrors[`data.${column.name}`]}</p>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="mt-6 flex flex-col-reverse gap-3 border-t border-gray-200 pt-4 sm:flex-row sm:justify-end">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        reset();
-                                        setShowForm(false);
-                                    }}
-                                    className="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:w-auto"
-                                >
-                                    Batal
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="inline-flex justify-center rounded-md bg-orange-600 px-6 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-                                >
-                                    {processing ? 'Menyimpan...' : 'Simpan Data'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                )}
-
-                {/* Data Table */}
                 <div className="rounded-lg border bg-white shadow-sm">
                     <div className="border-b border-gray-200 px-4 py-4 sm:px-6 sm:py-5">
                         <h2 className="text-lg font-medium text-gray-900 sm:text-xl">Data Tersimpan</h2>
@@ -326,54 +409,211 @@ export default function Insert() {
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase sm:px-6">No</th>
-                                    {table.columns.map((col, idx) => (
+                                    <th
+                                        rowSpan={2}
+                                        className="border-r border-gray-200 px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase sm:px-6"
+                                    >
+                                        No
+                                    </th>
+                                    {organizedHeaders.map((header, idx) => (
                                         <th
                                             key={idx}
-                                            className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase sm:px-6"
+                                            rowSpan={header.type === 'regular' ? 2 : 1}
+                                            colSpan={header.type === 'group' ? header.fields.length : 1}
+                                            className={`border-r border-gray-200 px-4 py-3 text-${header.type === 'group' ? 'center' : 'left'} text-xs font-medium tracking-wider text-gray-500 uppercase sm:px-6 ${header.type === 'group' ? 'bg-gray-100' : ''}`}
                                         >
-                                            {col.name}
+                                            {header.name}
                                         </th>
                                     ))}
-                                    <th className="px-4 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase sm:px-6">Aksi</th>
+                                    {table.has_column_total && (
+                                        <th
+                                            rowSpan={2}
+                                            className="border-r border-gray-200 bg-yellow-50 px-4 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase sm:px-6"
+                                        >
+                                            Total
+                                        </th>
+                                    )}
+                                    <th
+                                        rowSpan={2}
+                                        className="px-4 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase sm:px-6"
+                                    >
+                                        Aksi
+                                    </th>
+                                </tr>
+                                <tr>
+                                    {organizedHeaders
+                                        .filter((h) => h.type === 'group')
+                                        .map((header) =>
+                                            header.fields.map((field, idx) => (
+                                                <th
+                                                    key={idx}
+                                                    className="border-r border-gray-200 px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase sm:px-6"
+                                                >
+                                                    {field.displayName}
+                                                </th>
+                                            )),
+                                        )}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 bg-white">
-                                {dataArray.length === 0 ? (
+                                {dataArray.length === 0 && editingRowId !== 'new' ? (
                                     <tr>
-                                        <td colSpan={table.columns.length + 2} className="px-4 py-8 text-center sm:px-6">
+                                        <td
+                                            colSpan={
+                                                organizedHeaders.reduce((total, h) => total + h.fields.length, 0) +
+                                                2 +
+                                                (table.has_column_total ? 1 : 0)
+                                            }
+                                            className="px-4 py-8 text-center sm:px-6"
+                                        >
                                             <p className="text-sm text-gray-500">Belum ada data. Klik tombol "Tambah Data" untuk mulai.</p>
                                         </td>
                                     </tr>
                                 ) : (
-                                    dataArray.map((row, idx) => (
-                                        <tr key={row.id} className="hover:bg-gray-50">
-                                            <td className="px-4 py-4 text-sm whitespace-nowrap text-gray-900 sm:px-6">
-                                                {tableData.from ? tableData.from + idx : idx + 1}
-                                            </td>
-                                            {table.columns.map((col, colIdx) => (
-                                                <td key={colIdx} className="px-4 py-4 text-sm text-gray-900 sm:px-6">
-                                                    {row.data[col.name] || '-'}
+                                    dataArray.map((row, idx) => {
+                                        const flatData = flattenData(row.data);
+                                        const isEditing = editingRowId === row.id;
+                                        const rowTotal = table.has_column_total ? calculateRowTotal(flatData, allFields) : 0;
+
+                                        return (
+                                            <tr key={row.id} className={isEditing ? 'bg-yellow-50' : 'hover:bg-gray-50'}>
+                                                <td className="border-r border-gray-200 px-4 py-4 text-sm whitespace-nowrap text-gray-900 sm:px-6">
+                                                    {tableData.from ? tableData.from + idx : idx + 1}
                                                 </td>
-                                            ))}
-                                            <td className="px-4 py-4 text-right text-sm font-medium whitespace-nowrap sm:px-6">
-                                                <button
-                                                    onClick={() => handleDelete(row)}
-                                                    className="text-red-600 transition-colors hover:text-red-900"
-                                                    type="button"
-                                                    title="Hapus Data"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
+                                                {organizedHeaders.map((header, colIdx) =>
+                                                    header.fields.map((field, fieldIdx) => (
+                                                        <td
+                                                            key={`${colIdx}-${fieldIdx}`}
+                                                            className="border-r border-gray-200 px-4 py-4 text-sm sm:px-6"
+                                                        >
+                                                            {renderCell(field.fieldName, field.column, flatData[field.fieldName], isEditing)}
+                                                        </td>
+                                                    )),
+                                                )}
+                                                {table.has_column_total && (
+                                                    <td className="border-r border-gray-200 bg-yellow-50 px-4 py-4 text-center text-sm font-semibold whitespace-nowrap sm:px-6">
+                                                        {isEditing ? calculateRowTotal(editingData, allFields).toFixed(2) : rowTotal.toFixed(2)}
+                                                    </td>
+                                                )}
+                                                <td className="px-4 py-4 text-center text-sm font-medium whitespace-nowrap sm:px-6">
+                                                    {isEditing ? (
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <button
+                                                                onClick={handleSave}
+                                                                className="text-green-600 transition-colors hover:text-green-900"
+                                                                type="button"
+                                                                title="Simpan"
+                                                            >
+                                                                <Check className="h-5 w-5" />
+                                                            </button>
+                                                            <button
+                                                                onClick={handleCancel}
+                                                                className="text-gray-600 transition-colors hover:text-gray-900"
+                                                                type="button"
+                                                                title="Batal"
+                                                            >
+                                                                <X className="h-5 w-5" />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <button
+                                                                onClick={() => handleEdit(row)}
+                                                                disabled={editingRowId !== null}
+                                                                className="text-blue-600 transition-colors hover:text-blue-900 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                type="button"
+                                                                title="Edit Data"
+                                                            >
+                                                                <Edit2 className="h-4 w-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDelete(row)}
+                                                                disabled={editingRowId !== null}
+                                                                className="text-red-600 transition-colors hover:text-red-900 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                type="button"
+                                                                title="Hapus Data"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
+                                {editingRowId === 'new' && (
+                                    <tr className="bg-blue-50">
+                                        <td className="border-r border-gray-200 px-4 py-4 text-sm whitespace-nowrap text-gray-900 sm:px-6">
+                                            <span className="font-semibold text-blue-600">Baru</span>
+                                        </td>
+                                        {organizedHeaders.map((header, colIdx) =>
+                                            header.fields.map((field, fieldIdx) => (
+                                                <td key={`${colIdx}-${fieldIdx}`} className="border-r border-gray-200 px-4 py-4 text-sm sm:px-6">
+                                                    {renderCell(field.fieldName, field.column, '', true)}
+                                                </td>
+                                            )),
+                                        )}
+                                        {table.has_column_total && (
+                                            <td className="border-r border-gray-200 bg-yellow-50 px-4 py-4 text-center text-sm font-semibold whitespace-nowrap sm:px-6">
+                                                {calculateRowTotal(editingData, allFields).toFixed(2)}
                                             </td>
-                                        </tr>
-                                    ))
+                                        )}
+                                        <td className="px-4 py-4 text-center text-sm font-medium whitespace-nowrap sm:px-6">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <button
+                                                    onClick={handleSave}
+                                                    className="text-green-600 transition-colors hover:text-green-900"
+                                                    type="button"
+                                                    title="Simpan"
+                                                >
+                                                    <Check className="h-5 w-5" />
+                                                </button>
+                                                <button
+                                                    onClick={handleCancel}
+                                                    className="text-gray-600 transition-colors hover:text-gray-900"
+                                                    type="button"
+                                                    title="Batal"
+                                                >
+                                                    <X className="h-5 w-5" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                                {/* Row Total */}
+                                {table.has_row_total && dataArray.length > 0 && (
+                                    <tr className="bg-blue-50 font-semibold">
+                                        <td className="border-r border-gray-200 px-4 py-4 text-center text-sm uppercase sm:px-6" colSpan={1}>
+                                            Total
+                                        </td>
+                                        {organizedHeaders.map((header, colIdx) =>
+                                            header.fields.map((field, fieldIdx) => (
+                                                <td
+                                                    key={`total-${colIdx}-${fieldIdx}`}
+                                                    className="border-r border-gray-200 px-4 py-4 text-center text-sm sm:px-6"
+                                                >
+                                                    {field.column.type === 'number'
+                                                        ? calculateColumnTotal(field.fieldName, dataArray).toFixed(2)
+                                                        : '-'}
+                                                </td>
+                                            )),
+                                        )}
+                                        {table.has_column_total && (
+                                            <td className="border-r border-gray-200 bg-yellow-100 px-4 py-4 text-center text-sm sm:px-6">
+                                                {allFields
+                                                    .filter((f) => f.column.type === 'number')
+                                                    .reduce((sum, field) => sum + calculateColumnTotal(field.fieldName, dataArray), 0)
+                                                    .toFixed(2)}
+                                            </td>
+                                        )}
+                                        <td className="px-4 py-4 text-center text-sm sm:px-6">-</td>
+                                    </tr>
                                 )}
                             </tbody>
                         </table>
                     </div>
 
-                    {/* Pagination */}
                     {tableData.links && tableData.links.length > 0 && dataArray.length > 0 && (
                         <div className="border-t border-gray-200 px-4 py-4 sm:px-6">
                             <Pagination links={tableData.links} />

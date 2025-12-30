@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\ProfilDesaController;
 Route::get('/', [PageController::class, 'beranda'])->name('beranda');
 Route::get('/profil-desa', [ProfilDesaController::class, 'show'])->name('profil.show');
 Route::get('/data-desa', [DataDesaController::class, 'index'])->name('data.desa');
+Route::get('/data-desa/{table}/download', [DataDesaController::class, 'download'])->name('data-desa.download'); // ← TAMBAHKAN INI
 Route::get('/infografis', [InfografisController::class, 'index'])->name('infografis.desa');
 Route::get('/infografis/{infografis}', [InfografisController::class, 'show'])->name('infografis.detail');
 Route::get('/berita', [BeritaController::class, 'index'])->name('berita');
@@ -26,18 +27,18 @@ Route::get('/berita/{slug}', [BeritaController::class, 'show'])->name('berita.de
 // Rute untuk menerima data form pengaduan
 Route::post('/pengaduan', [PengaduanController::class, 'store'])->name('pengaduan.store');
 
-// Route publikasi - pastikan ini ada dan benar
+// Route publikasi
 Route::get('/publikasi', [PublikasiController::class, 'index'])->name('publikasi.index');
 Route::get('/publikasi/{publikasi}/download', [PublikasiController::class, 'download'])->name('publikasi.download');
 
-// Rute otentikasi (jika diperlukan nanti)
+// Rute otentikasi
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// Debug: tampilkan semua route
+// Debug routes (hapus di production)
 Route::get('/debug-routes', function() {
     return collect(Route::getRoutes())->map(function($route) {
         return [

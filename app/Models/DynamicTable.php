@@ -12,10 +12,14 @@ class DynamicTable extends Model
         'table_name',
         'description',
         'columns',
+        'has_column_total',
+        'has_row_total',
     ];
 
     protected $casts = [
         'columns' => 'array',
+        'has_column_total' => 'boolean',
+        'has_row_total' => 'boolean',
     ];
 
     public function tableData(): HasMany

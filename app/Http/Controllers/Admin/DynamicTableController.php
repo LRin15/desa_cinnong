@@ -70,9 +70,16 @@ class DynamicTableController extends Controller
                 'description' => 'nullable|string|max:1000',
                 'columns' => 'required|array|min:1',
                 'columns.*.name' => 'required|string|max:100',
-                'columns.*.type' => 'required|in:text,number,date,select,textarea',
+                'columns.*.type' => 'required|in:text,number,date,select,textarea,group',
                 'columns.*.required' => 'boolean',
                 'columns.*.options' => 'nullable|string',
+                'columns.*.subColumns' => 'nullable|array',
+                'columns.*.subColumns.*.name' => 'required|string|max:100',
+                'columns.*.subColumns.*.type' => 'required|in:text,number,date,select,textarea',
+                'columns.*.subColumns.*.required' => 'boolean',
+                'columns.*.subColumns.*.options' => 'nullable|string',
+                'has_column_total' => 'boolean',
+                'has_row_total' => 'boolean',
             ], [
                 'name.required' => 'Nama tabel wajib diisi.',
                 'columns.required' => 'Minimal harus ada 1 kolom.',
@@ -96,6 +103,8 @@ class DynamicTableController extends Controller
                 'table_name' => $tableName,
                 'description' => $validatedData['description'],
                 'columns' => $validatedData['columns'],
+                'has_column_total' => $validatedData['has_column_total'] ?? false,
+                'has_row_total' => $validatedData['has_row_total'] ?? false,
             ]);
 
             return redirect()->route('admin.dynamic-tables.index')
@@ -126,6 +135,8 @@ class DynamicTableController extends Controller
                 'name' => $dynamicTable->name,
                 'description' => $dynamicTable->description,
                 'columns' => $dynamicTable->columns,
+                'has_column_total' => $dynamicTable->has_column_total ?? false,
+                'has_row_total' => $dynamicTable->has_row_total ?? false,
             ]
         ]);
     }
@@ -141,15 +152,24 @@ class DynamicTableController extends Controller
                 'description' => 'nullable|string|max:1000',
                 'columns' => 'required|array|min:1',
                 'columns.*.name' => 'required|string|max:100',
-                'columns.*.type' => 'required|in:text,number,date,select,textarea',
+                'columns.*.type' => 'required|in:text,number,date,select,textarea,group',
                 'columns.*.required' => 'boolean',
                 'columns.*.options' => 'nullable|string',
+                'columns.*.subColumns' => 'nullable|array',
+                'columns.*.subColumns.*.name' => 'required|string|max:100',
+                'columns.*.subColumns.*.type' => 'required|in:text,number,date,select,textarea',
+                'columns.*.subColumns.*.required' => 'boolean',
+                'columns.*.subColumns.*.options' => 'nullable|string',
+                'has_column_total' => 'boolean',
+                'has_row_total' => 'boolean',
             ]);
 
             $dynamicTable->update([
                 'name' => $validatedData['name'],
                 'description' => $validatedData['description'],
                 'columns' => $validatedData['columns'],
+                'has_column_total' => $validatedData['has_column_total'] ?? false,
+                'has_row_total' => $validatedData['has_row_total'] ?? false,
             ]);
 
             return redirect()->route('admin.dynamic-tables.index')
@@ -187,7 +207,8 @@ class DynamicTableController extends Controller
      */
     public function showInsertForm(DynamicTable $dynamicTable)
     {
-        $tableData = $dynamicTable->tableData()->latest()->paginate(10)->through(fn ($row) => [
+        // Ubah dari latest() menjadi oldest()
+        $tableData = $dynamicTable->tableData()->oldest()->paginate(10)->through(fn ($row) => [
             'id' => $row->id,
             'data' => $row->data,
             'created_at' => $row->created_at->format('d F Y H:i'),
@@ -199,6 +220,8 @@ class DynamicTableController extends Controller
                 'name' => $dynamicTable->name,
                 'description' => $dynamicTable->description,
                 'columns' => $dynamicTable->columns,
+                'has_column_total' => $dynamicTable->has_column_total ?? false,
+                'has_row_total' => $dynamicTable->has_row_total ?? false,
             ],
             'tableData' => $tableData,
             'flash' => [
@@ -218,15 +241,28 @@ class DynamicTableController extends Controller
             $inputData = $request->input('data'); 
 
             $rules = [];
-            foreach ($dynamicTable->columns as $column) {
-                $colName = $column['name'];
-                $rules[$colName] = $column['required'] ? 'required' : 'nullable';
-            }
+            
+            // Fungsi rekursif untuk membangun rules validasi
+            $buildRules = function($columns, $prefix = '') use (&$buildRules, &$rules) {
+                foreach ($columns as $column) {
+                    $colName = $prefix . $column['name'];
+                    
+                    if ($column['type'] === 'group' && isset($column['subColumns'])) {
+                        // Untuk grup, validasi subColumns secara rekursif
+                        $buildRules($column['subColumns'], $colName . '.');
+                    } else {
+                        // Untuk kolom biasa, tambahkan rule
+                        $rules[$colName] = $column['required'] ? 'required' : 'nullable';
+                    }
+                }
+            };
+            
+            $buildRules($dynamicTable->columns);
 
             // Validasi isi array tersebut
             $validated = \Validator::make($inputData, $rules)->validate();
 
-            // Simpan hanya hasil validasi (array datar)
+            // Simpan hanya hasil validasi
             DynamicTableData::create([
                 'dynamic_table_id' => $dynamicTable->id,
                 'data' => $validated, 
@@ -235,6 +271,49 @@ class DynamicTableController extends Controller
             return back()->with('success', 'Data berhasil ditambahkan.');
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal menyimpan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Memperbarui data dalam tabel
+     */
+    public function updateData(Request $request, DynamicTable $dynamicTable, DynamicTableData $data)
+    {
+        try {
+            // Ambil isi dari objek 'data' yang dikirim Frontend
+            $inputData = $request->input('data');
+
+            $rules = [];
+            
+            // Fungsi rekursif untuk membangun rules validasi
+            $buildRules = function($columns, $prefix = '') use (&$buildRules, &$rules) {
+                foreach ($columns as $column) {
+                    $colName = $prefix . $column['name'];
+                    
+                    if ($column['type'] === 'group' && isset($column['subColumns'])) {
+                        // Untuk grup, validasi subColumns secara rekursif
+                        $buildRules($column['subColumns'], $colName . '.');
+                    } else {
+                        // Untuk kolom biasa, tambahkan rule
+                        $rules[$colName] = $column['required'] ? 'required' : 'nullable';
+                    }
+                }
+            };
+            
+            $buildRules($dynamicTable->columns);
+
+            // Validasi isi array tersebut
+            $validated = \Validator::make($inputData, $rules)->validate();
+
+            // Update data
+            $data->update([
+                'data' => $validated,
+            ]);
+
+            return back()->with('success', 'Data berhasil diperbarui.');
+        } catch (\Exception $e) {
+            \Log::error('Error updating data: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memperbarui: ' . $e->getMessage());
         }
     }
 
