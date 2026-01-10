@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\BeritaController;
 use App\Http\Controllers\Admin\InfografisController;
 use App\Http\Controllers\Admin\PengaduanController;
 use App\Http\Controllers\Admin\DynamicTableController;
+use App\Http\Controllers\Admin\LayananController as AdminLayananController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\PublikasiController as AdminPublikasiController;
 use App\Http\Controllers\Admin\ProfilDesaController;
@@ -23,6 +24,11 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/pengaduan', [PengaduanController::class, 'index'])->name('pengaduan.index');
     Route::put('/pengaduan/{pengaduan}/update-status', [PengaduanController::class, 'updateStatus'])->name('pengaduan.update-status');
     Route::delete('/pengaduan/{pengaduan}', [PengaduanController::class, 'destroy'])->name('pengaduan.destroy');
+    
+    // Route untuk kelola layanan
+    Route::get('/layanan', [AdminLayananController::class, 'index'])->name('layanan.index');
+    Route::put('/layanan/{layanan}/update-status', [AdminLayananController::class, 'updateStatus'])->name('layanan.update-status');
+    Route::delete('/layanan/{layanan}', [AdminLayananController::class, 'destroy'])->name('layanan.destroy');
     
     // Routes untuk Dynamic Tables
     Route::resource('dynamic-tables', DynamicTableController::class)->parameters([

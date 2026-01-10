@@ -1,6 +1,6 @@
 import MainLayout from '@/layouts/MainLayout';
 import { Head } from '@inertiajs/react';
-import { ChevronDown, ChevronRight, Database, FileJson, FileSpreadsheet, Table2 } from 'lucide-react';
+import { Database, FileJson, FileSpreadsheet, Table2 } from 'lucide-react';
 import { useState } from 'react';
 
 interface Column {
@@ -43,18 +43,10 @@ interface DataDesaProps {
 }
 
 export default function DataDesa({ tables, tahun, settings }: DataDesaProps) {
-    const [expandedTables, setExpandedTables] = useState<{ [key: number]: boolean }>({});
     const [downloadingTable, setDownloadingTable] = useState<number | null>(null);
 
     // Ambil nama desa dari settings atau gunakan default
     const namaDesa = settings.nama_desa || 'Desa Cinnong';
-
-    const toggleTable = (tableId: number) => {
-        setExpandedTables((prev) => ({
-            ...prev,
-            [tableId]: !prev[tableId],
-        }));
-    };
 
     const flattenData = (obj: Record<string, any>, prefix: string = ''): Record<string, any> => {
         const result: Record<string, any> = {};
@@ -203,18 +195,14 @@ export default function DataDesa({ tables, tahun, settings }: DataDesaProps) {
 
     return (
         <MainLayout>
-            <Head title={`Data ${namaDesa} ${tahun}`} />
-
-            {/* Header Halaman */}
+            <Head title={`Data ${namaDesa} ${tahun}`} />x{/* Header Halaman */}
             <div className="py-8 sm:py-12">
                 <div className="mx-auto max-w-screen-xl px-3 sm:px-6 lg:px-8">
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="flex flex-col gap-4 border-b-4 border-[#f97316] bg-[#ffedd5] p-4 text-gray-900 sm:flex-row sm:items-center sm:justify-between sm:p-6 lg:p-8">
                             <div>
                                 <h1 className="text-2xl font-bold text-[#9a3412] sm:text-3xl">Data {namaDesa}</h1>
-                                <p className="mt-2 text-sm text-gray-700 sm:text-base">
-                                    Laporan semua data {namaDesa} {tahun}
-                                </p>
+                                <p className="sms:text-base mt-2 text-sm text-gray-700">Laporan semua data desa {namaDesa}</p>
                             </div>
                             <div className="flex items-center gap-2">
                                 <Database className="h-5 w-5 text-[#f97316]" />
@@ -224,7 +212,6 @@ export default function DataDesa({ tables, tahun, settings }: DataDesaProps) {
                     </div>
                 </div>
             </div>
-
             {/* Daftar Tabel */}
             <div className="bg-slate-50 pb-8 sm:pb-12">
                 <div className="mx-auto max-w-screen-xl px-3 sm:px-6 lg:px-8">
@@ -241,200 +228,203 @@ export default function DataDesa({ tables, tahun, settings }: DataDesaProps) {
                                 const allFields = organizedHeaders.flatMap((h) => h.fields);
 
                                 return (
-                                    <div key={table.id} className="overflow-hidden rounded-lg bg-white shadow-sm">
+                                    <div
+                                        key={table.id}
+                                        className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md"
+                                    >
                                         {/* Header Tabel */}
-                                        <div className="flex flex-col gap-3 border-b-4 border-[#f97316] bg-[#ffedd5] p-4 sm:p-6">
-                                            <div className="flex cursor-pointer items-center justify-between" onClick={() => toggleTable(table.id)}>
+                                        <div className="border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white px-6 py-5">
+                                            <div className="flex items-start justify-between gap-4">
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-3">
-                                                        {expandedTables[table.id] ? (
-                                                            <ChevronDown className="h-5 w-5 text-[#9a3412]" />
-                                                        ) : (
-                                                            <ChevronRight className="h-5 w-5 text-[#9a3412]" />
-                                                        )}
-                                                        <h2 className="text-xl font-bold text-[#9a3412] sm:text-2xl">{table.name}</h2>
+                                                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
+                                                            <Table2 className="h-5 w-5 text-blue-600" />
+                                                        </div>
+                                                        <div>
+                                                            <h2 className="text-xl font-bold text-gray-900">{table.name}</h2>
+                                                            {table.description && <p className="mt-0.5 text-sm text-gray-600">{table.description}</p>}
+                                                        </div>
                                                     </div>
-                                                    {table.description && <p className="mt-2 ml-8 text-sm text-gray-700">{table.description}</p>}
+                                                    <div className="mt-3 flex items-center gap-4 text-sm">
+                                                        <div className="flex items-center gap-1.5 text-gray-600">
+                                                            <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                                                            <span className="font-medium">{table.columns_count}</span>
+                                                            <span>kolom</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5 text-gray-600">
+                                                            <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                                                            <span className="font-medium">{table.data_count}</span>
+                                                            <span>data</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div className="flex gap-4 text-sm">
-                                                    <div className="text-center">
-                                                        <div className="font-bold text-[#f97316]">{table.columns_count}</div>
-                                                        <div className="text-gray-600">Kolom</div>
+                                                {table.data.length > 0 && (
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDownload(table, 'excel');
+                                                            }}
+                                                            disabled={downloadingTable === table.id}
+                                                            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-green-500 to-green-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:from-green-600 hover:to-green-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+                                                        >
+                                                            <FileSpreadsheet className="h-4 w-4" />
+                                                            {downloadingTable === table.id ? 'Mengunduh...' : 'CSV'}
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDownload(table, 'json');
+                                                            }}
+                                                            disabled={downloadingTable === table.id}
+                                                            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:from-blue-600 hover:to-blue-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+                                                        >
+                                                            <FileJson className="h-4 w-4" />
+                                                            {downloadingTable === table.id ? 'Mengunduh...' : 'JSON'}
+                                                        </button>
                                                     </div>
-                                                    <div className="text-center">
-                                                        <div className="font-bold text-[#f97316]">{table.data_count}</div>
-                                                        <div className="text-gray-600">Data</div>
-                                                    </div>
-                                                </div>
+                                                )}
                                             </div>
-
-                                            {/* Download Buttons */}
-                                            {table.data.length > 0 && (
-                                                <div className="ml-8 flex flex-wrap gap-2">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleDownload(table, 'excel');
-                                                        }}
-                                                        disabled={downloadingTable === table.id}
-                                                        className="inline-flex items-center gap-2 rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
-                                                    >
-                                                        <FileSpreadsheet className="h-4 w-4" />
-                                                        {downloadingTable === table.id ? 'Mengunduh...' : 'Download CSV'}
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleDownload(table, 'json');
-                                                        }}
-                                                        disabled={downloadingTable === table.id}
-                                                        className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
-                                                    >
-                                                        <FileJson className="h-4 w-4" />
-                                                        {downloadingTable === table.id ? 'Mengunduh...' : 'Download JSON'}
-                                                    </button>
-                                                </div>
-                                            )}
                                         </div>
 
                                         {/* Konten Tabel */}
-                                        {expandedTables[table.id] && (
-                                            <div className="p-4 sm:p-6">
-                                                {table.data.length === 0 ? (
-                                                    <div className="py-8 text-center text-gray-500">Belum ada data pada tabel ini</div>
-                                                ) : (
-                                                    <>
-                                                        <div className="mb-3 text-xs text-gray-500 sm:hidden">
-                                                            ← Geser tabel untuk melihat data lengkap →
-                                                        </div>
+                                        <div className="p-6">
+                                            {table.data.length === 0 ? (
+                                                <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                                                    <Table2 className="mb-3 h-12 w-12 text-gray-300" />
+                                                    <p className="text-sm">Belum ada data pada tabel ini</p>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div className="mb-3 text-xs text-gray-500 sm:hidden">
+                                                        ← Geser tabel untuk melihat data lengkap →
+                                                    </div>
 
-                                                        <div className="overflow-x-auto">
-                                                            <table className="min-w-full divide-y divide-gray-200">
-                                                                <thead className="bg-gray-50">
-                                                                    <tr>
+                                                    <div className="overflow-x-auto">
+                                                        <table className="min-w-full border-collapse" style={{ fontFamily: 'Arial, sans-serif' }}>
+                                                            <thead>
+                                                                <tr>
+                                                                    <th
+                                                                        rowSpan={2}
+                                                                        className="border border-gray-400 bg-[#fce4cd] px-4 py-3 text-center text-sm font-bold text-gray-900 uppercase sm:px-6"
+                                                                    >
+                                                                        No.
+                                                                    </th>
+                                                                    {organizedHeaders.map((header, idx) => (
+                                                                        <th
+                                                                            key={idx}
+                                                                            rowSpan={header.type === 'regular' ? 2 : 1}
+                                                                            colSpan={header.type === 'group' ? header.fields.length : 1}
+                                                                            className={`border border-gray-400 px-4 py-3 text-center text-sm font-bold text-gray-900 uppercase sm:px-6 ${header.type === 'group' ? 'bg-[#fce4cd]' : 'bg-[#fce4cd]'}`}
+                                                                        >
+                                                                            {header.name}
+                                                                        </th>
+                                                                    ))}
+                                                                    {table.has_column_total && (
                                                                         <th
                                                                             rowSpan={2}
-                                                                            className="border-r border-gray-200 px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase sm:px-6"
+                                                                            className="border border-gray-400 bg-[#fce4cd] px-4 py-3 text-center text-sm font-bold text-gray-900 uppercase sm:px-6"
                                                                         >
-                                                                            No
+                                                                            Total
                                                                         </th>
-                                                                        {organizedHeaders.map((header, idx) => (
-                                                                            <th
-                                                                                key={idx}
-                                                                                rowSpan={header.type === 'regular' ? 2 : 1}
-                                                                                colSpan={header.type === 'group' ? header.fields.length : 1}
-                                                                                className={`border-r border-gray-200 px-4 py-3 text-${header.type === 'group' ? 'center' : 'left'} text-xs font-medium tracking-wider text-gray-500 uppercase sm:px-6 ${header.type === 'group' ? 'bg-gray-100' : ''}`}
-                                                                            >
-                                                                                {header.name}
-                                                                            </th>
-                                                                        ))}
-                                                                        {table.has_column_total && (
-                                                                            <th
-                                                                                rowSpan={2}
-                                                                                className="border-r border-gray-200 bg-yellow-50 px-4 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase sm:px-6"
-                                                                            >
-                                                                                Total
-                                                                            </th>
+                                                                    )}
+                                                                </tr>
+                                                                <tr>
+                                                                    {organizedHeaders
+                                                                        .filter((h) => h.type === 'group')
+                                                                        .map((header) =>
+                                                                            header.fields.map((field, idx) => (
+                                                                                <th
+                                                                                    key={idx}
+                                                                                    className="border border-gray-400 bg-[#fce4cd] px-4 py-3 text-center text-sm font-bold text-gray-900 uppercase sm:px-6"
+                                                                                >
+                                                                                    {field.displayName}
+                                                                                </th>
+                                                                            )),
                                                                         )}
-                                                                    </tr>
-                                                                    <tr>
-                                                                        {organizedHeaders
-                                                                            .filter((h) => h.type === 'group')
-                                                                            .map((header) =>
-                                                                                header.fields.map((field, idx) => (
-                                                                                    <th
-                                                                                        key={idx}
-                                                                                        className="border-r border-gray-200 px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase sm:px-6"
-                                                                                    >
-                                                                                        {field.displayName}
-                                                                                    </th>
-                                                                                )),
-                                                                            )}
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody className="divide-y divide-gray-200 bg-white">
-                                                                    {table.data.map((row, idx) => {
-                                                                        const flatData = flattenData(row.data);
-                                                                        const rowTotal = table.has_column_total
-                                                                            ? calculateRowTotal(flatData, allFields)
-                                                                            : 0;
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="bg-white">
+                                                                {table.data.map((row, idx) => {
+                                                                    const flatData = flattenData(row.data);
+                                                                    const rowTotal = table.has_column_total
+                                                                        ? calculateRowTotal(flatData, allFields)
+                                                                        : 0;
 
-                                                                        return (
-                                                                            <tr key={row.id} className="hover:bg-gray-50">
-                                                                                <td className="border-r border-gray-200 px-4 py-4 text-sm whitespace-nowrap text-gray-900 sm:px-6">
-                                                                                    {idx + 1}
-                                                                                </td>
-                                                                                {organizedHeaders.map((header, colIdx) =>
-                                                                                    header.fields.map((field, fieldIdx) => (
-                                                                                        <td
-                                                                                            key={`${colIdx}-${fieldIdx}`}
-                                                                                            className="border-r border-gray-200 px-4 py-4 text-sm sm:px-6"
-                                                                                        >
-                                                                                            {formatValue(flatData[field.fieldName], field.column)}
-                                                                                        </td>
-                                                                                    )),
-                                                                                )}
-                                                                                {table.has_column_total && (
-                                                                                    <td className="border-r border-gray-200 bg-yellow-50 px-4 py-4 text-center text-sm font-semibold whitespace-nowrap sm:px-6">
-                                                                                        {rowTotal.toLocaleString('id-ID', {
-                                                                                            minimumFractionDigits: 2,
-                                                                                            maximumFractionDigits: 2,
-                                                                                        })}
-                                                                                    </td>
-                                                                                )}
-                                                                            </tr>
-                                                                        );
-                                                                    })}
-
-                                                                    {/* Row Total */}
-                                                                    {table.has_row_total && (
-                                                                        <tr className="bg-blue-50 font-semibold">
-                                                                            <td className="border-r border-gray-200 px-4 py-4 text-center text-sm uppercase sm:px-6">
-                                                                                Total
+                                                                    return (
+                                                                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                                                            <td className="border border-gray-400 px-4 py-3 text-center text-sm text-gray-900 sm:px-6">
+                                                                                {idx + 1}
                                                                             </td>
                                                                             {organizedHeaders.map((header, colIdx) =>
                                                                                 header.fields.map((field, fieldIdx) => (
                                                                                     <td
-                                                                                        key={`total-${colIdx}-${fieldIdx}`}
-                                                                                        className="border-r border-gray-200 px-4 py-4 text-center text-sm sm:px-6"
+                                                                                        key={`${colIdx}-${fieldIdx}`}
+                                                                                        className="border border-gray-400 px-4 py-3 text-center text-sm text-gray-900 sm:px-6"
                                                                                     >
-                                                                                        {field.column.type === 'number'
-                                                                                            ? calculateColumnTotal(
-                                                                                                  field.fieldName,
-                                                                                                  table.data,
-                                                                                              ).toLocaleString('id-ID', {
-                                                                                                  minimumFractionDigits: 2,
-                                                                                                  maximumFractionDigits: 2,
-                                                                                              })
-                                                                                            : '-'}
+                                                                                        {formatValue(flatData[field.fieldName], field.column)}
                                                                                     </td>
                                                                                 )),
                                                                             )}
                                                                             {table.has_column_total && (
-                                                                                <td className="border-r border-gray-200 bg-yellow-100 px-4 py-4 text-center text-sm sm:px-6">
-                                                                                    {allFields
-                                                                                        .filter((f) => f.column.type === 'number')
-                                                                                        .reduce(
-                                                                                            (sum, field) =>
-                                                                                                sum +
-                                                                                                calculateColumnTotal(field.fieldName, table.data),
-                                                                                            0,
-                                                                                        )
-                                                                                        .toLocaleString('id-ID', {
-                                                                                            minimumFractionDigits: 2,
-                                                                                            maximumFractionDigits: 2,
-                                                                                        })}
+                                                                                <td className="border border-gray-400 bg-[#fff4e6] px-4 py-3 text-center text-sm font-semibold text-gray-900 sm:px-6">
+                                                                                    {rowTotal.toLocaleString('id-ID', {
+                                                                                        minimumFractionDigits: 2,
+                                                                                        maximumFractionDigits: 2,
+                                                                                    })}
                                                                                 </td>
                                                                             )}
                                                                         </tr>
-                                                                    )}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    </>
-                                                )}
-                                            </div>
-                                        )}
+                                                                    );
+                                                                })}
+
+                                                                {/* Row Total */}
+                                                                {table.has_row_total && (
+                                                                    <tr className="bg-[#e3f2fd] font-bold">
+                                                                        <td className="border border-gray-400 px-4 py-3 text-center text-sm text-gray-900 uppercase sm:px-6">
+                                                                            Total
+                                                                        </td>
+                                                                        {organizedHeaders.map((header, colIdx) =>
+                                                                            header.fields.map((field, fieldIdx) => (
+                                                                                <td
+                                                                                    key={`total-${colIdx}-${fieldIdx}`}
+                                                                                    className="border border-gray-400 px-4 py-3 text-center text-sm text-gray-900 sm:px-6"
+                                                                                >
+                                                                                    {field.column.type === 'number'
+                                                                                        ? calculateColumnTotal(
+                                                                                              field.fieldName,
+                                                                                              table.data,
+                                                                                          ).toLocaleString('id-ID', {
+                                                                                              minimumFractionDigits: 2,
+                                                                                              maximumFractionDigits: 2,
+                                                                                          })
+                                                                                        : '-'}
+                                                                                </td>
+                                                                            )),
+                                                                        )}
+                                                                        {table.has_column_total && (
+                                                                            <td className="border border-gray-400 bg-[#fff8e1] px-4 py-3 text-center text-sm text-gray-900 sm:px-6">
+                                                                                {allFields
+                                                                                    .filter((f) => f.column.type === 'number')
+                                                                                    .reduce(
+                                                                                        (sum, field) =>
+                                                                                            sum + calculateColumnTotal(field.fieldName, table.data),
+                                                                                        0,
+                                                                                    )
+                                                                                    .toLocaleString('id-ID', {
+                                                                                        minimumFractionDigits: 2,
+                                                                                        maximumFractionDigits: 2,
+                                                                                    })}
+                                                                            </td>
+                                                                        )}
+                                                                    </tr>
+                                                                )}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
                                 );
                             })}

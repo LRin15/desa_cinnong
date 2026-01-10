@@ -1,7 +1,7 @@
 // resources/js/layouts/MainLayout.tsx
 import { Link, useForm, usePage } from '@inertiajs/react';
-import { CheckCircle, ExternalLink, Mail, MapPin, Menu, MessageSquare, X } from 'lucide-react';
-import { ReactNode, useState } from 'react';
+import { CheckCircle, ChevronDown, ExternalLink, Mail, MapPin, Menu, MessageSquare, X } from 'lucide-react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 
 interface User {
     id: number;
@@ -29,12 +29,16 @@ interface MainLayoutProps {
 }
 
 export default function MainLayout({ auth, children }: MainLayoutProps) {
-    // Ambil villageSettings dari shared props
     const { villageSettings } = usePage<{ villageSettings: VillageSettings }>().props;
 
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [complaintModalOpen, setComplaintModalOpen] = useState(false);
     const [successModalOpen, setSuccessModalOpen] = useState(false);
+    const [layananDropdownOpen, setLayananDropdownOpen] = useState(false);
+    const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
+    const [mobileLayananOpen, setMobileLayananOpen] = useState(false);
+
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         nama: '',
@@ -44,12 +48,26 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
         isi_pengaduan: '',
     });
 
+    // Handle click outside dropdown
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setLayananDropdownOpen(false);
+                setActiveSubmenu(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     const toggleMobileMenu = () => {
         setMobileMenuOpen(!mobileMenuOpen);
     };
 
     const closeMobileMenu = () => {
         setMobileMenuOpen(false);
+        setMobileLayananOpen(false);
     };
 
     const openComplaintModal = () => {
@@ -76,13 +94,30 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
         });
     };
 
-    // Gunakan data dari villageSettings atau fallback ke nilai default
     const namaDesa = villageSettings?.nama_desa || 'Desa Cinnong';
     const emailDesa = villageSettings?.email || 'Cinnongsib@gmail.com';
     const teleponDesa = villageSettings?.telepon || '';
     const provinsi = villageSettings?.provinsi || 'Sulawesi Selatan';
     const kabupaten = villageSettings?.kabupaten || 'Kabupaten Bone';
     const kecamatan = villageSettings?.kecamatan || 'Kecamatan Sibulue';
+
+    // Data layanan
+    const layananKependudukan = [
+        { name: 'Surat Pengantar KTP', route: 'layanan.ktp' },
+        { name: 'Surat Pengantar KK', route: 'layanan.kk' },
+        { name: 'Surat Keterangan Domisili', route: 'layanan.domisili' },
+        { name: 'Surat Keterangan Usaha', route: 'layanan.usaha' },
+        { name: 'Surat Keterangan Tidak Mampu (SKTM)', route: 'layanan.sktm' },
+        { name: 'Surat Keterangan Kelahiran', route: 'layanan.kelahiran' },
+        { name: 'Surat Keterangan Kematian', route: 'layanan.kematian' },
+    ];
+
+    const layananUmum = [
+        { name: 'Surat Pengantar Nikah', route: 'layanan.nikah' },
+        { name: 'Surat Keterangan Pindah', route: 'layanan.pindah' },
+        { name: 'Surat Izin Kegiatan', route: 'layanan.izin-kegiatan' },
+        { name: 'Surat Rekomendasi Desa', route: 'layanan.rekomendasi' },
+    ];
 
     return (
         <div className="flex min-h-screen flex-col bg-gray-100">
@@ -140,6 +175,76 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                             >
                                 Publikasi
                             </Link>
+
+                            {/* Dropdown Layanan */}
+                            <div
+                                className="relative"
+                                ref={dropdownRef}
+                                onMouseEnter={() => setLayananDropdownOpen(true)}
+                                onMouseLeave={() => {
+                                    setLayananDropdownOpen(false);
+                                    setActiveSubmenu(null);
+                                }}
+                            >
+                                <button className="flex items-center text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]">
+                                    Layanan
+                                    <ChevronDown className="ml-1 h-4 w-4" />
+                                </button>
+
+                                {/* Dropdown Menu */}
+                                {layananDropdownOpen && (
+                                    <div className="absolute top-full left-0 mt-1 w-64 rounded-md bg-white shadow-lg">
+                                        {/* Layanan Administrasi Kependudukan */}
+                                        <div className="relative" onMouseEnter={() => setActiveSubmenu('kependudukan')}>
+                                            <div className="flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 hover:bg-orange-50">
+                                                <span>Layanan Administrasi Kependudukan</span>
+                                                <ChevronDown className="h-4 w-4 rotate-[-90deg]" />
+                                            </div>
+
+                                            {/* Submenu Kependudukan */}
+                                            {activeSubmenu === 'kependudukan' && (
+                                                <div className="absolute top-0 left-full ml-1 w-64 rounded-md bg-white shadow-lg">
+                                                    {layananKependudukan.map((layanan, index) => (
+                                                        <Link
+                                                            key={index}
+                                                            href={route(layanan.route)}
+                                                            className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600"
+                                                        >
+                                                            {layanan.name}
+                                                        </Link>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="border-t border-gray-100" />
+
+                                        {/* Layanan Administrasi Umum */}
+                                        <div className="relative" onMouseEnter={() => setActiveSubmenu('umum')}>
+                                            <div className="flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 hover:bg-orange-50">
+                                                <span>Layanan Administrasi Umum</span>
+                                                <ChevronDown className="h-4 w-4 rotate-[-90deg]" />
+                                            </div>
+
+                                            {/* Submenu Umum */}
+                                            {activeSubmenu === 'umum' && (
+                                                <div className="absolute top-0 left-full ml-1 w-64 rounded-md bg-white shadow-lg">
+                                                    {layananUmum.map((layanan, index) => (
+                                                        <Link
+                                                            key={index}
+                                                            href={route(layanan.route)}
+                                                            className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600"
+                                                        >
+                                                            {layanan.name}
+                                                        </Link>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
                             <button
                                 onClick={openComplaintModal}
                                 className="text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]"
@@ -238,6 +343,50 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                         >
                             Publikasi
                         </Link>
+
+                        {/* Mobile Layanan Dropdown */}
+                        <div>
+                            <button
+                                onClick={() => setMobileLayananOpen(!mobileLayananOpen)}
+                                className="flex w-full items-center justify-between rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
+                            >
+                                Layanan
+                                <ChevronDown className={`h-4 w-4 transition-transform ${mobileLayananOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {mobileLayananOpen && (
+                                <div className="ml-4 space-y-1">
+                                    <div className="py-2">
+                                        <p className="px-3 text-xs font-semibold text-orange-200 uppercase">Administrasi Kependudukan</p>
+                                        {layananKependudukan.map((layanan, index) => (
+                                            <Link
+                                                key={index}
+                                                href={route(layanan.route)}
+                                                onClick={closeMobileMenu}
+                                                className="block rounded-md px-3 py-2 text-sm text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
+                                            >
+                                                {layanan.name}
+                                            </Link>
+                                        ))}
+                                    </div>
+
+                                    <div className="border-t border-orange-600/20 py-2">
+                                        <p className="px-3 text-xs font-semibold text-orange-200 uppercase">Administrasi Umum</p>
+                                        {layananUmum.map((layanan, index) => (
+                                            <Link
+                                                key={index}
+                                                href={route(layanan.route)}
+                                                onClick={closeMobileMenu}
+                                                className="block rounded-md px-3 py-2 text-sm text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
+                                            >
+                                                {layanan.name}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         <button
                             onClick={openComplaintModal}
                             className="block w-full rounded-md px-3 py-3 text-left text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"

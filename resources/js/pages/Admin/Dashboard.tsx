@@ -4,9 +4,12 @@ import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Link } from '@inertiajs/react';
 import {
     Activity,
+    AlertCircle,
     ArrowRight,
     Building,
     Calendar,
+    CheckCircle,
+    Clock,
     Database,
     FileText,
     Image as ImageIcon,
@@ -15,6 +18,7 @@ import {
     PlusCircle,
     TrendingUp,
     Users,
+    XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -35,6 +39,11 @@ interface DashboardProps {
         pengaduan_belum_diproses: number;
         pengaduan_sedang_diproses: number;
         pengaduan_selesai: number;
+        total_layanan: number;
+        layanan_pending: number;
+        layanan_diproses: number;
+        layanan_selesai: number;
+        layanan_ditolak: number;
     };
     [key: string]: unknown;
 }
@@ -166,7 +175,7 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                 </div>
 
                 {/* Statistics Cards Grid */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-5">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-6">
                     <StatCard
                         title="Berita"
                         value={stats.total_berita}
@@ -192,6 +201,14 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                         link={route('admin.publikasi.index')}
                     />
                     <StatCard
+                        title="Layanan"
+                        value={stats.total_layanan}
+                        icon={<FileText className="h-6 w-6 text-indigo-600 sm:h-7 sm:w-7" />}
+                        colorClass="text-indigo-600 hover:text-indigo-700"
+                        bgClass="bg-indigo-100"
+                        link={route('admin.layanan.index')}
+                    />
+                    <StatCard
                         title="Pengaduan"
                         value={stats.total_pengaduan}
                         icon={<MessageSquare className="h-6 w-6 text-red-600 sm:h-7 sm:w-7" />}
@@ -209,9 +226,65 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                     />
                 </div>
 
+                {/* Layanan Status Cards */}
+                <div className="rounded-lg border bg-white p-4 shadow-sm sm:p-6">
+                    <div className="mb-4 flex items-center justify-between">
+                        <h2 className="text-lg font-bold text-gray-800 sm:text-xl">Status Permohonan Layanan</h2>
+                        <Link
+                            href={route('admin.layanan.index')}
+                            className="text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-700"
+                        >
+                            Lihat Semua →
+                        </Link>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                        <div className="rounded-lg border-l-4 border-yellow-500 bg-yellow-50 p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-yellow-600">Menunggu</p>
+                                    <p className="mt-1 text-2xl font-bold text-yellow-700">{stats.layanan_pending}</p>
+                                </div>
+                                <Clock className="h-8 w-8 text-yellow-500" />
+                            </div>
+                        </div>
+                        <div className="rounded-lg border-l-4 border-blue-500 bg-blue-50 p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-blue-600">Diproses</p>
+                                    <p className="mt-1 text-2xl font-bold text-blue-700">{stats.layanan_diproses}</p>
+                                </div>
+                                <AlertCircle className="h-8 w-8 text-blue-500" />
+                            </div>
+                        </div>
+                        <div className="rounded-lg border-l-4 border-green-500 bg-green-50 p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-green-600">Selesai</p>
+                                    <p className="mt-1 text-2xl font-bold text-green-700">{stats.layanan_selesai}</p>
+                                </div>
+                                <CheckCircle className="h-8 w-8 text-green-500" />
+                            </div>
+                        </div>
+                        <div className="rounded-lg border-l-4 border-red-500 bg-red-50 p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-red-600">Ditolak</p>
+                                    <p className="mt-1 text-2xl font-bold text-red-700">{stats.layanan_ditolak}</p>
+                                </div>
+                                <XCircle className="h-8 w-8 text-red-500" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Pengaduan Status Cards */}
                 <div className="rounded-lg border bg-white p-4 shadow-sm sm:p-6">
-                    <h2 className="mb-4 text-lg font-bold text-gray-800 sm:text-xl">Status Pengaduan Masyarakat</h2>
+                    <div className="mb-4 flex items-center justify-between">
+                        <h2 className="text-lg font-bold text-gray-800 sm:text-xl">Status Pengaduan Masyarakat</h2>
+                        <Link href={route('admin.pengaduan.index')} className="text-sm font-medium text-red-600 transition-colors hover:text-red-700">
+                            Lihat Semua →
+                        </Link>
+                    </div>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                         <div className="rounded-lg border-l-4 border-red-500 bg-red-50 p-4">
                             <div className="flex items-center justify-between">
@@ -293,6 +366,20 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                             bgColor="bg-purple-600"
                             hoverColor="hover:bg-purple-700"
                         />
+                        <QuickActionButton
+                            href={route('admin.layanan.index')}
+                            icon={<FileText className="h-5 w-5 sm:h-6 sm:w-6" />}
+                            title="Kelola Layanan"
+                            bgColor="bg-indigo-600"
+                            hoverColor="hover:bg-indigo-700"
+                        />
+                        <QuickActionButton
+                            href={route('admin.pengaduan.index')}
+                            icon={<MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />}
+                            title="Kelola Pengaduan"
+                            bgColor="bg-red-600"
+                            hoverColor="hover:bg-red-700"
+                        />
                     </div>
                 </div>
 
@@ -300,7 +387,7 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                 <div className="rounded-lg border bg-gradient-to-br from-gray-50 to-white p-4 shadow-sm sm:p-6">
                     <h2 className="mb-4 text-lg font-bold text-gray-800 sm:text-xl">Ringkasan Aktivitas</h2>
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-5">
                         <div className="rounded-lg bg-white p-4 text-center shadow-sm">
                             <div className="text-2xl font-bold text-blue-600 sm:text-3xl">
                                 {stats.total_berita + stats.total_infografis + stats.total_publikasi}
@@ -318,6 +405,11 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                         <div className="rounded-lg bg-white p-4 text-center shadow-sm">
                             <div className="text-2xl font-bold text-orange-600 sm:text-3xl">{stats.total_publikasi}</div>
                             <div className="mt-1 text-xs text-gray-600 sm:text-sm">Dokumen Publik</div>
+                        </div>
+
+                        <div className="rounded-lg bg-white p-4 text-center shadow-sm">
+                            <div className="text-2xl font-bold text-indigo-600 sm:text-3xl">{stats.total_layanan}</div>
+                            <div className="mt-1 text-xs text-gray-600 sm:text-sm">Permohonan Layanan</div>
                         </div>
 
                         <div className="rounded-lg bg-white p-4 text-center shadow-sm">
