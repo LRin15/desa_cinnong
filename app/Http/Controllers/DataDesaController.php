@@ -26,6 +26,7 @@ class DataDesaController extends Controller
                     'table_name' => $table->table_name,
                     'description' => $table->description,
                     'columns' => $table->columns,
+                    'charts' => $table->charts ?? [], // Tambahkan charts
                     'data' => $table->tableData->map(function ($row) {
                         return [
                             'id' => $row->id,
@@ -51,6 +52,8 @@ class DataDesaController extends Controller
         ]);
     }
 
+    // ... method download, downloadJson, downloadExcel, flattenData, dan sanitizeFilename tetap sama
+    
     /**
      * Download data tabel dalam format Excel atau JSON
      */

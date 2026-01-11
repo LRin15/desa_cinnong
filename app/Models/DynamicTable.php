@@ -14,12 +14,14 @@ class DynamicTable extends Model
         'columns',
         'has_column_total',
         'has_row_total',
+        'charts',
     ];
 
     protected $casts = [
         'columns' => 'array',
         'has_column_total' => 'boolean',
         'has_row_total' => 'boolean',
+        'charts' => 'array',
     ];
 
     public function tableData(): HasMany

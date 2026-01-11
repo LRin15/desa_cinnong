@@ -37,10 +37,15 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
 
     // Route tambahan untuk Dynamic Tables yang tidak dicover oleh resource
     Route::prefix('dynamic-tables/{dynamicTable}')->name('dynamic-tables.')->group(function () {
+        // Route untuk insert data
         Route::get('/insert', [DynamicTableController::class, 'showInsertForm'])->name('insert');
         Route::post('/insert', [DynamicTableController::class, 'insertData'])->name('insert-data');
         Route::put('/data/{data}', [DynamicTableController::class, 'updateData'])->name('update-data');
         Route::delete('/data/{data}', [DynamicTableController::class, 'deleteData'])->name('delete-data');
+        
+        // Route untuk grafik
+        Route::get('/charts', [DynamicTableController::class, 'charts'])->name('charts');
+        Route::post('/charts', [DynamicTableController::class, 'saveCharts'])->name('save-charts');
     });
 });
 

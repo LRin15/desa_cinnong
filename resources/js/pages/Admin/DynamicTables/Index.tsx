@@ -3,7 +3,7 @@
 import Pagination from '@/components/Pagination';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Database, Pencil, Plus, Search, Table2, Trash2, Upload, X } from 'lucide-react';
+import { BarChart3, Database, Pencil, Plus, Search, Table2, Trash2, Upload, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface TableItem {
@@ -175,6 +175,14 @@ export default function Index() {
                 >
                     <Upload className="h-4 w-4" />
                     Isi Data
+                </Link>
+                <Link
+                    href={`/admin/dynamic-tables/${item.id}/charts`}
+                    className="flex flex-1 items-center justify-center gap-1 rounded-md bg-purple-50 px-3 py-2 text-sm font-medium text-purple-600 transition-colors hover:bg-purple-100"
+                    title={`Grafik ${item.name}`}
+                >
+                    <BarChart3 className="h-4 w-4" />
+                    Grafik
                 </Link>
                 <Link
                     href={`/admin/dynamic-tables/${item.id}/edit`}

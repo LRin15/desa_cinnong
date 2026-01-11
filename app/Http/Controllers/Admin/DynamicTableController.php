@@ -330,4 +330,81 @@ class DynamicTableController extends Controller
             return back()->with('error', 'Terjadi kesalahan saat menghapus data.');
         }
     }
+
+    public function charts(DynamicTable $dynamicTable)
+    {
+        // Ambil semua data untuk grafik
+        $allData = $dynamicTable->tableData()->oldest()->get()->map(function ($row) {
+            return [
+                'id' => $row->id,
+                'data' => $row->data,
+            ];
+        });
+
+        return Inertia::render('Admin/DynamicTables/Charts', [
+            'table' => [
+                'id' => $dynamicTable->id,
+                'name' => $dynamicTable->name,
+                'description' => $dynamicTable->description,
+                'columns' => $dynamicTable->columns,
+                'charts' => $dynamicTable->charts ?? [],
+            ],
+            'tableData' => $allData,
+            'flash' => [
+                'success' => session('success'),
+                'error' => session('error'),
+            ],
+        ]);
+    }
+
+    /**
+     * Menyimpan konfigurasi grafik
+     */
+    public function saveCharts(Request $request, DynamicTable $dynamicTable)
+    {
+        try {
+            // Ambil data charts
+            $chartsInput = $request->input('charts');
+            
+            // Jika charts dikirim sebagai string JSON, decode dulu
+            if (is_string($chartsInput)) {
+                $chartsData = json_decode($chartsInput, true);
+                
+                // Check jika JSON decode gagal
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    throw new \Exception('Invalid JSON format: ' . json_last_error_msg());
+                }
+            } else {
+                // Jika sudah array, langsung gunakan
+                $chartsData = $chartsInput;
+            }
+
+            // Validasi data
+            $validatedData = Validator::make(['charts' => $chartsData], [
+                'charts' => 'required|array',
+                'charts.*.id' => 'required|string',
+                'charts.*.name' => 'required|string|max:255',
+                'charts.*.type' => 'required|in:bar,line,pie,doughnut,area,radar',
+                'charts.*.xAxis' => 'required|string',
+                'charts.*.yAxis' => 'required|array|min:1',
+                'charts.*.yAxis.*' => 'required|string',
+            ])->validate();
+
+            // Update tabel dengan konfigurasi grafik
+            $dynamicTable->update([
+                'charts' => $validatedData['charts'],
+            ]);
+
+            return back()->with('success', 'Konfigurasi grafik berhasil disimpan.');
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation error saving charts: ' . json_encode($e->errors()));
+            return back()->with('error', 'Data grafik tidak valid: ' . implode(', ', array_map(fn($err) => implode(', ', $err), $e->errors())));
+            
+        } catch (\Exception $e) {
+            \Log::error('Error saving charts: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            return back()->with('error', 'Terjadi kesalahan saat menyimpan grafik: ' . $e->getMessage());
+        }
+    }
 }
