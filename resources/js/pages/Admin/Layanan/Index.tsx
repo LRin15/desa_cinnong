@@ -2,8 +2,8 @@
 
 import Pagination from '@/components/Pagination';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
-import { Head, router } from '@inertiajs/react';
-import { AlertCircle, CheckCircle, Clock, Eye, FileText, Filter, Search, X, XCircle } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { AlertCircle, CheckCircle, Clock, Eye, FileText, Filter, Search, Settings, X, XCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface LayananSubmission {
@@ -245,8 +245,8 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
     const layananArray = layanan?.data || [];
 
     return (
-        <AuthenticatedLayout auth={auth} title="Kelola Layanan">
-            <Head title="Kelola Layanan" />
+        <AuthenticatedLayout auth={auth} title="Kelola Permohonan Layanan">
+            <Head title="Kelola Permohonan Layanan" />
 
             <div className="space-y-4 px-4 sm:space-y-6 sm:px-0">
                 {/* Flash Messages */}
@@ -262,10 +262,10 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                 )}
 
                 {/* Header */}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex-1">
-                        <h2 className="text-xl font-semibold text-gray-700 sm:text-2xl">Kelola Layanan</h2>
-                        {layanan.total && (
+                        <h2 className="text-xl font-semibold text-gray-700 sm:text-2xl">Kelola Permohonan Layanan</h2>
+                        {layanan.total !== undefined && (
                             <p className="mt-1 text-xs text-gray-500 sm:text-sm">
                                 {layanan.from && layanan.to ? (
                                     <>
@@ -277,6 +277,31 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                                 )}
                             </p>
                         )}
+                    </div>
+
+                    {/* Button to Settings */}
+                    <Link
+                        href={route('admin.layanan-settings.index')}
+                        className="inline-flex items-center justify-center rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-orange-700 focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:outline-none sm:w-auto"
+                    >
+                        <Settings className="mr-2 h-4 w-4" />
+                        Kelola Jenis Layanan
+                    </Link>
+                </div>
+
+                {/* Info Banner */}
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                    <div className="flex items-start">
+                        <div className="flex-shrink-0">
+                            <Settings className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div className="ml-3 flex-1">
+                            <h3 className="text-sm font-medium text-blue-800">Kelola Jenis Layanan</h3>
+                            <p className="mt-1 text-sm text-blue-700">
+                                Anda dapat mengaktifkan atau menonaktifkan jenis layanan yang tersedia di website. Layanan yang dinonaktifkan tidak
+                                akan muncul di menu navigasi.
+                            </p>
+                        </div>
                     </div>
                 </div>
 

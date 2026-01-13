@@ -10,32 +10,13 @@ use Tighten\Ziggy\Ziggy;
 
 class HandleInertiaRequests extends Middleware
 {
-    /**
-     * The root template that's loaded on the first page visit.
-     *
-     * @see https://inertiajs.com/server-side-setup#root-template
-     *
-     * @var string
-     */
     protected $rootView = 'app';
 
-    /**
-     * Determines the current asset version.
-     *
-     * @see https://inertiajs.com/asset-versioning
-     */
     public function version(Request $request): ?string
     {
         return parent::version($request);
     }
 
-    /**
-     * Define the props that are shared by default.
-     *
-     * @see https://inertiajs.com/shared-data
-     *
-     * @return array<string, mixed>
-     */
     public function share(Request $request): array
     {
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
@@ -50,6 +31,18 @@ class HandleInertiaRequests extends Middleware
             'kecamatan'
         ])->pluck('value', 'key');
 
+        // Ambil data layanan yang aktif
+        $layananSettings = Setting::where('key', 'LIKE', 'layanan_%')
+            ->get()
+            ->mapWithKeys(function ($setting) {
+                $data = json_decode($setting->value, true);
+                return [$setting->key => $data];
+            })
+            ->filter(function ($layanan) {
+                // PENTING: Filter hanya yang is_active === true
+                return isset($layanan['is_active']) && $layanan['is_active'] === true;
+            });
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -63,7 +56,6 @@ class HandleInertiaRequests extends Middleware
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             
-            // Tambahkan data kontak desa ke shared props
             'villageSettings' => [
                 'nama_desa' => $villageSettings->get('nama_desa'),
                 'email' => $villageSettings->get('email'),
@@ -72,6 +64,9 @@ class HandleInertiaRequests extends Middleware
                 'kabupaten' => $villageSettings->get('kabupaten'),
                 'kecamatan' => $villageSettings->get('kecamatan'),
             ],
+            
+            // Share layanan settings ke semua halaman
+            'layananSettings' => $layananSettings->toArray(),
         ];
     }
 }

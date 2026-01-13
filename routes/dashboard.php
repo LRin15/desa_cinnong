@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\InfografisController;
 use App\Http\Controllers\Admin\PengaduanController;
 use App\Http\Controllers\Admin\DynamicTableController;
 use App\Http\Controllers\Admin\LayananController as AdminLayananController;
+use App\Http\Controllers\Admin\LayananSettingsController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\PublikasiController as AdminPublikasiController;
 use App\Http\Controllers\Admin\ProfilDesaController;
@@ -25,10 +26,15 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::put('/pengaduan/{pengaduan}/update-status', [PengaduanController::class, 'updateStatus'])->name('pengaduan.update-status');
     Route::delete('/pengaduan/{pengaduan}', [PengaduanController::class, 'destroy'])->name('pengaduan.destroy');
     
-    // Route untuk kelola layanan
+    // Route untuk kelola layanan submissions
     Route::get('/layanan', [AdminLayananController::class, 'index'])->name('layanan.index');
     Route::put('/layanan/{layanan}/update-status', [AdminLayananController::class, 'updateStatus'])->name('layanan.update-status');
     Route::delete('/layanan/{layanan}', [AdminLayananController::class, 'destroy'])->name('layanan.destroy');
+    
+    // Route untuk kelola layanan settings (aktif/nonaktif)
+    Route::get('/layanan-settings', [LayananSettingsController::class, 'index'])->name('layanan-settings.index');
+    Route::post('/layanan-settings/toggle', [LayananSettingsController::class, 'toggleStatus'])->name('layanan-settings.toggle');
+    Route::post('/layanan-settings/toggle-bulk', [LayananSettingsController::class, 'toggleBulk'])->name('layanan-settings.toggle-bulk');
     
     // Routes untuk Dynamic Tables
     Route::resource('dynamic-tables', DynamicTableController::class)->parameters([

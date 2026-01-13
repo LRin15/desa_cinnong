@@ -1,7 +1,7 @@
 // resources/js/layouts/MainLayout.tsx
 import { Link, useForm, usePage } from '@inertiajs/react';
 import { CheckCircle, ChevronDown, ExternalLink, Mail, MapPin, Menu, MessageSquare, X } from 'lucide-react';
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 interface User {
     id: number;
@@ -22,6 +22,12 @@ interface VillageSettings {
     kecamatan?: string;
 }
 
+interface LayananSetting {
+    name: string;
+    is_active: boolean;
+    category: 'kependudukan' | 'umum';
+}
+
 interface MainLayoutProps {
     auth?: Auth;
     children: ReactNode;
@@ -29,7 +35,10 @@ interface MainLayoutProps {
 }
 
 export default function MainLayout({ auth, children }: MainLayoutProps) {
-    const { villageSettings } = usePage<{ villageSettings: VillageSettings }>().props;
+    const { villageSettings, layananSettings } = usePage<{
+        villageSettings: VillageSettings;
+        layananSettings: Record<string, LayananSetting>;
+    }>().props;
 
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [complaintModalOpen, setComplaintModalOpen] = useState(false);
@@ -101,23 +110,43 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
     const kabupaten = villageSettings?.kabupaten || 'Kabupaten Bone';
     const kecamatan = villageSettings?.kecamatan || 'Kecamatan Sibulue';
 
-    // Data layanan
-    const layananKependudukan = [
-        { name: 'Surat Pengantar KTP', route: 'layanan.ktp' },
-        { name: 'Surat Pengantar KK', route: 'layanan.kk' },
-        { name: 'Surat Keterangan Domisili', route: 'layanan.domisili' },
-        { name: 'Surat Keterangan Usaha', route: 'layanan.usaha' },
-        { name: 'Surat Keterangan Tidak Mampu (SKTM)', route: 'layanan.sktm' },
-        { name: 'Surat Keterangan Kelahiran', route: 'layanan.kelahiran' },
-        { name: 'Surat Keterangan Kematian', route: 'layanan.kematian' },
-    ];
+    // Filter layanan berdasarkan status aktif
+    // Filter layanan berdasarkan status aktif
+    const activeLayananKependudukan = useMemo(() => {
+        const allLayanan = [
+            { name: 'Surat Pengantar KTP', route: 'layanan.ktp', key: 'layanan_ktp' },
+            { name: 'Surat Pengantar KK', route: 'layanan.kk', key: 'layanan_kk' },
+            { name: 'Surat Keterangan Domisili', route: 'layanan.domisili', key: 'layanan_domisili' },
+            { name: 'Surat Keterangan Usaha', route: 'layanan.usaha', key: 'layanan_usaha' },
+            { name: 'Surat Keterangan Tidak Mampu (SKTM)', route: 'layanan.sktm', key: 'layanan_sktm' },
+            { name: 'Surat Keterangan Kelahiran', route: 'layanan.kelahiran', key: 'layanan_kelahiran' },
+            { name: 'Surat Keterangan Kematian', route: 'layanan.kematian', key: 'layanan_kematian' },
+        ];
 
-    const layananUmum = [
-        { name: 'Surat Pengantar Nikah', route: 'layanan.nikah' },
-        { name: 'Surat Keterangan Pindah', route: 'layanan.pindah' },
-        { name: 'Surat Izin Kegiatan', route: 'layanan.izin-kegiatan' },
-        { name: 'Surat Rekomendasi Desa', route: 'layanan.rekomendasi' },
-    ];
+        // Filter: hanya tampilkan jika is_active === true
+        return allLayanan.filter((layanan) => {
+            const setting = layananSettings?.[layanan.key];
+            return setting?.is_active === true;
+        });
+    }, [layananSettings]);
+
+    const activeLayananUmum = useMemo(() => {
+        const allLayanan = [
+            { name: 'Surat Pengantar Nikah', route: 'layanan.nikah', key: 'layanan_nikah' },
+            { name: 'Surat Keterangan Pindah', route: 'layanan.pindah', key: 'layanan_pindah' },
+            { name: 'Surat Izin Kegiatan', route: 'layanan.izin-kegiatan', key: 'layanan_izin_kegiatan' },
+            { name: 'Surat Rekomendasi Desa', route: 'layanan.rekomendasi', key: 'layanan_rekomendasi' },
+        ];
+
+        // Filter: hanya tampilkan jika is_active === true
+        return allLayanan.filter((layanan) => {
+            const setting = layananSettings?.[layanan.key];
+            return setting?.is_active === true;
+        });
+    }, [layananSettings]);
+
+    // Cek apakah ada layanan yang aktif
+    const hasActiveLayanan = activeLayananKependudukan.length > 0 || activeLayananUmum.length > 0;
 
     return (
         <div className="flex min-h-screen flex-col bg-gray-100">
@@ -176,74 +205,82 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                 Publikasi
                             </Link>
 
-                            {/* Dropdown Layanan */}
-                            <div
-                                className="relative"
-                                ref={dropdownRef}
-                                onMouseEnter={() => setLayananDropdownOpen(true)}
-                                onMouseLeave={() => {
-                                    setLayananDropdownOpen(false);
-                                    setActiveSubmenu(null);
-                                }}
-                            >
-                                <button className="flex items-center text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]">
-                                    Layanan
-                                    <ChevronDown className="ml-1 h-4 w-4" />
-                                </button>
+                            {/* Dropdown Layanan - Hanya tampil jika ada layanan aktif */}
+                            {hasActiveLayanan && (
+                                <div
+                                    className="relative"
+                                    ref={dropdownRef}
+                                    onMouseEnter={() => setLayananDropdownOpen(true)}
+                                    onMouseLeave={() => {
+                                        setLayananDropdownOpen(false);
+                                        setActiveSubmenu(null);
+                                    }}
+                                >
+                                    <button className="flex items-center text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]">
+                                        Layanan
+                                        <ChevronDown className="ml-1 h-4 w-4" />
+                                    </button>
 
-                                {/* Dropdown Menu */}
-                                {layananDropdownOpen && (
-                                    <div className="absolute top-full left-0 mt-1 w-64 rounded-md bg-white shadow-lg">
-                                        {/* Layanan Administrasi Kependudukan */}
-                                        <div className="relative" onMouseEnter={() => setActiveSubmenu('kependudukan')}>
-                                            <div className="flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 hover:bg-orange-50">
-                                                <span>Layanan Administrasi Kependudukan</span>
-                                                <ChevronDown className="h-4 w-4 rotate-[-90deg]" />
-                                            </div>
+                                    {/* Dropdown Menu */}
+                                    {layananDropdownOpen && (
+                                        <div className="absolute top-full left-0 mt-1 w-64 rounded-md bg-white shadow-lg">
+                                            {/* Layanan Administrasi Kependudukan */}
+                                            {activeLayananKependudukan.length > 0 && (
+                                                <div className="relative" onMouseEnter={() => setActiveSubmenu('kependudukan')}>
+                                                    <div className="flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 hover:bg-orange-50">
+                                                        <span>Layanan Administrasi Kependudukan</span>
+                                                        <ChevronDown className="h-4 w-4 rotate-[-90deg]" />
+                                                    </div>
 
-                                            {/* Submenu Kependudukan */}
-                                            {activeSubmenu === 'kependudukan' && (
-                                                <div className="absolute top-0 left-full ml-1 w-64 rounded-md bg-white shadow-lg">
-                                                    {layananKependudukan.map((layanan, index) => (
-                                                        <Link
-                                                            key={index}
-                                                            href={route(layanan.route)}
-                                                            className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600"
-                                                        >
-                                                            {layanan.name}
-                                                        </Link>
-                                                    ))}
+                                                    {/* Submenu Kependudukan */}
+                                                    {activeSubmenu === 'kependudukan' && (
+                                                        <div className="absolute top-0 left-full ml-1 w-64 rounded-md bg-white shadow-lg">
+                                                            {activeLayananKependudukan.map((layanan, index) => (
+                                                                <Link
+                                                                    key={index}
+                                                                    href={route(layanan.route)}
+                                                                    className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600"
+                                                                >
+                                                                    {layanan.name}
+                                                                </Link>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {activeLayananKependudukan.length > 0 && activeLayananUmum.length > 0 && (
+                                                <div className="border-t border-gray-100" />
+                                            )}
+
+                                            {/* Layanan Administrasi Umum */}
+                                            {activeLayananUmum.length > 0 && (
+                                                <div className="relative" onMouseEnter={() => setActiveSubmenu('umum')}>
+                                                    <div className="flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 hover:bg-orange-50">
+                                                        <span>Layanan Administrasi Umum</span>
+                                                        <ChevronDown className="h-4 w-4 rotate-[-90deg]" />
+                                                    </div>
+
+                                                    {/* Submenu Umum */}
+                                                    {activeSubmenu === 'umum' && (
+                                                        <div className="absolute top-0 left-full ml-1 w-64 rounded-md bg-white shadow-lg">
+                                                            {activeLayananUmum.map((layanan, index) => (
+                                                                <Link
+                                                                    key={index}
+                                                                    href={route(layanan.route)}
+                                                                    className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600"
+                                                                >
+                                                                    {layanan.name}
+                                                                </Link>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
-
-                                        <div className="border-t border-gray-100" />
-
-                                        {/* Layanan Administrasi Umum */}
-                                        <div className="relative" onMouseEnter={() => setActiveSubmenu('umum')}>
-                                            <div className="flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 hover:bg-orange-50">
-                                                <span>Layanan Administrasi Umum</span>
-                                                <ChevronDown className="h-4 w-4 rotate-[-90deg]" />
-                                            </div>
-
-                                            {/* Submenu Umum */}
-                                            {activeSubmenu === 'umum' && (
-                                                <div className="absolute top-0 left-full ml-1 w-64 rounded-md bg-white shadow-lg">
-                                                    {layananUmum.map((layanan, index) => (
-                                                        <Link
-                                                            key={index}
-                                                            href={route(layanan.route)}
-                                                            className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600"
-                                                        >
-                                                            {layanan.name}
-                                                        </Link>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                                    )}
+                                </div>
+                            )}
 
                             <button
                                 onClick={openComplaintModal}
@@ -344,48 +381,54 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                             Publikasi
                         </Link>
 
-                        {/* Mobile Layanan Dropdown */}
-                        <div>
-                            <button
-                                onClick={() => setMobileLayananOpen(!mobileLayananOpen)}
-                                className="flex w-full items-center justify-between rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
-                            >
-                                Layanan
-                                <ChevronDown className={`h-4 w-4 transition-transform ${mobileLayananOpen ? 'rotate-180' : ''}`} />
-                            </button>
+                        {/* Mobile Layanan Dropdown - Hanya tampil jika ada layanan aktif */}
+                        {hasActiveLayanan && (
+                            <div>
+                                <button
+                                    onClick={() => setMobileLayananOpen(!mobileLayananOpen)}
+                                    className="flex w-full items-center justify-between rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
+                                >
+                                    Layanan
+                                    <ChevronDown className={`h-4 w-4 transition-transform ${mobileLayananOpen ? 'rotate-180' : ''}`} />
+                                </button>
 
-                            {mobileLayananOpen && (
-                                <div className="ml-4 space-y-1">
-                                    <div className="py-2">
-                                        <p className="px-3 text-xs font-semibold text-orange-200 uppercase">Administrasi Kependudukan</p>
-                                        {layananKependudukan.map((layanan, index) => (
-                                            <Link
-                                                key={index}
-                                                href={route(layanan.route)}
-                                                onClick={closeMobileMenu}
-                                                className="block rounded-md px-3 py-2 text-sm text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
-                                            >
-                                                {layanan.name}
-                                            </Link>
-                                        ))}
-                                    </div>
+                                {mobileLayananOpen && (
+                                    <div className="ml-4 space-y-1">
+                                        {activeLayananKependudukan.length > 0 && (
+                                            <div className="py-2">
+                                                <p className="px-3 text-xs font-semibold text-orange-200 uppercase">Administrasi Kependudukan</p>
+                                                {activeLayananKependudukan.map((layanan, index) => (
+                                                    <Link
+                                                        key={index}
+                                                        href={route(layanan.route)}
+                                                        onClick={closeMobileMenu}
+                                                        className="block rounded-md px-3 py-2 text-sm text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
+                                                    >
+                                                        {layanan.name}
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        )}
 
-                                    <div className="border-t border-orange-600/20 py-2">
-                                        <p className="px-3 text-xs font-semibold text-orange-200 uppercase">Administrasi Umum</p>
-                                        {layananUmum.map((layanan, index) => (
-                                            <Link
-                                                key={index}
-                                                href={route(layanan.route)}
-                                                onClick={closeMobileMenu}
-                                                className="block rounded-md px-3 py-2 text-sm text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
-                                            >
-                                                {layanan.name}
-                                            </Link>
-                                        ))}
+                                        {activeLayananUmum.length > 0 && (
+                                            <div className="border-t border-orange-600/20 py-2">
+                                                <p className="px-3 text-xs font-semibold text-orange-200 uppercase">Administrasi Umum</p>
+                                                {activeLayananUmum.map((layanan, index) => (
+                                                    <Link
+                                                        key={index}
+                                                        href={route(layanan.route)}
+                                                        onClick={closeMobileMenu}
+                                                        className="block rounded-md px-3 py-2 text-sm text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
+                                                    >
+                                                        {layanan.name}
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                            )}
-                        </div>
+                                )}
+                            </div>
+                        )}
 
                         <button
                             onClick={openComplaintModal}
