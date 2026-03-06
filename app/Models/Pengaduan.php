@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Pengaduan extends Model
 {
@@ -15,8 +16,7 @@ class Pengaduan extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'nama',
-        'email',
+        'user_id',
         'telepon',
         'judul',
         'isi_pengaduan',
@@ -34,6 +34,30 @@ class Pengaduan extends Model
     ];
 
     /**
+     * Relasi ke User (pengguna terdaftar yang membuat pengaduan)
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Accessor: ambil nama dari relasi user
+     */
+    public function getNamaAttribute(): string
+    {
+        return $this->user?->name ?? '-';
+    }
+
+    /**
+     * Accessor: ambil email dari relasi user
+     */
+    public function getEmailAttribute(): string
+    {
+        return $this->user?->email ?? '-';
+    }
+
+    /**
      * Scope untuk filter berdasarkan status
      */
     public function scopeStatus($query, $status)
@@ -46,7 +70,7 @@ class Pengaduan extends Model
      */
     public function scopeBelumDiproses($query)
     {
-        return $query->where('status', 'belum_diproses');
+        return $query->where('status', 'menunggu');
     }
 
     /**
@@ -54,7 +78,7 @@ class Pengaduan extends Model
      */
     public function scopeSedangDiproses($query)
     {
-        return $query->where('status', 'sedang_diproses');
+        return $query->where('status', 'diproses');
     }
 
     /**

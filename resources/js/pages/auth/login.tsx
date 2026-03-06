@@ -187,15 +187,17 @@ export default function Login({ status, canResetPassword = false }: LoginProps) 
                         </form>
                     </div>
 
-                    {/* Back to Home */}
+                    {/* Register Link */}
                     <div className="text-center">
-                        <Link
-                            href={route('beranda')}
-                            className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-all duration-150 ease-in-out hover:gap-3 hover:bg-white/50 hover:text-orange-600"
-                        >
-                            <span className="text-lg">←</span>
-                            Kembali ke Beranda
-                        </Link>
+                        <p className="text-sm text-gray-600">
+                            Belum punya akun?{' '}
+                            <Link
+                                href={route('register')}
+                                className="font-medium text-orange-600 transition-colors hover:text-orange-700 hover:underline"
+                            >
+                                Daftar sekarang
+                            </Link>
+                        </p>
                     </div>
                 </div>
             </div>

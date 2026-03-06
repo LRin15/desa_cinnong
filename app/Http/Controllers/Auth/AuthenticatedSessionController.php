@@ -33,6 +33,11 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // Arahkan pengguna_terdaftar ke beranda, role lain ke dashboard
+        if (Auth::user()->role === \App\Models\User::ROLE_PENGGUNA_TERDAFTAR) {
+            return redirect()->intended(route('beranda', absolute: false));
+        }
+
         return redirect()->intended(route('dashboard', absolute: false));
     }
 

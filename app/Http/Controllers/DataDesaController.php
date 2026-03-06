@@ -11,12 +11,20 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class DataDesaController extends Controller
 {
     /**
-     * Menampilkan semua tabel dinamis untuk Desa Cinnong.
+     * Menampilkan semua tabel dinamis untuk Desa dengan fitur pencarian.
      */
     public function index(Request $request)
     {
-        // Ambil semua tabel dinamis beserta datanya
+        $search = $request->get('search');
+
+        // Ambil semua tabel dinamis beserta datanya dengan fitur pencarian
         $tables = DynamicTable::with('tableData')
+            ->when($search, function ($query, $search) {
+                return $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', '%' . $search . '%')
+                      ->orWhere('description', 'like', '%' . $search . '%');
+                });
+            })
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($table) {
@@ -26,7 +34,7 @@ class DataDesaController extends Controller
                     'table_name' => $table->table_name,
                     'description' => $table->description,
                     'columns' => $table->columns,
-                    'charts' => $table->charts ?? [], // Tambahkan charts
+                    'charts' => $table->charts ?? [],
                     'data' => $table->tableData->map(function ($row) {
                         return [
                             'id' => $row->id,
@@ -49,10 +57,11 @@ class DataDesaController extends Controller
             'tables' => $tables,
             'tahun' => date('Y'),
             'settings' => $settings,
+            'filters' => [
+                'search' => $search,
+            ],
         ]);
     }
-
-    // ... method download, downloadJson, downloadExcel, flattenData, dan sanitizeFilename tetap sama
     
     /**
      * Download data tabel dalam format Excel atau JSON

@@ -14,35 +14,51 @@ class PengaduanController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Pengaduan::query()->latest();
+        $query = Pengaduan::with('user')->latest();
 
-        // Filter by search
-        if ($request->has('search') && $request->search) {
+        // Filter by search (cari berdasarkan nama/email user atau judul)
+        if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('nama', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('judul', 'like', "%{$search}%");
+                $q->where('judul', 'like', "%{$search}%")
+                  ->orWhereHas('user', function ($uq) use ($search) {
+                      $uq->where('name', 'like', "%{$search}%")
+                         ->orWhere('email', 'like', "%{$search}%");
+                  });
             });
         }
 
         // Filter by status
-        if ($request->has('status') && $request->status) {
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
         $pengaduan = $query->paginate(10)->withQueryString();
 
+        // Transform agar nama & email tersedia langsung di frontend
+        $pengaduan->through(function ($item) {
+            return [
+                'id'           => $item->id,
+                'nama'         => $item->user?->name ?? '-',
+                'email'        => $item->user?->email ?? '-',
+                'telepon'      => $item->telepon,
+                'judul'        => $item->judul,
+                'isi_pengaduan' => $item->isi_pengaduan,
+                'status'       => $item->status,
+                'created_at'   => $item->created_at,
+                'updated_at'   => $item->updated_at,
+            ];
+        });
+
         return Inertia::render('Admin/Pengaduan/Index', [
             'pengaduan' => $pengaduan,
-            'filters' => [
+            'filters'   => [
                 'search' => $request->search,
                 'status' => $request->status,
             ],
-            // Explicitly pass flash messages
             'flash' => [
                 'success' => session('success'),
-                'error' => session('error'),
+                'error'   => session('error'),
             ],
         ]);
     }
@@ -54,41 +70,38 @@ class PengaduanController extends Controller
     {
         try {
             $validated = $request->validate([
-                'status' => 'required|in:belum_diproses,sedang_diproses,selesai',
+                'status' => 'required|in:menunggu,diproses,selesai',
             ]);
 
             $statusLabels = [
-                'belum_diproses' => 'Belum Diproses',
-                'sedang_diproses' => 'Sedang Diproses',
-                'selesai' => 'Selesai',
+                'menunggu' => 'Menunggu',
+                'diproses' => 'Diproses',
+                'selesai'  => 'Selesai',
             ];
 
-            $pengaduan->update([
-                'status' => $validated['status'],
-            ]);
+            $pengaduan->update(['status' => $validated['status']]);
 
-            // Preserve filters saat redirect
             $queryParams = [];
-            if ($request->has('search') && $request->search) {
+            if ($request->filled('search')) {
                 $queryParams['search'] = $request->search;
             }
-            if ($request->has('status_filter') && $request->status_filter) {
+            if ($request->filled('status_filter')) {
                 $queryParams['status'] = $request->status_filter;
             }
 
             $statusLabel = $statusLabels[$validated['status']] ?? $validated['status'];
+            $namaPelapor = $pengaduan->user?->name ?? 'Pengguna';
 
             return redirect()->route('admin.pengaduan.index', $queryParams)
-                ->with('success', "Status pengaduan dari '{$pengaduan->nama}' berhasil diubah menjadi '{$statusLabel}'.");
+                ->with('success', "Status pengaduan dari '{$namaPelapor}' berhasil diubah menjadi '{$statusLabel}'.");
 
         } catch (\Exception $e) {
             \Log::error('Error updating pengaduan status: ' . $e->getMessage(), [
                 'pengaduan_id' => $pengaduan->id,
-                'trace' => $e->getTraceAsString(),
+                'trace'        => $e->getTraceAsString(),
             ]);
 
-            return back()
-                ->with('error', 'Terjadi kesalahan saat mengubah status pengaduan. Silakan coba lagi.');
+            return back()->with('error', 'Terjadi kesalahan saat mengubah status pengaduan. Silakan coba lagi.');
         }
     }
 
@@ -99,24 +112,23 @@ class PengaduanController extends Controller
     {
         \Log::info('=== DESTROY PENGADUAN METHOD CALLED ===');
         \Log::info('Pengaduan to delete: ' . $pengaduan->id . ' - ' . $pengaduan->judul);
-        
+
         try {
-            $pengaduanNama = $pengaduan->nama;
-            $pengaduanJudul = $pengaduan->judul;
-            
+            $namaPelapor  = $pengaduan->user?->name ?? 'Pengguna';
+            $judulPengaduan = $pengaduan->judul;
+
             if (!$pengaduan->exists) {
                 \Log::error('Pengaduan does not exist in database: ' . $pengaduan->id);
                 return redirect()->route('admin.pengaduan.index')
                     ->with('error', 'Pengaduan tidak ditemukan.');
             }
-            
+
             $deleted = $pengaduan->delete();
-            
+
             \Log::info('Delete result: ' . ($deleted ? 'SUCCESS' : 'FAILED'));
-            \Log::info('Pengaduan deleted successfully: ' . $pengaduan->id);
 
             return redirect()->route('admin.pengaduan.index')
-                ->with('success', "Pengaduan dari '{$pengaduanNama}' dengan judul '{$pengaduanJudul}' berhasil dihapus.");
+                ->with('success', "Pengaduan dari '{$namaPelapor}' dengan judul '{$judulPengaduan}' berhasil dihapus.");
 
         } catch (\Exception $e) {
             \Log::error('=== ERROR DELETING PENGADUAN ===');

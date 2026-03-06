@@ -13,7 +13,7 @@ interface Pengaduan {
     telepon: string;
     judul: string;
     isi_pengaduan: string;
-    status: 'belum_diproses' | 'sedang_diproses' | 'selesai';
+    status: 'menunggu' | 'diproses' | 'selesai';
     created_at: string;
 }
 
@@ -51,6 +51,35 @@ interface PengaduanIndexProps {
     };
 }
 
+// Status values match backend: menunggu | diproses | selesai
+const getStatusBadge = (status: string) => {
+    switch (status) {
+        case 'menunggu':
+            return (
+                <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
+                    <AlertCircle className="mr-1 h-3 w-3" />
+                    Menunggu
+                </span>
+            );
+        case 'diproses':
+            return (
+                <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                    <Clock className="mr-1 h-3 w-3" />
+                    Diproses
+                </span>
+            );
+        case 'selesai':
+            return (
+                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                    <CheckCircle className="mr-1 h-3 w-3" />
+                    Selesai
+                </span>
+            );
+        default:
+            return <span className="text-xs text-gray-400">{status}</span>;
+    }
+};
+
 export default function PengaduanIndex({ auth, pengaduan, filters, flash }: PengaduanIndexProps) {
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
     const [selectedStatus, setSelectedStatus] = useState(filters.status || '');
@@ -60,55 +89,26 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
     const [confirmData, setConfirmData] = useState<{ item: Pengaduan; newStatus: string } | null>(null);
     const isInitialMount = useRef(true);
 
-    // Debounced search
     useEffect(() => {
         if (isInitialMount.current) {
             isInitialMount.current = false;
             return;
         }
-
         const timeoutId = setTimeout(() => {
-            handleSearch();
+            const params = new URLSearchParams();
+            if (searchTerm) params.set('search', searchTerm);
+            if (selectedStatus) params.set('status', selectedStatus);
+            const queryString = params.toString();
+            const url = queryString ? route('admin.pengaduan.index') + `?${queryString}` : route('admin.pengaduan.index');
+            router.get(url, {}, { preserveState: true, replace: true });
         }, 500);
-
         return () => clearTimeout(timeoutId);
     }, [searchTerm, selectedStatus]);
-
-    const handleSearch = () => {
-        const params = new URLSearchParams();
-
-        if (searchTerm) {
-            params.set('search', searchTerm);
-        }
-
-        if (selectedStatus) {
-            params.set('status', selectedStatus);
-        }
-
-        const queryString = params.toString();
-        const url = queryString ? route('admin.pengaduan.index') + `?${queryString}` : route('admin.pengaduan.index');
-
-        router.get(
-            url,
-            {},
-            {
-                preserveState: true,
-                replace: true,
-            },
-        );
-    };
 
     const clearSearch = () => {
         setSearchTerm('');
         setSelectedStatus('');
-        router.get(
-            route('admin.pengaduan.index'),
-            {},
-            {
-                preserveState: true,
-                replace: true,
-            },
-        );
+        router.get(route('admin.pengaduan.index'), {}, { preserveState: true, replace: true });
     };
 
     const handleStatusChange = (item: Pengaduan, newStatus: string) => {
@@ -118,11 +118,10 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
 
     const confirmStatusChange = () => {
         if (!confirmData) return;
-
         router.put(
             route('admin.pengaduan.update-status', confirmData.item.id),
             {
-                status: confirmData.newStatus,
+                status: confirmData.newStatus, // menunggu | diproses | selesai
                 search: searchTerm,
                 status_filter: selectedStatus,
             },
@@ -142,33 +141,8 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
         setConfirmData(null);
     };
 
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'belum_diproses':
-                return (
-                    <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
-                        <AlertCircle className="mr-1 h-3 w-3" />
-                        Belum Diproses
-                    </span>
-                );
-            case 'sedang_diproses':
-                return (
-                    <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
-                        <Clock className="mr-1 h-3 w-3" />
-                        Sedang Diproses
-                    </span>
-                );
-            case 'selesai':
-                return (
-                    <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                        <CheckCircle className="mr-1 h-3 w-3" />
-                        Selesai
-                    </span>
-                );
-        }
-    };
+    const pengaduanArray = pengaduan?.data || [];
 
-    // Card component for mobile view
     const PengaduanCard = ({ item }: { item: Pengaduan }) => (
         <div className="rounded-lg border bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
             <div className="mb-3 flex items-start justify-between">
@@ -203,16 +177,14 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
                         onChange={(e) => handleStatusChange(item, e.target.value)}
                         className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-xs focus:border-orange-500 focus:outline-none"
                     >
-                        <option value="belum_diproses">Belum Diproses</option>
-                        <option value="sedang_diproses">Sedang Diproses</option>
+                        <option value="menunggu">Menunggu</option>
+                        <option value="diproses">Diproses</option>
                         <option value="selesai">Selesai</option>
                     </select>
                 )}
             </div>
         </div>
     );
-
-    const pengaduanArray = pengaduan?.data || [];
 
     return (
         <AuthenticatedLayout auth={auth} title="Kelola Pengaduan">
@@ -232,22 +204,16 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
                 )}
 
                 {/* Header */}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex-1">
-                        <h2 className="text-xl font-semibold text-gray-700 sm:text-2xl">Kelola Pengaduan</h2>
-                        {pengaduan.total && (
-                            <p className="mt-1 text-xs text-gray-500 sm:text-sm">
-                                {pengaduan.from && pengaduan.to ? (
-                                    <>
-                                        Menampilkan {pengaduan.from} - {pengaduan.to} dari {pengaduan.total} pengaduan
-                                        {(searchTerm || selectedStatus) && ' (difilter)'}
-                                    </>
-                                ) : (
-                                    <>Total {pengaduan.total} pengaduan</>
-                                )}
-                            </p>
-                        )}
-                    </div>
+                <div className="flex-1">
+                    <h2 className="text-xl font-semibold text-gray-700 sm:text-2xl">Kelola Pengaduan</h2>
+                    {pengaduan.total > 0 && (
+                        <p className="mt-1 text-xs text-gray-500 sm:text-sm">
+                            {pengaduan.from && pengaduan.to
+                                ? `Menampilkan ${pengaduan.from} - ${pengaduan.to} dari ${pengaduan.total} pengaduan`
+                                : `Total ${pengaduan.total} pengaduan`}
+                            {(searchTerm || selectedStatus) && ' (difilter)'}
+                        </p>
+                    )}
                 </div>
 
                 {/* Statistics Cards */}
@@ -255,10 +221,8 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
                     <div className="rounded-lg border bg-white p-4 shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-600">Belum Diproses</p>
-                                <p className="mt-1 text-2xl font-bold text-red-600">
-                                    {pengaduanArray.filter((p) => p.status === 'belum_diproses').length}
-                                </p>
+                                <p className="text-sm font-medium text-gray-600">Menunggu</p>
+                                <p className="mt-1 text-2xl font-bold text-red-600">{pengaduanArray.filter((p) => p.status === 'menunggu').length}</p>
                             </div>
                             <AlertCircle className="h-8 w-8 text-red-600" />
                         </div>
@@ -266,9 +230,9 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
                     <div className="rounded-lg border bg-white p-4 shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-600">Sedang Diproses</p>
+                                <p className="text-sm font-medium text-gray-600">Diproses</p>
                                 <p className="mt-1 text-2xl font-bold text-yellow-600">
-                                    {pengaduanArray.filter((p) => p.status === 'sedang_diproses').length}
+                                    {pengaduanArray.filter((p) => p.status === 'diproses').length}
                                 </p>
                             </div>
                             <Clock className="h-8 w-8 text-yellow-600" />
@@ -289,7 +253,6 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
 
                 {/* Search and Filter */}
                 <div className="rounded-lg border bg-white p-3 shadow-sm sm:p-4">
-                    {/* Search Input */}
                     <div className="relative">
                         <div className="absolute inset-y-0 left-0 flex items-center pl-3">
                             <Search className="h-4 w-4 text-gray-400 sm:h-5 sm:w-5" />
@@ -317,7 +280,6 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
                         </div>
                     </div>
 
-                    {/* Expandable Filters */}
                     {(showFilters || selectedStatus) && (
                         <div className="mt-3 border-t border-gray-200 pt-3">
                             <div className="flex flex-col gap-3 sm:flex-row">
@@ -332,12 +294,11 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
                                         className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
                                     >
                                         <option value="">Semua Status</option>
-                                        <option value="belum_diproses">Belum Diproses</option>
-                                        <option value="sedang_diproses">Sedang Diproses</option>
+                                        <option value="menunggu">Menunggu</option>
+                                        <option value="diproses">Diproses</option>
                                         <option value="selesai">Selesai</option>
                                     </select>
                                 </div>
-
                                 {(searchTerm || selectedStatus) && (
                                     <div className="flex items-end">
                                         <button
@@ -361,7 +322,7 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
                             <div className="py-12 text-center">
                                 <MessageSquare className="mx-auto h-12 w-12 text-gray-400" />
                                 <h3 className="mt-4 text-base font-medium text-gray-900 sm:text-lg">
-                                    {searchTerm || selectedStatus ? 'Tidak ada pengaduan yang sesuai dengan pencarian' : 'Tidak ada pengaduan'}
+                                    {searchTerm || selectedStatus ? 'Tidak ada pengaduan yang sesuai' : 'Tidak ada pengaduan'}
                                 </h3>
                                 <p className="mx-auto mt-2 max-w-md text-sm text-gray-500">
                                     {searchTerm || selectedStatus
@@ -431,8 +392,8 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
                                                                     onChange={(e) => handleStatusChange(item, e.target.value)}
                                                                     className="rounded-md border border-gray-300 px-2 py-1 text-xs focus:border-orange-500 focus:outline-none"
                                                                 >
-                                                                    <option value="belum_diproses">Belum Diproses</option>
-                                                                    <option value="sedang_diproses">Sedang Diproses</option>
+                                                                    <option value="menunggu">Menunggu</option>
+                                                                    <option value="diproses">Diproses</option>
                                                                     <option value="selesai">Selesai</option>
                                                                 </select>
                                                             )}
@@ -463,10 +424,8 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
                         <div className="border-b p-4 sm:p-6">
                             <h3 className="text-lg font-semibold text-gray-900 sm:text-xl">Konfirmasi Perubahan Status</h3>
                         </div>
-
                         <div className="space-y-4 p-4 sm:p-6">
                             <p className="text-sm text-gray-700 sm:text-base">Apakah Anda yakin ingin mengubah status pengaduan ini?</p>
-
                             <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 sm:p-4">
                                 <div className="mb-3 flex items-center justify-between">
                                     <span className="text-xs font-medium text-gray-600 sm:text-sm">Dari:</span>
@@ -477,7 +436,6 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
                                     {getStatusBadge(confirmData.newStatus)}
                                 </div>
                             </div>
-
                             <div className="space-y-2 rounded-lg border border-orange-100 bg-orange-50 p-3 sm:p-4">
                                 <div>
                                     <span className="text-xs font-medium text-gray-700">Pengadu:</span>
@@ -489,7 +447,6 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
                                 </div>
                             </div>
                         </div>
-
                         <div className="flex gap-3 border-t bg-gray-50 p-4 sm:p-6">
                             <button
                                 onClick={cancelStatusChange}
@@ -518,13 +475,11 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
                                 <X className="h-6 w-6" />
                             </button>
                         </div>
-
                         <div className="space-y-4 p-6">
                             <div>
                                 <label className="text-sm font-medium text-gray-700">Status</label>
                                 <div className="mt-1">{getStatusBadge(selectedPengaduan.status)}</div>
                             </div>
-
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
                                     <label className="text-sm font-medium text-gray-700">Nama Lengkap</label>
@@ -542,7 +497,6 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
                                     </p>
                                 </div>
                             </div>
-
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
                                     <label className="text-sm font-medium text-gray-700">Email</label>
@@ -565,12 +519,10 @@ export default function PengaduanIndex({ auth, pengaduan, filters, flash }: Peng
                                     </a>
                                 </div>
                             </div>
-
                             <div>
                                 <label className="text-sm font-medium text-gray-700">Judul Pengaduan</label>
                                 <p className="mt-1 text-sm font-semibold text-gray-900">{selectedPengaduan.judul}</p>
                             </div>
-
                             <div>
                                 <label className="text-sm font-medium text-gray-700">Isi Pengaduan</label>
                                 <div className="mt-1 rounded-md border border-gray-300 bg-gray-50 p-4">

@@ -1,4 +1,5 @@
-import { Head } from '@inertiajs/react';
+import MainLayout from '@/layouts/MainLayout';
+import { Head, router } from '@inertiajs/react';
 import {
     ArcElement,
     BarElement,
@@ -13,8 +14,8 @@ import {
     Title,
     Tooltip,
 } from 'chart.js';
-import { BarChart3, Database, FileJson, FileSpreadsheet, Table2 } from 'lucide-react';
-import { useState } from 'react';
+import { BarChart3, Database, FileJson, FileSpreadsheet, Search, Table2, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Bar, Doughnut, Line, Pie, Radar } from 'react-chartjs-2';
 
 // Register ChartJS components
@@ -63,16 +64,49 @@ interface Settings {
 }
 
 interface DataDesaProps {
+    auth?: any;
     tables: DynamicTable[];
     tahun: string | number;
     settings: Settings;
+    filters: {
+        search: string;
+    };
 }
 
-export default function DataDesa({ tables, tahun, settings }: DataDesaProps) {
+export default function DataDesa({ auth, tables, tahun, settings, filters }: DataDesaProps) {
     const [downloadingTable, setDownloadingTable] = useState<number | null>(null);
     const [viewMode, setViewMode] = useState<Record<number, 'table' | 'chart'>>({});
+    const [searchQuery, setSearchQuery] = useState(filters.search || '');
 
     const namaDesa = settings.nama_desa || 'Desa Cinnong';
+
+    useEffect(() => {
+        setSearchQuery(filters.search || '');
+    }, [filters.search]);
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        router.get(
+            '/data-desa',
+            { search: searchQuery },
+            {
+                preserveState: true,
+                replace: true,
+            },
+        );
+    };
+
+    const clearSearch = () => {
+        setSearchQuery('');
+        router.get(
+            '/data-desa',
+            {},
+            {
+                preserveState: true,
+                replace: true,
+            },
+        );
+    };
 
     const toggleViewMode = (tableId: number) => {
         setViewMode((prev) => ({
@@ -291,38 +325,106 @@ export default function DataDesa({ tables, tahun, settings }: DataDesaProps) {
     };
 
     return (
-        <div>
+        <MainLayout auth={auth}>
             <Head title={`Data ${namaDesa} ${tahun}`} />
 
-            {/* Header Halaman */}
-            <div className="py-8 sm:py-12">
-                <div className="mx-auto max-w-screen-xl px-3 sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                        <div className="flex flex-col gap-4 border-b-4 border-orange-500 bg-orange-100 p-4 text-gray-900 sm:flex-row sm:items-center sm:justify-between sm:p-6 lg:p-8">
-                            <div>
-                                <h1 className="text-2xl font-bold text-orange-900 sm:text-3xl">Data {namaDesa}</h1>
-                                <p className="mt-2 text-sm text-gray-700 sm:text-base">Laporan semua data desa {namaDesa}</p>
+            {/* Header Section - Konsisten dengan Infografis */}
+            <section className="border-b border-gray-200 bg-gradient-to-br from-orange-50 to-orange-100">
+                <div className="container mx-auto px-3 py-12 text-center sm:px-4 sm:py-16 lg:px-8">
+                    <h1 className="mb-3 text-3xl font-bold text-gray-900 sm:mb-4 sm:text-4xl md:text-5xl">Data {namaDesa}</h1>
+                    <p className="mx-auto max-w-2xl text-base text-gray-700 sm:text-lg">
+                        Laporan dan data statistik {namaDesa} yang tersedia untuk publik dalam bentuk tabel dan visualisasi grafik.
+                    </p>
+
+                    {/* Search Form */}
+                    <div className="mx-auto mt-6 max-w-md sm:mt-8">
+                        <form onSubmit={handleSearch} className="relative">
+                            <div className="relative">
+                                <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Cari data atau tabel..."
+                                    className="w-full rounded-lg border border-gray-300 bg-white py-3 pr-12 pl-10 text-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-200 focus:outline-none"
+                                />
+                                {searchQuery && (
+                                    <button
+                                        type="button"
+                                        onClick={clearSearch}
+                                        className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </button>
+                                )}
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Database className="h-5 w-5 text-orange-500" />
-                                <span className="text-lg font-bold text-orange-500">{tables.length} Tabel</span>
-                            </div>
-                        </div>
+                            <button
+                                type="submit"
+                                className="mt-2 w-full rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700 focus:ring-2 focus:ring-orange-200 focus:outline-none active:bg-orange-800"
+                            >
+                                Cari Data
+                            </button>
+                        </form>
                     </div>
+
+                    {/* Search Result Info */}
+                    {filters.search && (
+                        <div className="mt-3 text-sm text-gray-600 sm:mt-4">
+                            {tables.length > 0 ? (
+                                <p>
+                                    <span className="hidden sm:inline">Ditemukan </span>
+                                    <span className="font-semibold">{tables.length}</span>
+                                    <span className="hidden sm:inline"> tabel untuk "</span>
+                                    <span className="sm:hidden"> tabel: "</span>
+                                    <span className="font-semibold">{filters.search}</span>"
+                                </p>
+                            ) : (
+                                <p>
+                                    <span className="hidden sm:inline">Tidak ditemukan hasil untuk "</span>
+                                    <span className="sm:hidden">Tidak ada hasil: "</span>
+                                    <span className="font-semibold">{filters.search}</span>"
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Stats Info */}
+                    {!filters.search && tables.length > 0 && (
+                        <div className="mt-6 flex items-center justify-center gap-2">
+                            <Database className="h-5 w-5 text-orange-600" />
+                            <span className="text-base font-semibold text-orange-600 sm:text-lg">{tables.length} Tabel Tersedia</span>
+                        </div>
+                    )}
                 </div>
-            </div>
+            </section>
 
             {/* Daftar Tabel */}
-            <div className="bg-slate-50 pb-8 sm:pb-12">
-                <div className="mx-auto max-w-screen-xl px-3 sm:px-6 lg:px-8">
+            <section className="bg-slate-50 py-12 sm:py-16 lg:py-20">
+                <div className="container mx-auto px-3 sm:px-4 lg:px-8">
                     {tables.length === 0 ? (
-                        <div className="rounded-lg border bg-white p-8 text-center shadow-sm sm:p-12">
-                            <Table2 className="mx-auto h-16 w-16 text-gray-400" />
-                            <h3 className="mt-4 text-lg font-semibold text-gray-900">Belum Ada Data</h3>
-                            <p className="mt-2 text-sm text-gray-600">Belum ada tabel yang dibuat. Silakan buat tabel melalui dashboard admin.</p>
+                        <div className="mx-auto max-w-5xl rounded-lg border border-gray-200 bg-white p-8 text-center shadow-sm sm:p-12">
+                            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+                                <Table2 className="h-8 w-8 text-gray-400" />
+                            </div>
+                            <h3 className="mb-4 text-lg font-semibold text-gray-900 sm:text-xl">
+                                {filters.search ? 'Tidak ada data yang sesuai dengan pencarian Anda.' : 'Belum Ada Data'}
+                            </h3>
+                            <p className="mb-4 text-sm text-gray-600">
+                                {filters.search
+                                    ? 'Coba gunakan kata kunci yang berbeda untuk mencari data.'
+                                    : 'Belum ada tabel yang dibuat. Silakan buat tabel melalui dashboard admin.'}
+                            </p>
+                            {filters.search && (
+                                <button
+                                    onClick={clearSearch}
+                                    className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700 active:bg-orange-800"
+                                >
+                                    Tampilkan Semua Data
+                                </button>
+                            )}
                         </div>
                     ) : (
-                        <div className="space-y-6">
+                        <div className="mx-auto max-w-7xl space-y-6">
                             {tables.map((table) => {
                                 const currentView = viewMode[table.id] || 'table';
                                 const hasCharts = table.charts && table.charts.length > 0;
@@ -572,7 +674,7 @@ export default function DataDesa({ tables, tahun, settings }: DataDesaProps) {
                         </div>
                     )}
                 </div>
-            </div>
-        </div>
+            </section>
+        </MainLayout>
     );
 }

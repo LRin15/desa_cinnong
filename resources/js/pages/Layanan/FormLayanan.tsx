@@ -17,19 +17,25 @@ interface FormField {
     multiple?: boolean;
 }
 
+interface UserInfo {
+    name: string;
+    email: string;
+}
+
 interface FormLayananProps {
     auth?: any;
     jenisLayanan: string;
     deskripsi: string;
     persyaratan: string[];
     formFields: FormField[];
+    userInfo: UserInfo;
 }
 
-export default function FormLayanan({ auth, jenisLayanan, deskripsi, persyaratan, formFields }: FormLayananProps) {
+export default function FormLayanan({ auth, jenisLayanan, deskripsi, persyaratan, formFields, userInfo }: FormLayananProps) {
     const [successModalOpen, setSuccessModalOpen] = useState(false);
     const [filePreviews, setFilePreviews] = useState<{ [key: string]: string[] }>({});
 
-    // 1. Definisikan initialData dengan tipe Record agar fleksibel
+    // Inisialisasi data form — nama_lengkap di-prefill dari akun user
     const initialData: Record<string, any> = {
         jenis_layanan: jenisLayanan,
     };
@@ -39,12 +45,14 @@ export default function FormLayanan({ auth, jenisLayanan, deskripsi, persyaratan
             initialData[field.name] = field.multiple ? [] : null;
         } else if (field.type === 'select' && field.options) {
             initialData[field.name] = field.options[0];
+        } else if (field.name === 'nama_lengkap') {
+            // Pre-fill nama dari akun — pengguna tetap bisa mengubah jika berbeda dengan KTP
+            initialData[field.name] = userInfo.name;
         } else {
             initialData[field.name] = '';
         }
     });
 
-    // 2. Gunakan Record<string, any> langsung di useForm untuk mematikan pengecekan tipe strict pada keys
     const { data, setData, post, processing, errors, reset } = useForm<Record<string, any>>(initialData);
 
     const handleFileChange = (fieldName: string, files: FileList | null, multiple: boolean = false) => {
@@ -52,10 +60,8 @@ export default function FormLayanan({ auth, jenisLayanan, deskripsi, persyaratan
         const fileArray = Array.from(files);
 
         if (multiple) {
-            // Gunakan setData satu per satu untuk menghindari masalah array spread pada tipe dinamis
             const currentFiles = data[fieldName] || [];
             setData(fieldName, [...currentFiles, ...fileArray]);
-
             fileArray.forEach((file) => {
                 if (file.type.startsWith('image/')) {
                     const reader = new FileReader();
@@ -73,10 +79,7 @@ export default function FormLayanan({ auth, jenisLayanan, deskripsi, persyaratan
             if (fileArray[0].type.startsWith('image/')) {
                 const reader = new FileReader();
                 reader.onloadend = () => {
-                    setFilePreviews((prev) => ({
-                        ...prev,
-                        [fieldName]: [reader.result as string],
-                    }));
+                    setFilePreviews((prev) => ({ ...prev, [fieldName]: [reader.result as string] }));
                 };
                 reader.readAsDataURL(fileArray[0]);
             }
@@ -88,7 +91,6 @@ export default function FormLayanan({ auth, jenisLayanan, deskripsi, persyaratan
             const newFiles = [...(data[fieldName] || [])];
             newFiles.splice(index, 1);
             setData(fieldName, newFiles);
-
             const newPreviews = [...(filePreviews[fieldName] || [])];
             newPreviews.splice(index, 1);
             setFilePreviews((prev) => ({ ...prev, [fieldName]: newPreviews }));
@@ -112,11 +114,7 @@ export default function FormLayanan({ auth, jenisLayanan, deskripsi, persyaratan
 
     const renderField = (field: FormField) => {
         const fieldError = errors[field.name];
-
-        // 3. Solusi Terakhir: Bungkus setData dalam fungsi lokal yang menerima string
-        const handleChange = (value: any) => {
-            setData(field.name as never, value as never);
-        };
+        const handleChange = (value: any) => setData(field.name as never, value as never);
 
         switch (field.type) {
             case 'textarea':
@@ -221,6 +219,8 @@ export default function FormLayanan({ auth, jenisLayanan, deskripsi, persyaratan
                     <div key={field.name}>
                         <label className="mb-1 block text-sm font-medium text-gray-700">
                             {field.label} {field.required && <span className="text-red-500">*</span>}
+                            {/* Tanda pre-fill untuk nama_lengkap */}
+                            {field.name === 'nama_lengkap' && <span className="ml-2 text-xs font-normal text-orange-500">(dari akun Anda)</span>}
                         </label>
                         <input
                             type={field.type}
@@ -242,13 +242,19 @@ export default function FormLayanan({ auth, jenisLayanan, deskripsi, persyaratan
             <Head title={jenisLayanan} />
             <div className="min-h-screen bg-gray-50 py-8">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                    {/* Breadcrumb */}
                     <div className="mb-8">
                         <div className="mb-4 flex items-center space-x-3 text-sm text-gray-600">
                             <a href={route('beranda')} className="hover:text-orange-600">
                                 Beranda
                             </a>
-                            <span>/</span> Layanan <span>/</span> <span className="text-orange-600">{jenisLayanan}</span>
+                            <span>/</span>
+                            <span>Layanan</span>
+                            <span>/</span>
+                            <span className="text-orange-600">{jenisLayanan}</span>
                         </div>
+
+                        {/* Header card */}
                         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
                             <div className="flex items-start space-x-4">
                                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
@@ -263,22 +269,41 @@ export default function FormLayanan({ auth, jenisLayanan, deskripsi, persyaratan
                     </div>
 
                     <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+                        {/* Sidebar kiri: info akun + persyaratan */}
                         <div className="lg:col-span-1">
-                            <div className="sticky top-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-                                <h2 className="mb-4 text-lg font-bold text-gray-900">Persyaratan</h2>
-                                <ul className="space-y-3">
-                                    {persyaratan.map((item, index) => (
-                                        <li key={index} className="flex items-start space-x-2">
-                                            <div className="mt-1 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-orange-100">
-                                                <div className="h-2 w-2 rounded-full bg-orange-600" />
-                                            </div>
-                                            <span className="text-sm text-gray-700">{item}</span>
-                                        </li>
-                                    ))}
-                                </ul>
+                            <div className="sticky top-8 space-y-4">
+                                {/* Kartu info akun pemohon */}
+                                <div className="rounded-lg border border-orange-100 bg-orange-50 p-5 shadow-sm">
+                                    <p className="mb-3 text-xs font-semibold tracking-wide text-orange-600 uppercase">Permohonan atas nama</p>
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-orange-200 text-sm font-bold text-orange-700">
+                                            {userInfo.name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-semibold text-gray-900">{userInfo.name}</p>
+                                            <p className="truncate text-xs text-gray-500">{userInfo.email}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Persyaratan */}
+                                <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+                                    <h2 className="mb-4 text-lg font-bold text-gray-900">Persyaratan</h2>
+                                    <ul className="space-y-3">
+                                        {persyaratan.map((item, index) => (
+                                            <li key={index} className="flex items-start space-x-2">
+                                                <div className="mt-1 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-orange-100">
+                                                    <div className="h-2 w-2 rounded-full bg-orange-600" />
+                                                </div>
+                                                <span className="text-sm text-gray-700">{item}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
                             </div>
                         </div>
 
+                        {/* Form utama */}
                         <div className="lg:col-span-2">
                             <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
                                 <h2 className="mb-6 text-xl font-bold text-gray-900">Formulir Permohonan</h2>
@@ -295,6 +320,7 @@ export default function FormLayanan({ auth, jenisLayanan, deskripsi, persyaratan
                                             );
                                         })}
                                     </div>
+
                                     <div className="flex flex-col-reverse gap-3 border-t pt-6 sm:flex-row sm:justify-end">
                                         <a
                                             href={route('beranda')}
@@ -317,6 +343,7 @@ export default function FormLayanan({ auth, jenisLayanan, deskripsi, persyaratan
                 </div>
             </div>
 
+            {/* Modal sukses */}
             {successModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
                     <div className="w-full max-w-md rounded-lg bg-white p-8 text-center shadow-xl">
@@ -324,7 +351,12 @@ export default function FormLayanan({ auth, jenisLayanan, deskripsi, persyaratan
                             <CheckCircle className="h-10 w-10 text-green-600" />
                         </div>
                         <h3 className="mb-2 text-xl font-bold text-gray-900">Permohonan Berhasil Dikirim!</h3>
-                        <p className="mb-6 text-sm text-gray-600">Terima kasih. Permohonan Anda akan segera kami proses.</p>
+                        <p className="mb-2 text-sm text-gray-600">
+                            Terima kasih, <span className="font-semibold">{userInfo.name}</span>.
+                        </p>
+                        <p className="mb-6 text-sm text-gray-500">
+                            Permohonan <span className="font-medium">{jenisLayanan}</span> Anda akan segera kami proses.
+                        </p>
                         <a
                             href={route('beranda')}
                             className="inline-block w-full rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-orange-700"

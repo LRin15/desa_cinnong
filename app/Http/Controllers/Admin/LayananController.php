@@ -14,30 +14,49 @@ class LayananController extends Controller
      */
     public function index(Request $request)
     {
-        $query = LayananSubmission::query()->latest();
+        $query = LayananSubmission::with('user')->latest();
 
-        // Filter by search
-        if ($request->has('search') && $request->search) {
+        // Filter by search — cari berdasarkan nama/email user atau jenis layanan atau NIK di form_data
+        if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('jenis_layanan', 'like', "%{$search}%")
-                  ->orWhereRaw("JSON_EXTRACT(form_data, '$.nama_lengkap') LIKE ?", ["%{$search}%"])
                   ->orWhereRaw("JSON_EXTRACT(form_data, '$.nik') LIKE ?", ["%{$search}%"])
-                  ->orWhereRaw("JSON_EXTRACT(form_data, '$.email') LIKE ?", ["%{$search}%"]);
+                  ->orWhereHas('user', function ($uq) use ($search) {
+                      $uq->where('name', 'like', "%{$search}%")
+                         ->orWhere('email', 'like', "%{$search}%");
+                  });
             });
         }
 
         // Filter by jenis layanan
-        if ($request->has('jenis_layanan') && $request->jenis_layanan) {
+        if ($request->filled('jenis_layanan')) {
             $query->where('jenis_layanan', $request->jenis_layanan);
         }
 
         // Filter by status
-        if ($request->has('status') && $request->status) {
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
         $layanan = $query->paginate(10)->withQueryString();
+
+        // Transform: sertakan nama & email dari relasi user agar frontend tidak perlu eager-load sendiri
+        $layanan->through(function ($item) {
+            return [
+                'id'             => $item->id,
+                'nama_pemohon'   => $item->user?->name ?? '-',
+                'email_pemohon'  => $item->user?->email ?? '-',
+                'jenis_layanan'  => $item->jenis_layanan,
+                'form_data'      => $item->form_data,
+                'uploaded_files' => $item->uploaded_files,
+                'status'         => $item->status,
+                'status_label'   => $item->status_label,
+                'catatan_admin'  => $item->catatan_admin,
+                'created_at'     => $item->created_at,
+                'updated_at'     => $item->updated_at,
+            ];
+        });
 
         // Get distinct jenis layanan for filter dropdown
         $jenisLayananList = LayananSubmission::select('jenis_layanan')
@@ -46,16 +65,16 @@ class LayananController extends Controller
             ->pluck('jenis_layanan');
 
         return Inertia::render('Admin/Layanan/Index', [
-            'layanan' => $layanan,
-            'jenisLayananList' => $jenisLayananList,
-            'filters' => [
-                'search' => $request->search,
-                'jenis_layanan' => $request->jenis_layanan,
-                'status' => $request->status,
+            'layanan'         => $layanan,
+            'jenisLayananList'=> $jenisLayananList,
+            'filters'         => [
+                'search'       => $request->search,
+                'jenis_layanan'=> $request->jenis_layanan,
+                'status'       => $request->status,
             ],
             'flash' => [
                 'success' => session('success'),
-                'error' => session('error'),
+                'error'   => session('error'),
             ],
         ]);
     }
@@ -67,53 +86,44 @@ class LayananController extends Controller
     {
         try {
             $validated = $request->validate([
-                'status' => 'required|in:pending,diproses,selesai,ditolak',
+                'status'        => 'required|in:pending,diproses,selesai,ditolak',
                 'catatan_admin' => 'nullable|string|max:1000',
             ]);
 
-            // Jika status ditolak, catatan wajib diisi
             if ($validated['status'] === 'ditolak' && empty($validated['catatan_admin'])) {
                 return back()->with('error', 'Alasan penolakan harus diisi.');
             }
 
             $statusLabels = [
-                'pending' => 'Menunggu',
+                'pending'  => 'Menunggu',
                 'diproses' => 'Sedang Diproses',
-                'selesai' => 'Selesai',
-                'ditolak' => 'Ditolak',
+                'selesai'  => 'Selesai',
+                'ditolak'  => 'Ditolak',
             ];
 
             $layanan->update([
-                'status' => $validated['status'],
+                'status'        => $validated['status'],
                 'catatan_admin' => $validated['catatan_admin'] ?? $layanan->catatan_admin,
             ]);
 
-            // Preserve filters saat redirect
             $queryParams = [];
-            if ($request->has('search') && $request->search) {
-                $queryParams['search'] = $request->search;
-            }
-            if ($request->has('jenis_layanan_filter') && $request->jenis_layanan_filter) {
-                $queryParams['jenis_layanan'] = $request->jenis_layanan_filter;
-            }
-            if ($request->has('status_filter') && $request->status_filter) {
-                $queryParams['status'] = $request->status_filter;
-            }
+            if ($request->filled('search'))              $queryParams['search']        = $request->search;
+            if ($request->filled('jenis_layanan_filter'))$queryParams['jenis_layanan'] = $request->jenis_layanan_filter;
+            if ($request->filled('status_filter'))       $queryParams['status']        = $request->status_filter;
 
-            $statusLabel = $statusLabels[$validated['status']] ?? $validated['status'];
-            $namaLengkap = $layanan->form_data['nama_lengkap'] ?? 'Pemohon';
+            $statusLabel  = $statusLabels[$validated['status']] ?? $validated['status'];
+            $namaPemohon  = $layanan->user?->name ?? 'Pemohon';
 
             return redirect()->route('admin.layanan.index', $queryParams)
-                ->with('success', "Status permohonan '{$layanan->jenis_layanan}' dari '{$namaLengkap}' berhasil diubah menjadi '{$statusLabel}'.");
+                ->with('success', "Status permohonan '{$layanan->jenis_layanan}' dari '{$namaPemohon}' berhasil diubah menjadi '{$statusLabel}'.");
 
         } catch (\Exception $e) {
             \Log::error('Error updating layanan status: ' . $e->getMessage(), [
                 'layanan_id' => $layanan->id,
-                'trace' => $e->getTraceAsString(),
+                'trace'      => $e->getTraceAsString(),
             ]);
 
-            return back()
-                ->with('error', 'Terjadi kesalahan saat mengubah status permohonan. Silakan coba lagi.');
+            return back()->with('error', 'Terjadi kesalahan saat mengubah status permohonan. Silakan coba lagi.');
         }
     }
 
@@ -124,18 +134,18 @@ class LayananController extends Controller
     {
         \Log::info('=== DESTROY LAYANAN METHOD CALLED ===');
         \Log::info('Layanan to delete: ' . $layanan->id . ' - ' . $layanan->jenis_layanan);
-        
+
         try {
             $jenisLayanan = $layanan->jenis_layanan;
-            $namaLengkap = $layanan->form_data['nama_lengkap'] ?? 'Pemohon';
-            
+            $namaPemohon  = $layanan->user?->name ?? 'Pemohon';
+
             if (!$layanan->exists) {
                 \Log::error('Layanan does not exist in database: ' . $layanan->id);
                 return redirect()->route('admin.layanan.index')
                     ->with('error', 'Permohonan layanan tidak ditemukan.');
             }
 
-            // Delete uploaded files
+            // Hapus file yang terupload
             if (!empty($layanan->uploaded_files)) {
                 foreach ($layanan->uploaded_files as $filePath) {
                     if (is_array($filePath)) {
@@ -147,14 +157,13 @@ class LayananController extends Controller
                     }
                 }
             }
-            
+
             $deleted = $layanan->delete();
-            
+
             \Log::info('Delete result: ' . ($deleted ? 'SUCCESS' : 'FAILED'));
-            \Log::info('Layanan deleted successfully: ' . $layanan->id);
 
             return redirect()->route('admin.layanan.index')
-                ->with('success', "Permohonan '{$jenisLayanan}' dari '{$namaLengkap}' berhasil dihapus.");
+                ->with('success', "Permohonan '{$jenisLayanan}' dari '{$namaPemohon}' berhasil dihapus.");
 
         } catch (\Exception $e) {
             \Log::error('=== ERROR DELETING LAYANAN ===');

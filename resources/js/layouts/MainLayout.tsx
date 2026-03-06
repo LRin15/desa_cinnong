@@ -1,12 +1,13 @@
 // resources/js/layouts/MainLayout.tsx
 import { Link, useForm, usePage } from '@inertiajs/react';
-import { CheckCircle, ChevronDown, ExternalLink, Mail, MapPin, Menu, MessageSquare, X } from 'lucide-react';
+import { CheckCircle, ChevronDown, ExternalLink, Lock, LogIn, Mail, MapPin, Menu, MessageSquare, X } from 'lucide-react';
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 interface User {
     id: number;
     name: string;
     email: string;
+    role: string;
 }
 
 interface Auth {
@@ -46,16 +47,21 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
     const [layananDropdownOpen, setLayananDropdownOpen] = useState(false);
     const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
     const [mobileLayananOpen, setMobileLayananOpen] = useState(false);
+    // State untuk modal login prompt
+    const [loginPromptOpen, setLoginPromptOpen] = useState(false);
+    const [loginPromptType, setLoginPromptType] = useState<'layanan' | 'pengaduan'>('layanan');
 
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const { data, setData, post, processing, errors, reset } = useForm({
-        nama: '',
-        email: '',
         telepon: '',
         judul: '',
         isi_pengaduan: '',
     });
+
+    // Cek apakah user adalah pengguna terdaftar
+    const isPenggunaTerdaftar = auth?.user?.role === 'pengguna_terdaftar';
+    const isLoggedIn = !!auth?.user;
 
     // Handle click outside dropdown
     useEffect(() => {
@@ -79,7 +85,24 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
         setMobileLayananOpen(false);
     };
 
+    // Handler klik layanan — cek dulu apakah pengguna terdaftar
+    const handleLayananClick = (e: React.MouseEvent) => {
+        if (!isPenggunaTerdaftar) {
+            e.preventDefault();
+            setLoginPromptType('layanan');
+            setLoginPromptOpen(true);
+            closeMobileMenu();
+        }
+    };
+
+    // Handler klik pengaduan — cek dulu apakah pengguna terdaftar
     const openComplaintModal = () => {
+        if (!isPenggunaTerdaftar) {
+            setLoginPromptType('pengaduan');
+            setLoginPromptOpen(true);
+            closeMobileMenu();
+            return;
+        }
         setComplaintModalOpen(true);
         closeMobileMenu();
     };
@@ -111,7 +134,6 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
     const kecamatan = villageSettings?.kecamatan || 'Kecamatan Sibulue';
 
     // Filter layanan berdasarkan status aktif
-    // Filter layanan berdasarkan status aktif
     const activeLayananKependudukan = useMemo(() => {
         const allLayanan = [
             { name: 'Surat Pengantar KTP', route: 'layanan.ktp', key: 'layanan_ktp' },
@@ -123,7 +145,6 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
             { name: 'Surat Keterangan Kematian', route: 'layanan.kematian', key: 'layanan_kematian' },
         ];
 
-        // Filter: hanya tampilkan jika is_active === true
         return allLayanan.filter((layanan) => {
             const setting = layananSettings?.[layanan.key];
             return setting?.is_active === true;
@@ -138,14 +159,12 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
             { name: 'Surat Rekomendasi Desa', route: 'layanan.rekomendasi', key: 'layanan_rekomendasi' },
         ];
 
-        // Filter: hanya tampilkan jika is_active === true
         return allLayanan.filter((layanan) => {
             const setting = layananSettings?.[layanan.key];
             return setting?.is_active === true;
         });
     }, [layananSettings]);
 
-    // Cek apakah ada layanan yang aktif
     const hasActiveLayanan = activeLayananKependudukan.length > 0 || activeLayananUmum.length > 0;
 
     return (
@@ -205,26 +224,33 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                 Publikasi
                             </Link>
 
-                            {/* Dropdown Layanan - Hanya tampil jika ada layanan aktif */}
+                            {/* Dropdown Layanan */}
                             {hasActiveLayanan && (
                                 <div
                                     className="relative"
                                     ref={dropdownRef}
-                                    onMouseEnter={() => setLayananDropdownOpen(true)}
+                                    onMouseEnter={() => {
+                                        if (isPenggunaTerdaftar) {
+                                            setLayananDropdownOpen(true);
+                                        }
+                                    }}
                                     onMouseLeave={() => {
                                         setLayananDropdownOpen(false);
                                         setActiveSubmenu(null);
                                     }}
                                 >
-                                    <button className="flex items-center text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]">
+                                    <button
+                                        onClick={handleLayananClick}
+                                        className="flex items-center text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]"
+                                    >
                                         Layanan
-                                        <ChevronDown className="ml-1 h-4 w-4" />
+                                        {!isPenggunaTerdaftar && <Lock className="ml-1 h-3 w-3 opacity-70" />}
+                                        {isPenggunaTerdaftar && <ChevronDown className="ml-1 h-4 w-4" />}
                                     </button>
 
-                                    {/* Dropdown Menu */}
-                                    {layananDropdownOpen && (
+                                    {/* Dropdown Menu — hanya tampil jika pengguna terdaftar */}
+                                    {layananDropdownOpen && isPenggunaTerdaftar && (
                                         <div className="absolute top-full left-0 mt-1 w-64 rounded-md bg-white shadow-lg">
-                                            {/* Layanan Administrasi Kependudukan */}
                                             {activeLayananKependudukan.length > 0 && (
                                                 <div className="relative" onMouseEnter={() => setActiveSubmenu('kependudukan')}>
                                                     <div className="flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 hover:bg-orange-50">
@@ -232,7 +258,6 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                                         <ChevronDown className="h-4 w-4 rotate-[-90deg]" />
                                                     </div>
 
-                                                    {/* Submenu Kependudukan */}
                                                     {activeSubmenu === 'kependudukan' && (
                                                         <div className="absolute top-0 left-full ml-1 w-64 rounded-md bg-white shadow-lg">
                                                             {activeLayananKependudukan.map((layanan, index) => (
@@ -253,7 +278,6 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                                 <div className="border-t border-gray-100" />
                                             )}
 
-                                            {/* Layanan Administrasi Umum */}
                                             {activeLayananUmum.length > 0 && (
                                                 <div className="relative" onMouseEnter={() => setActiveSubmenu('umum')}>
                                                     <div className="flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 hover:bg-orange-50">
@@ -261,7 +285,6 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                                         <ChevronDown className="h-4 w-4 rotate-[-90deg]" />
                                                     </div>
 
-                                                    {/* Submenu Umum */}
                                                     {activeSubmenu === 'umum' && (
                                                         <div className="absolute top-0 left-full ml-1 w-64 rounded-md bg-white shadow-lg">
                                                             {activeLayananUmum.map((layanan, index) => (
@@ -284,23 +307,33 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
 
                             <button
                                 onClick={openComplaintModal}
-                                className="text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]"
+                                className="flex items-center text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]"
                             >
                                 Pengaduan
+                                {!isPenggunaTerdaftar && <Lock className="ml-1 h-3 w-3 opacity-70" />}
                             </button>
                         </div>
 
                         {/* Desktop Auth Buttons */}
                         <div className="hidden items-center space-x-3 sm:flex">
-                            {auth?.user && (
+                            {auth?.user ? (
                                 <div className="flex items-center space-x-3">
                                     <span className="hidden max-w-32 truncate text-sm font-medium text-white md:block">Hai, {auth.user.name}</span>
-                                    <Link
-                                        href={route('dashboard')}
-                                        className="px-2 text-xs font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff] sm:text-sm"
-                                    >
-                                        Dashboard
-                                    </Link>
+                                    {auth.user.role === 'pengguna_terdaftar' ? (
+                                        <Link
+                                            href={route('pengguna.profil')}
+                                            className="px-2 text-xs font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff] sm:text-sm"
+                                        >
+                                            Profil
+                                        </Link>
+                                    ) : (
+                                        <Link
+                                            href={route('dashboard')}
+                                            className="px-2 text-xs font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff] sm:text-sm"
+                                        >
+                                            Dashboard
+                                        </Link>
+                                    )}
                                     <Link
                                         href={route('logout')}
                                         method="post"
@@ -310,6 +343,13 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                         Keluar
                                     </Link>
                                 </div>
+                            ) : (
+                                <Link
+                                    href={route('login')}
+                                    className="rounded-md bg-white px-4 py-1.5 text-xs font-medium text-orange-600 shadow-sm transition duration-150 ease-in-out hover:bg-orange-50 sm:text-sm"
+                                >
+                                    Masuk
+                                </Link>
                             )}
                         </div>
 
@@ -381,18 +421,29 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                             Publikasi
                         </Link>
 
-                        {/* Mobile Layanan Dropdown - Hanya tampil jika ada layanan aktif */}
+                        {/* Mobile Layanan */}
                         {hasActiveLayanan && (
                             <div>
                                 <button
-                                    onClick={() => setMobileLayananOpen(!mobileLayananOpen)}
+                                    onClick={(e) => {
+                                        if (!isPenggunaTerdaftar) {
+                                            handleLayananClick(e);
+                                        } else {
+                                            setMobileLayananOpen(!mobileLayananOpen);
+                                        }
+                                    }}
                                     className="flex w-full items-center justify-between rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
                                 >
-                                    Layanan
-                                    <ChevronDown className={`h-4 w-4 transition-transform ${mobileLayananOpen ? 'rotate-180' : ''}`} />
+                                    <span className="flex items-center gap-2">
+                                        Layanan
+                                        {!isPenggunaTerdaftar && <Lock className="h-3.5 w-3.5 opacity-70" />}
+                                    </span>
+                                    {isPenggunaTerdaftar && (
+                                        <ChevronDown className={`h-4 w-4 transition-transform ${mobileLayananOpen ? 'rotate-180' : ''}`} />
+                                    )}
                                 </button>
 
-                                {mobileLayananOpen && (
+                                {mobileLayananOpen && isPenggunaTerdaftar && (
                                     <div className="ml-4 space-y-1">
                                         {activeLayananKependudukan.length > 0 && (
                                             <div className="py-2">
@@ -432,12 +483,13 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
 
                         <button
                             onClick={openComplaintModal}
-                            className="block w-full rounded-md px-3 py-3 text-left text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
+                            className="flex w-full items-center gap-2 rounded-md px-3 py-3 text-left text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
                         >
                             Pengaduan
+                            {!isPenggunaTerdaftar && <Lock className="h-3.5 w-3.5 opacity-70" />}
                         </button>
 
-                        {auth?.user && (
+                        {auth?.user ? (
                             <div className="mt-3 space-y-2 border-t border-orange-600/20 pt-3">
                                 <Link
                                     href={route('dashboard')}
@@ -456,15 +508,80 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                     Keluar
                                 </Link>
                             </div>
+                        ) : (
+                            <div className="mt-3 border-t border-orange-600/20 pt-3">
+                                <Link
+                                    href={route('login')}
+                                    onClick={closeMobileMenu}
+                                    className="block rounded-md bg-white px-3 py-3 text-center text-base font-medium text-orange-600 transition duration-150 ease-in-out hover:bg-orange-50"
+                                >
+                                    Masuk
+                                </Link>
+                            </div>
                         )}
                     </div>
                 </div>
             </nav>
 
+            {/* ===================== MODAL LOGIN PROMPT ===================== */}
+            {loginPromptOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl">
+                        {/* Header strip */}
+                        <div className="bg-orange-600 px-6 py-5 text-center">
+                            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-white/20">
+                                <Lock className="h-7 w-7 text-white" />
+                            </div>
+                            <h3 className="text-lg font-bold text-white">Akses Terbatas</h3>
+                        </div>
+
+                        {/* Body */}
+                        <div className="px-6 py-6 text-center">
+                            <p className="mb-1 text-base font-semibold text-gray-900">
+                                {loginPromptType === 'layanan' ? 'Fitur Layanan Desa' : 'Fitur Pengaduan Masyarakat'}
+                            </p>
+                            <p className="mb-6 text-sm leading-relaxed text-gray-500">
+                                {isLoggedIn
+                                    ? 'Fitur ini hanya dapat diakses oleh pengguna dengan akun terdaftar sebagai warga desa.'
+                                    : 'Anda perlu masuk ke akun terlebih dahulu untuk mengakses fitur ini. Silakan login atau daftarkan diri Anda.'}
+                            </p>
+
+                            {/* Buttons */}
+                            <div className="space-y-3">
+                                {!isLoggedIn && (
+                                    <>
+                                        <Link
+                                            href={route('login')}
+                                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-700"
+                                        >
+                                            <LogIn className="h-4 w-4" />
+                                            Masuk ke Akun
+                                        </Link>
+                                        <Link
+                                            href={route('register')}
+                                            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-orange-200 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100"
+                                        >
+                                            Daftar Akun Baru
+                                        </Link>
+                                    </>
+                                )}
+                                <button
+                                    onClick={() => setLoginPromptOpen(false)}
+                                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+                                >
+                                    Kembali
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Modal Pengaduan */}
             {complaintModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
                     <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-xl">
+                        {/* Header */}
                         <div className="sticky top-0 flex items-center justify-between border-b bg-white p-4 sm:p-6">
                             <div className="flex items-center">
                                 <MessageSquare className="mr-2 h-6 w-6 text-orange-600" />
@@ -476,63 +593,64 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                         </div>
 
                         <form onSubmit={handleSubmit} className="p-4 sm:p-6">
+                            {/* Info akun pengirim — diambil otomatis dari sesi login */}
+                            <div className="mb-5 rounded-lg border border-orange-100 bg-orange-50 p-4">
+                                <p className="mb-2 text-xs font-semibold tracking-wide text-orange-600 uppercase">Pengaduan dikirim atas nama</p>
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-orange-200 text-sm font-bold text-orange-700">
+                                        {auth?.user?.name?.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-gray-900">{auth?.user?.name}</p>
+                                        <p className="text-xs text-gray-500">{auth?.user?.email}</p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="space-y-4">
+                                {/* No. Telepon */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700">Nama Lengkap *</label>
-                                    <input
-                                        type="text"
-                                        value={data.nama}
-                                        onChange={(e) => setData('nama', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-orange-500 focus:outline-none"
-                                        required
-                                    />
-                                    {errors.nama && <p className="mt-1 text-sm text-red-600">{errors.nama}</p>}
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">Email *</label>
-                                    <input
-                                        type="email"
-                                        value={data.email}
-                                        onChange={(e) => setData('email', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-orange-500 focus:outline-none"
-                                        required
-                                    />
-                                    {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">No. Telepon *</label>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        No. Telepon <span className="text-red-500">*</span>
+                                    </label>
                                     <input
                                         type="tel"
                                         value={data.telepon}
                                         onChange={(e) => setData('telepon', e.target.value)}
+                                        placeholder="08xxxxxxxxxx"
                                         className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-orange-500 focus:outline-none"
                                         required
                                     />
                                     {errors.telepon && <p className="mt-1 text-sm text-red-600">{errors.telepon}</p>}
                                 </div>
 
+                                {/* Judul Pengaduan */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700">Judul Pengaduan *</label>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Judul Pengaduan <span className="text-red-500">*</span>
+                                    </label>
                                     <input
                                         type="text"
                                         value={data.judul}
                                         onChange={(e) => setData('judul', e.target.value)}
+                                        placeholder="Ringkasan singkat pengaduan Anda"
                                         className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-orange-500 focus:outline-none"
                                         required
                                     />
                                     {errors.judul && <p className="mt-1 text-sm text-red-600">{errors.judul}</p>}
                                 </div>
 
+                                {/* Isi Pengaduan */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700">Isi Pengaduan *</label>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Isi Pengaduan <span className="text-red-500">*</span>
+                                    </label>
                                     <textarea
                                         value={data.isi_pengaduan}
                                         onChange={(e) => setData('isi_pengaduan', e.target.value)}
                                         rows={6}
-                                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-orange-500 focus:outline-none"
                                         placeholder="Jelaskan pengaduan Anda secara detail..."
+                                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-orange-500 focus:outline-none"
                                         required
                                     />
                                     {errors.isi_pengaduan && <p className="mt-1 text-sm text-red-600">{errors.isi_pengaduan}</p>}
@@ -568,13 +686,10 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
                                 <CheckCircle className="h-10 w-10 text-green-600" />
                             </div>
-
                             <h3 className="mb-2 text-xl font-bold text-gray-900 sm:text-2xl">Pengaduan Berhasil Dikirim!</h3>
-
                             <p className="mb-6 text-sm text-gray-600 sm:text-base">
                                 Terima kasih telah mengirimkan pengaduan Anda. Tim kami akan segera meninjau dan menindaklanjuti pengaduan Anda.
                             </p>
-
                             <button
                                 onClick={closeSuccessModal}
                                 className="mt-6 w-full rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-orange-700 sm:text-base"

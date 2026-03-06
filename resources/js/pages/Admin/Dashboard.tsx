@@ -3,20 +3,16 @@
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Link } from '@inertiajs/react';
 import {
-    Activity,
     AlertCircle,
     ArrowRight,
-    Building,
     Calendar,
     CheckCircle,
     Clock,
-    Database,
     FileText,
     Image as ImageIcon,
     MessageSquare,
     Newspaper,
-    PlusCircle,
-    TrendingUp,
+    Plus,
     Users,
     XCircle,
 } from 'lucide-react';
@@ -45,99 +41,65 @@ interface DashboardProps {
         layanan_selesai: number;
         layanan_ditolak: number;
     };
+    settings?: {
+        nama_desa?: string;
+        [key: string]: string | undefined;
+    };
     [key: string]: unknown;
 }
 
-const StatCard = ({
+const StatCardWithHover = ({
     title,
     value,
     icon,
     colorClass,
-    bgClass,
+    bgGradient,
     link,
 }: {
     title: string;
     value: number;
     icon: React.ReactNode;
     colorClass: string;
-    bgClass: string;
+    bgGradient: string;
     link: string;
 }) => {
-    const [isPressed, setIsPressed] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
 
     return (
         <div
-            className={`rounded-lg border bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-md sm:p-6 ${
-                isPressed ? 'scale-95' : 'hover:scale-[1.02]'
-            }`}
-            onTouchStart={() => setIsPressed(true)}
-            onTouchEnd={() => setIsPressed(false)}
-            onMouseDown={() => setIsPressed(true)}
-            onMouseUp={() => setIsPressed(false)}
-            onMouseLeave={() => setIsPressed(false)}
+            className={`group relative overflow-hidden rounded-lg ${bgGradient} p-6 shadow-md transition-all duration-300 hover:shadow-xl`}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
         >
-            <div className="mb-4 flex items-center justify-between">
-                <div className="flex-1">
-                    <p className="text-xs font-medium tracking-wider text-gray-500 uppercase sm:text-sm">{title}</p>
-                    <p className="mt-1 text-2xl font-bold text-gray-800 sm:text-3xl">{value}</p>
-                </div>
-                <div className={`flex h-12 w-12 items-center justify-center rounded-full sm:h-14 sm:w-14 ${bgClass} shadow-sm`}>{icon}</div>
+            <div className="mb-3 flex items-center justify-between">
+                <span className={`text-sm font-semibold tracking-wide uppercase ${colorClass}`}>{title}</span>
+                <div className={`rounded-full p-2 ${colorClass.replace('text-', 'bg-').replace('-600', '-100')}`}>{icon}</div>
             </div>
+            <div className={`mb-2 text-4xl font-bold ${colorClass}`}>{value}</div>
 
-            <div className="flex items-center justify-between">
-                <div className="flex items-center text-xs text-gray-500 sm:text-sm">
-                    <TrendingUp className="mr-1 h-3 w-3 text-green-500 sm:h-4 sm:w-4" />
-                    <span>Total aktif</span>
-                </div>
-            </div>
-
-            <Link
-                href={link}
-                className={`-mx-1 mt-4 inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold transition-colors hover:bg-gray-50 ${colorClass}`}
+            {/* Tambah Button at Bottom */}
+            <div
+                className={`absolute right-0 bottom-0 left-0 transition-all duration-300 ${
+                    isHovered ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
+                }`}
             >
-                <span>Kelola {title}</span>
-                <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
+                <Link
+                    href={link}
+                    className={`flex items-center justify-start gap-2 px-4 py-3 text-sm font-semibold transition-all duration-200 hover:gap-3 ${colorClass} ${bgGradient} backdrop-blur-sm`}
+                >
+                    <Plus className="h-4 w-4" />
+                    <span>Tambah</span>
+                    <ArrowRight className="h-4 w-4" />
+                </Link>
+            </div>
         </div>
     );
 };
 
-const QuickActionButton = ({
-    href,
-    icon,
-    title,
-    bgColor,
-    hoverColor,
-}: {
-    href: string;
-    icon: React.ReactNode;
-    title: string;
-    bgColor: string;
-    hoverColor: string;
-}) => {
-    const [isPressed, setIsPressed] = useState(false);
+export default function Dashboard({ auth, stats, settings }: DashboardProps) {
+    // Ambil nama desa dari settings atau gunakan default
+    const namaDesa = settings?.nama_desa || 'Desa Cinnong';
 
-    return (
-        <Link
-            href={href}
-            className={`flex items-center justify-center rounded-lg p-4 text-white shadow-sm transition-all duration-200 hover:shadow-md sm:p-5 ${bgColor} ${hoverColor} ${
-                isPressed ? 'scale-95' : 'hover:scale-[1.02]'
-            }`}
-            onTouchStart={() => setIsPressed(true)}
-            onTouchEnd={() => setIsPressed(false)}
-            onMouseDown={() => setIsPressed(true)}
-            onMouseUp={() => setIsPressed(false)}
-            onMouseLeave={() => setIsPressed(false)}
-        >
-            <div className="flex flex-col items-center text-center sm:flex-row sm:text-left">
-                <div className="mb-2 sm:mr-3 sm:mb-0">{icon}</div>
-                <span className="text-sm leading-tight font-semibold sm:text-base">{title}</span>
-            </div>
-        </Link>
-    );
-};
-
-export default function Dashboard({ auth, stats }: DashboardProps) {
     return (
         <AuthenticatedLayout auth={auth} title="Dashboard">
             <div className="space-y-6 px-4 sm:space-y-8 sm:px-0">
@@ -145,249 +107,285 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                 <div className="rounded-lg border-l-4 border-orange-500 bg-gradient-to-r from-white to-orange-50 p-4 shadow-sm sm:p-6">
                     <div className="flex items-start justify-between">
                         <div className="flex-1">
-                            <h1 className="text-xl leading-tight font-bold text-gray-800 sm:text-2xl">Selamat Datang, {auth.user.name}!</h1>
-                            <p className="mt-1 text-sm leading-relaxed text-gray-600 sm:text-base">
-                                Anda berada di pusat kendali Sistem Informasi Desa Cinnong.
-                            </p>
+                            <h1 className="text-xl leading-tight font-bold text-gray-800 sm:text-2xl">Selamat Datang, Admin {namaDesa}!</h1>
+                            <p className="mt-1 text-sm leading-relaxed text-gray-600 sm:text-base">Pusat kendali Sistem Informasi {namaDesa}</p>
                         </div>
                         <div className="hidden h-12 w-12 items-center justify-center rounded-full bg-orange-100 sm:flex">
-                            <Activity className="h-6 w-6 text-orange-600" />
+                            <Calendar className="h-6 w-6 text-orange-600" />
                         </div>
                     </div>
 
                     <div className="mt-4 flex items-center gap-4 text-xs sm:text-sm">
                         <div className="flex items-center">
-                            <div className="mr-2 h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
-                            <span className="text-gray-600">Sistem Aktif</span>
-                        </div>
-                        <div className="flex items-center">
                             <Calendar className="mr-2 h-4 w-4 text-gray-500" />
-                            <span className="text-gray-600">
-                                {new Date().toLocaleDateString('id-ID', {
-                                    weekday: 'long',
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric',
-                                })}
-                            </span>
+                            <span className="text-gray-600">Sabtu, 31 Januari 2026</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Statistics Cards Grid */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-6">
-                    <StatCard
+                {/* Statistics Cards Grid - Top Row with Light Theme */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <StatCardWithHover
                         title="Berita"
                         value={stats.total_berita}
-                        icon={<Newspaper className="h-6 w-6 text-blue-600 sm:h-7 sm:w-7" />}
-                        colorClass="text-blue-600 hover:text-blue-700"
-                        bgClass="bg-blue-100"
-                        link={route('admin.berita.index')}
+                        icon={<Newspaper className="h-5 w-5 text-blue-600" />}
+                        colorClass="text-blue-600"
+                        bgGradient="bg-gradient-to-br from-blue-50 to-blue-100"
+                        link={route('admin.berita.create')}
                     />
-                    <StatCard
+
+                    <StatCardWithHover
                         title="Infografis"
                         value={stats.total_infografis}
-                        icon={<ImageIcon className="h-6 w-6 text-green-600 sm:h-7 sm:w-7" />}
-                        colorClass="text-green-600 hover:text-green-700"
-                        bgClass="bg-green-100"
-                        link={route('admin.infografis.index')}
+                        icon={<ImageIcon className="h-5 w-5 text-green-600" />}
+                        colorClass="text-green-600"
+                        bgGradient="bg-gradient-to-br from-green-50 to-green-100"
+                        link={route('admin.infografis.create')}
                     />
-                    <StatCard
+
+                    <StatCardWithHover
                         title="Publikasi"
                         value={stats.total_publikasi}
-                        icon={<FileText className="h-6 w-6 text-orange-600 sm:h-7 sm:w-7" />}
-                        colorClass="text-orange-600 hover:text-orange-700"
-                        bgClass="bg-orange-100"
-                        link={route('admin.publikasi.index')}
-                    />
-                    <StatCard
-                        title="Layanan"
-                        value={stats.total_layanan}
-                        icon={<FileText className="h-6 w-6 text-indigo-600 sm:h-7 sm:w-7" />}
-                        colorClass="text-indigo-600 hover:text-indigo-700"
-                        bgClass="bg-indigo-100"
-                        link={route('admin.layanan.index')}
-                    />
-                    <StatCard
-                        title="Pengaduan"
-                        value={stats.total_pengaduan}
-                        icon={<MessageSquare className="h-6 w-6 text-red-600 sm:h-7 sm:w-7" />}
-                        colorClass="text-red-600 hover:text-red-700"
-                        bgClass="bg-red-100"
-                        link={route('admin.pengaduan.index')}
-                    />
-                    <StatCard
-                        title="Pengguna"
-                        value={stats.total_pengguna}
-                        icon={<Users className="h-6 w-6 text-purple-600 sm:h-7 sm:w-7" />}
-                        colorClass="text-purple-600 hover:text-purple-700"
-                        bgClass="bg-purple-100"
-                        link={route('admin.users.index')}
+                        icon={<FileText className="h-5 w-5 text-orange-600" />}
+                        colorClass="text-orange-600"
+                        bgGradient="bg-gradient-to-br from-orange-50 to-orange-100"
+                        link={route('admin.publikasi.create')}
                     />
                 </div>
 
-                {/* Layanan Status Cards */}
-                <div className="rounded-lg border bg-white p-4 shadow-sm sm:p-6">
-                    <div className="mb-4 flex items-center justify-between">
-                        <h2 className="text-lg font-bold text-gray-800 sm:text-xl">Status Permohonan Layanan</h2>
-                        <Link
-                            href={route('admin.layanan.index')}
-                            className="text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-700"
-                        >
-                            Lihat Semua →
-                        </Link>
+                {/* Status Sections Row */}
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    {/* Layanan Status Cards */}
+                    <div className="rounded-lg border bg-white p-4 shadow-sm sm:p-6">
+                        <div className="mb-4 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-lg font-bold text-gray-800 sm:text-xl">Status Permohonan Layanan</h2>
+                                <p className="text-sm text-gray-600">Pantau status layanan masyarakat</p>
+                            </div>
+                            <Link
+                                href={route('admin.layanan.index')}
+                                className="text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-700"
+                            >
+                                Lihat Semua →
+                            </Link>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-2">
+                            <div className="rounded-lg border-l-4 border-yellow-500 bg-yellow-50 p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-yellow-600">Menunggu</p>
+                                        <p className="mt-1 text-2xl font-bold text-yellow-700">{stats.layanan_pending}</p>
+                                    </div>
+                                    <Clock className="h-8 w-8 text-yellow-500" />
+                                </div>
+                            </div>
+                            <div className="rounded-lg border-l-4 border-blue-500 bg-blue-50 p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-blue-600">Diproses</p>
+                                        <p className="mt-1 text-2xl font-bold text-blue-700">{stats.layanan_diproses}</p>
+                                    </div>
+                                    <AlertCircle className="h-8 w-8 text-blue-500" />
+                                </div>
+                            </div>
+                            <div className="rounded-lg border-l-4 border-green-500 bg-green-50 p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-green-600">Selesai</p>
+                                        <p className="mt-1 text-2xl font-bold text-green-700">{stats.layanan_selesai}</p>
+                                    </div>
+                                    <CheckCircle className="h-8 w-8 text-green-500" />
+                                </div>
+                            </div>
+                            <div className="rounded-lg border-l-4 border-red-500 bg-red-50 p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-red-600">Ditolak</p>
+                                        <p className="mt-1 text-2xl font-bold text-red-700">{stats.layanan_ditolak}</p>
+                                    </div>
+                                    <XCircle className="h-8 w-8 text-red-500" />
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                        <div className="rounded-lg border-l-4 border-yellow-500 bg-yellow-50 p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-yellow-600">Menunggu</p>
-                                    <p className="mt-1 text-2xl font-bold text-yellow-700">{stats.layanan_pending}</p>
-                                </div>
-                                <Clock className="h-8 w-8 text-yellow-500" />
-                            </div>
-                        </div>
-                        <div className="rounded-lg border-l-4 border-blue-500 bg-blue-50 p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-blue-600">Diproses</p>
-                                    <p className="mt-1 text-2xl font-bold text-blue-700">{stats.layanan_diproses}</p>
-                                </div>
-                                <AlertCircle className="h-8 w-8 text-blue-500" />
-                            </div>
-                        </div>
-                        <div className="rounded-lg border-l-4 border-green-500 bg-green-50 p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-green-600">Selesai</p>
-                                    <p className="mt-1 text-2xl font-bold text-green-700">{stats.layanan_selesai}</p>
-                                </div>
-                                <CheckCircle className="h-8 w-8 text-green-500" />
-                            </div>
-                        </div>
-                        <div className="rounded-lg border-l-4 border-red-500 bg-red-50 p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-red-600">Ditolak</p>
-                                    <p className="mt-1 text-2xl font-bold text-red-700">{stats.layanan_ditolak}</p>
-                                </div>
-                                <XCircle className="h-8 w-8 text-red-500" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                {/* Pengaduan Status Cards */}
-                <div className="rounded-lg border bg-white p-4 shadow-sm sm:p-6">
-                    <div className="mb-4 flex items-center justify-between">
-                        <h2 className="text-lg font-bold text-gray-800 sm:text-xl">Status Pengaduan Masyarakat</h2>
-                        <Link href={route('admin.pengaduan.index')} className="text-sm font-medium text-red-600 transition-colors hover:text-red-700">
-                            Lihat Semua →
-                        </Link>
-                    </div>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                        <div className="rounded-lg border-l-4 border-red-500 bg-red-50 p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-red-600">Belum Diproses</p>
-                                    <p className="mt-1 text-2xl font-bold text-red-700">{stats.pengaduan_belum_diproses}</p>
-                                </div>
-                                <MessageSquare className="h-8 w-8 text-red-500" />
+                    {/* Pengaduan Status Cards */}
+                    <div className="rounded-lg border bg-white p-4 shadow-sm sm:p-6">
+                        <div className="mb-4 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-lg font-bold text-gray-800 sm:text-xl">Status Pengaduan Masyarakat</h2>
+                                <p className="text-sm text-gray-600">Monitor pengaduan yang masuk</p>
                             </div>
+                            <Link
+                                href={route('admin.pengaduan.index')}
+                                className="text-sm font-medium text-red-600 transition-colors hover:text-red-700"
+                            >
+                                Lihat Semua →
+                            </Link>
                         </div>
-                        <div className="rounded-lg border-l-4 border-yellow-500 bg-yellow-50 p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-yellow-600">Sedang Diproses</p>
-                                    <p className="mt-1 text-2xl font-bold text-yellow-700">{stats.pengaduan_sedang_diproses}</p>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                            <div className="rounded-lg border-l-4 border-yellow-500 bg-yellow-50 p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-yellow-600">Menunggu</p>
+                                        <p className="mt-1 text-2xl font-bold text-yellow-700">{stats.pengaduan_belum_diproses}</p>
+                                    </div>
+                                    <Clock className="h-8 w-8 text-yellow-500" />
                                 </div>
-                                <MessageSquare className="h-8 w-8 text-yellow-500" />
                             </div>
-                        </div>
-                        <div className="rounded-lg border-l-4 border-green-500 bg-green-50 p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-green-600">Selesai</p>
-                                    <p className="mt-1 text-2xl font-bold text-green-700">{stats.pengaduan_selesai}</p>
+                            <div className="rounded-lg border-l-4 border-blue-500 bg-blue-50 p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-blue-600">Diproses</p>
+                                        <p className="mt-1 text-2xl font-bold text-blue-700">{stats.pengaduan_sedang_diproses}</p>
+                                    </div>
+                                    <AlertCircle className="h-8 w-8 text-blue-500" />
                                 </div>
-                                <MessageSquare className="h-8 w-8 text-green-500" />
+                            </div>
+                            <div className="rounded-lg border-l-4 border-green-500 bg-green-50 p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-green-600">Selesai</p>
+                                        <p className="mt-1 text-2xl font-bold text-green-700">{stats.pengaduan_selesai}</p>
+                                    </div>
+                                    <CheckCircle className="h-8 w-8 text-green-500" />
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Quick Actions Section */}
+                {/* Content Distribution Chart */}
                 <div className="rounded-lg border bg-white p-4 shadow-sm sm:p-6">
-                    <div className="mb-4 sm:mb-6">
-                        <h2 className="text-lg font-bold text-gray-800 sm:text-xl">Aksi Cepat</h2>
-                        <p className="mt-1 text-sm text-gray-600">Tambahkan konten baru dengan mudah</p>
-                    </div>
+                    <h2 className="mb-4 text-lg font-bold text-gray-800 sm:text-xl">Statistik Sistem</h2>
+                    <p className="mb-4 text-sm text-gray-600">
+                        Total{' '}
+                        {stats.total_berita +
+                            stats.total_infografis +
+                            stats.total_publikasi +
+                            stats.total_layanan +
+                            stats.total_pengaduan +
+                            stats.total_pengguna}{' '}
+                        data aktif
+                    </p>
 
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
-                        <QuickActionButton
-                            href={route('admin.berita.create')}
-                            icon={<PlusCircle className="h-5 w-5 sm:h-6 sm:w-6" />}
-                            title="Tambah Berita Baru"
-                            bgColor="bg-blue-600"
-                            hoverColor="hover:bg-blue-700"
-                        />
-                        <QuickActionButton
-                            href={route('admin.infografis.create')}
-                            icon={<PlusCircle className="h-5 w-5 sm:h-6 sm:w-6" />}
-                            title="Tambah Infografis Baru"
-                            bgColor="bg-green-600"
-                            hoverColor="hover:bg-green-700"
-                        />
-                        <QuickActionButton
-                            href={route('admin.publikasi.create')}
-                            icon={<PlusCircle className="h-5 w-5 sm:h-6 sm:w-6" />}
-                            title="Tambah Publikasi Baru"
-                            bgColor="bg-orange-600"
-                            hoverColor="hover:bg-orange-700"
-                        />
-                        <QuickActionButton
-                            href={route('admin.users.create')}
-                            icon={<PlusCircle className="h-5 w-5 sm:h-6 sm:w-6" />}
-                            title="Tambah Pengguna Baru"
-                            bgColor="bg-gray-600"
-                            hoverColor="hover:bg-gray-700"
-                        />
-                        <QuickActionButton
-                            href={route('admin.profil.edit')}
-                            icon={<Building className="h-5 w-5 sm:h-6 sm:w-6" />}
-                            title="Kelola Profil Desa"
-                            bgColor="bg-teal-600"
-                            hoverColor="hover:bg-teal-700"
-                        />
-                        <QuickActionButton
-                            href={route('admin.dynamic-tables.index')}
-                            icon={<Database className="h-5 w-5 sm:h-6 sm:w-6" />}
-                            title="Kelola Tabel Data"
-                            bgColor="bg-purple-600"
-                            hoverColor="hover:bg-purple-700"
-                        />
-                        <QuickActionButton
-                            href={route('admin.layanan.index')}
-                            icon={<FileText className="h-5 w-5 sm:h-6 sm:w-6" />}
-                            title="Kelola Layanan"
-                            bgColor="bg-indigo-600"
-                            hoverColor="hover:bg-indigo-700"
-                        />
-                        <QuickActionButton
-                            href={route('admin.pengaduan.index')}
-                            icon={<MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />}
-                            title="Kelola Pengaduan"
-                            bgColor="bg-red-600"
-                            hoverColor="hover:bg-red-700"
-                        />
+                    <div className="space-y-4">
+                        <div className="flex items-center">
+                            <div className="flex w-32 items-center text-sm font-medium text-gray-700">
+                                <Newspaper className="mr-2 h-4 w-4 text-blue-600" />
+                                Berita
+                            </div>
+                            <div className="mx-4 flex-1">
+                                <div className="h-3 overflow-hidden rounded-full bg-gray-200">
+                                    <div
+                                        className="h-full bg-blue-600 transition-all duration-300"
+                                        style={{
+                                            width: `${(stats.total_berita / Math.max(stats.total_berita + stats.total_infografis + stats.total_publikasi + stats.total_layanan + stats.total_pengaduan + stats.total_pengguna, 1)) * 100}%`,
+                                        }}
+                                    ></div>
+                                </div>
+                            </div>
+                            <div className="w-12 text-right text-sm font-semibold text-gray-800">{stats.total_berita}</div>
+                        </div>
+
+                        <div className="flex items-center">
+                            <div className="flex w-32 items-center text-sm font-medium text-gray-700">
+                                <ImageIcon className="mr-2 h-4 w-4 text-green-600" />
+                                Infografis
+                            </div>
+                            <div className="mx-4 flex-1">
+                                <div className="h-3 overflow-hidden rounded-full bg-gray-200">
+                                    <div
+                                        className="h-full bg-green-600 transition-all duration-300"
+                                        style={{
+                                            width: `${(stats.total_infografis / Math.max(stats.total_berita + stats.total_infografis + stats.total_publikasi + stats.total_layanan + stats.total_pengaduan + stats.total_pengguna, 1)) * 100}%`,
+                                        }}
+                                    ></div>
+                                </div>
+                            </div>
+                            <div className="w-12 text-right text-sm font-semibold text-gray-800">{stats.total_infografis}</div>
+                        </div>
+
+                        <div className="flex items-center">
+                            <div className="flex w-32 items-center text-sm font-medium text-gray-700">
+                                <FileText className="mr-2 h-4 w-4 text-orange-600" />
+                                Publikasi
+                            </div>
+                            <div className="mx-4 flex-1">
+                                <div className="h-3 overflow-hidden rounded-full bg-gray-200">
+                                    <div
+                                        className="h-full bg-orange-600 transition-all duration-300"
+                                        style={{
+                                            width: `${(stats.total_publikasi / Math.max(stats.total_berita + stats.total_infografis + stats.total_publikasi + stats.total_layanan + stats.total_pengaduan + stats.total_pengguna, 1)) * 100}%`,
+                                        }}
+                                    ></div>
+                                </div>
+                            </div>
+                            <div className="w-12 text-right text-sm font-semibold text-gray-800">{stats.total_publikasi}</div>
+                        </div>
+
+                        <div className="flex items-center">
+                            <div className="flex w-32 items-center text-sm font-medium text-gray-700">
+                                <FileText className="mr-2 h-4 w-4 text-indigo-600" />
+                                Layanan
+                            </div>
+                            <div className="mx-4 flex-1">
+                                <div className="h-3 overflow-hidden rounded-full bg-gray-200">
+                                    <div
+                                        className="h-full bg-indigo-600 transition-all duration-300"
+                                        style={{
+                                            width: `${(stats.total_layanan / Math.max(stats.total_berita + stats.total_infografis + stats.total_publikasi + stats.total_layanan + stats.total_pengaduan + stats.total_pengguna, 1)) * 100}%`,
+                                        }}
+                                    ></div>
+                                </div>
+                            </div>
+                            <div className="w-12 text-right text-sm font-semibold text-gray-800">{stats.total_layanan}</div>
+                        </div>
+
+                        <div className="flex items-center">
+                            <div className="flex w-32 items-center text-sm font-medium text-gray-700">
+                                <MessageSquare className="mr-2 h-4 w-4 text-red-600" />
+                                Pengaduan
+                            </div>
+                            <div className="mx-4 flex-1">
+                                <div className="h-3 overflow-hidden rounded-full bg-gray-200">
+                                    <div
+                                        className="h-full bg-red-600 transition-all duration-300"
+                                        style={{
+                                            width: `${(stats.total_pengaduan / Math.max(stats.total_berita + stats.total_infografis + stats.total_publikasi + stats.total_layanan + stats.total_pengaduan + stats.total_pengguna, 1)) * 100}%`,
+                                        }}
+                                    ></div>
+                                </div>
+                            </div>
+                            <div className="w-12 text-right text-sm font-semibold text-gray-800">{stats.total_pengaduan}</div>
+                        </div>
+
+                        <div className="flex items-center">
+                            <div className="flex w-32 items-center text-sm font-medium text-gray-700">
+                                <Users className="mr-2 h-4 w-4 text-purple-600" />
+                                Pengguna
+                            </div>
+                            <div className="mx-4 flex-1">
+                                <div className="h-3 overflow-hidden rounded-full bg-gray-200">
+                                    <div
+                                        className="h-full bg-purple-600 transition-all duration-300"
+                                        style={{
+                                            width: `${(stats.total_pengguna / Math.max(stats.total_berita + stats.total_infografis + stats.total_publikasi + stats.total_layanan + stats.total_pengaduan + stats.total_pengguna, 1)) * 100}%`,
+                                        }}
+                                    ></div>
+                                </div>
+                            </div>
+                            <div className="w-12 text-right text-sm font-semibold text-gray-800">{stats.total_pengguna}</div>
+                        </div>
                     </div>
                 </div>
 
                 {/* Enhanced Summary Section */}
                 <div className="rounded-lg border bg-gradient-to-br from-gray-50 to-white p-4 shadow-sm sm:p-6">
                     <h2 className="mb-4 text-lg font-bold text-gray-800 sm:text-xl">Ringkasan Aktivitas</h2>
+                    <p className="mb-4 text-sm text-gray-600">Statistik keseluruhan sistem</p>
 
-                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
                         <div className="rounded-lg bg-white p-4 text-center shadow-sm">
                             <div className="text-2xl font-bold text-blue-600 sm:text-3xl">
                                 {stats.total_berita + stats.total_infografis + stats.total_publikasi}
@@ -403,8 +401,8 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                         </div>
 
                         <div className="rounded-lg bg-white p-4 text-center shadow-sm">
-                            <div className="text-2xl font-bold text-orange-600 sm:text-3xl">{stats.total_publikasi}</div>
-                            <div className="mt-1 text-xs text-gray-600 sm:text-sm">Dokumen Publik</div>
+                            <div className="text-2xl font-bold text-orange-600 sm:text-3xl">{stats.total_pengaduan}</div>
+                            <div className="mt-1 text-xs text-gray-600 sm:text-sm">Pengaduan Masyarakat</div>
                         </div>
 
                         <div className="rounded-lg bg-white p-4 text-center shadow-sm">
@@ -415,67 +413,6 @@ export default function Dashboard({ auth, stats }: DashboardProps) {
                         <div className="rounded-lg bg-white p-4 text-center shadow-sm">
                             <div className="text-2xl font-bold text-purple-600 sm:text-3xl">{stats.total_pengguna}</div>
                             <div className="mt-1 text-xs text-gray-600 sm:text-sm">Admin Aktif</div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Content Distribution Chart */}
-                <div className="rounded-lg border bg-white p-4 shadow-sm sm:p-6">
-                    <h2 className="mb-4 text-lg font-bold text-gray-800 sm:text-xl">Distribusi Konten</h2>
-
-                    <div className="space-y-4">
-                        <div className="flex items-center">
-                            <div className="flex w-20 items-center text-sm font-medium text-gray-700">
-                                <Newspaper className="mr-2 h-4 w-4 text-blue-600" />
-                                Berita
-                            </div>
-                            <div className="mx-4 flex-1">
-                                <div className="h-3 overflow-hidden rounded-full bg-gray-200">
-                                    <div
-                                        className="h-full bg-blue-600 transition-all duration-300"
-                                        style={{
-                                            width: `${(stats.total_berita / Math.max(stats.total_berita + stats.total_infografis + stats.total_publikasi, 1)) * 100}%`,
-                                        }}
-                                    ></div>
-                                </div>
-                            </div>
-                            <div className="w-8 text-right text-sm font-semibold text-gray-800">{stats.total_berita}</div>
-                        </div>
-
-                        <div className="flex items-center">
-                            <div className="flex w-20 items-center text-sm font-medium text-gray-700">
-                                <ImageIcon className="mr-2 h-4 w-4 text-green-600" />
-                                Infografis
-                            </div>
-                            <div className="mx-4 flex-1">
-                                <div className="h-3 overflow-hidden rounded-full bg-gray-200">
-                                    <div
-                                        className="h-full bg-green-600 transition-all duration-300"
-                                        style={{
-                                            width: `${(stats.total_infografis / Math.max(stats.total_berita + stats.total_infografis + stats.total_publikasi, 1)) * 100}%`,
-                                        }}
-                                    ></div>
-                                </div>
-                            </div>
-                            <div className="w-8 text-right text-sm font-semibold text-gray-800">{stats.total_infografis}</div>
-                        </div>
-
-                        <div className="flex items-center">
-                            <div className="flex w-20 items-center text-sm font-medium text-gray-700">
-                                <FileText className="mr-2 h-4 w-4 text-orange-600" />
-                                Publikasi
-                            </div>
-                            <div className="mx-4 flex-1">
-                                <div className="h-3 overflow-hidden rounded-full bg-gray-200">
-                                    <div
-                                        className="h-full bg-orange-600 transition-all duration-300"
-                                        style={{
-                                            width: `${(stats.total_publikasi / Math.max(stats.total_berita + stats.total_infografis + stats.total_publikasi, 1)) * 100}%`,
-                                        }}
-                                    ></div>
-                                </div>
-                            </div>
-                            <div className="w-8 text-right text-sm font-semibold text-gray-800">{stats.total_publikasi}</div>
                         </div>
                     </div>
                 </div>

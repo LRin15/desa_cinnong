@@ -2,61 +2,19 @@
 
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Shield } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
 interface CreatePageProps {
-    auth: {
-        user: {
-            id: number;
-            name: string;
-            email: string;
-        };
-    };
-    errors?: {
-        name?: string;
-        email?: string;
-        password?: string;
-        password_confirmation?: string;
-    };
-    flash?: {
-        success?: string;
-        error?: string;
-    };
+    auth: { user: { id: number; name: string; email: string } };
+    targetRole: string;
+    errors?: Record<string, string>;
+    flash?: { success?: string; error?: string };
     [key: string]: unknown;
 }
 
 export default function Create() {
-    // Add error handling for page props
-    let pageProps: CreatePageProps;
-
-    try {
-        pageProps = usePage<CreatePageProps>().props;
-    } catch (error) {
-        console.error('Error getting page props:', error);
-        return (
-            <div className="flex min-h-screen items-center justify-center p-4">
-                <div className="text-center">
-                    <h1 className="text-xl font-bold text-red-600 sm:text-2xl">Error Loading Page</h1>
-                    <p className="mt-2 text-sm text-gray-600 sm:text-base">Please check the console for details.</p>
-                </div>
-            </div>
-        );
-    }
-
-    const { auth, errors, flash } = pageProps;
-
-    // Safety check for auth
-    if (!auth || !auth.user) {
-        return (
-            <div className="flex min-h-screen items-center justify-center p-4">
-                <div className="text-center">
-                    <h1 className="text-xl font-bold text-red-600 sm:text-2xl">Authentication Error</h1>
-                    <p className="mt-2 text-sm text-gray-600 sm:text-base">User authentication data is missing.</p>
-                </div>
-            </div>
-        );
-    }
+    const { auth, errors, flash, targetRole } = usePage<CreatePageProps>().props;
 
     const {
         data,
@@ -71,7 +29,6 @@ export default function Create() {
         password_confirmation: '',
     });
 
-    // Merge server errors with form errors
     const allErrors = { ...errors, ...formErrors };
 
     const submit: FormEventHandler = (e) => {
@@ -80,51 +37,51 @@ export default function Create() {
     };
 
     return (
-        <AuthenticatedLayout auth={auth} title="Tambah Pengguna Baru">
-            <Head title="Tambah Pengguna Baru" />
-            <div className="space-y-4 px-4 sm:space-y-6 sm:px-0">
+        <AuthenticatedLayout auth={auth} title="Tambah Admin Desa">
+            <Head title="Tambah Admin Desa" />
+
+            <div className="space-y-5 px-4 sm:px-0">
                 {/* Header */}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-3">
-                        <Link
-                            href={route('admin.users.index')}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-600 transition-colors hover:bg-gray-50 sm:h-10 sm:w-10"
-                            title="Kembali ke Daftar Pengguna"
-                        >
-                            <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-                        </Link>
-                        <div>
-                            <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">Tambah Pengguna Baru</h1>
-                            <p className="mt-1 text-xs text-gray-500 sm:text-sm">Buat akun pengguna baru untuk sistem</p>
-                        </div>
+                <div className="flex items-center gap-3">
+                    <Link
+                        href={route('admin.users.index')}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                    </Link>
+                    <div>
+                        <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">Tambah Admin Desa</h1>
+                        <p className="mt-0.5 text-sm text-gray-500">Buat akun admin desa baru</p>
                     </div>
                 </div>
 
-                {/* Flash Messages */}
+                {/* Flash */}
                 {flash?.success && (
-                    <div className="rounded-md border border-green-200 bg-green-50 p-3 sm:p-4">
-                        <p className="text-sm text-green-700 sm:text-base">{flash.success}</p>
-                    </div>
+                    <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{flash.success}</div>
                 )}
-                {flash?.error && (
-                    <div className="rounded-md border border-red-200 bg-red-50 p-3 sm:p-4">
-                        <p className="text-sm text-red-700 sm:text-base">{flash.error}</p>
-                    </div>
-                )}
+                {flash?.error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{flash.error}</div>}
 
-                {/* Form Container */}
-                <div className="rounded-lg border bg-white shadow-sm">
-                    <div className="border-b border-gray-200 px-4 py-4 sm:px-6 sm:py-5">
-                        <h2 className="text-lg font-medium text-gray-900 sm:text-xl">Formulir Pengguna</h2>
-                        <p className="mt-1 text-xs text-gray-500 sm:text-sm">Isi detail pengguna di bawah ini</p>
+                {/* Role indicator */}
+                <div className="flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3">
+                    <Shield className="h-4 w-4 flex-shrink-0 text-indigo-600" />
+                    <p className="text-sm text-indigo-700">
+                        Akun yang dibuat akan memiliki role <strong>Admin Desa</strong> secara otomatis.
+                    </p>
+                </div>
+
+                {/* Form */}
+                <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
+                    <div className="border-b border-gray-100 px-6 py-5">
+                        <h2 className="text-base font-semibold text-gray-900">Formulir Pengguna</h2>
+                        <p className="mt-0.5 text-sm text-gray-500">Isi detail akun admin desa baru</p>
                     </div>
 
-                    <form onSubmit={submit} className="p-4 sm:p-6">
-                        <div className="space-y-4 sm:space-y-6">
-                            {/* Name and Email - Responsive Grid */}
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
+                    <form onSubmit={submit} className="p-6">
+                        <div className="space-y-5">
+                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                                {/* Nama */}
                                 <div>
-                                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 sm:text-base">
+                                    <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-gray-700">
                                         Nama Lengkap <span className="text-red-500">*</span>
                                     </label>
                                     <input
@@ -132,14 +89,16 @@ export default function Create() {
                                         type="text"
                                         value={data.name}
                                         onChange={(e) => setData('name', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none sm:text-base"
-                                        placeholder="Masukkan nama pengguna..."
+                                        placeholder="Masukkan nama lengkap..."
                                         required
+                                        className={`block w-full rounded-lg border px-3 py-2.5 text-sm shadow-sm transition focus:ring-2 focus:outline-none ${allErrors.name ? 'border-red-300 focus:border-red-500 focus:ring-red-500/30' : 'border-gray-300 focus:border-orange-500 focus:ring-orange-500/30'}`}
                                     />
-                                    {allErrors.name && <p className="mt-2 text-sm text-red-600">{allErrors.name}</p>}
+                                    {allErrors.name && <p className="mt-1 text-xs text-red-600">{allErrors.name}</p>}
                                 </div>
+
+                                {/* Email */}
                                 <div>
-                                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 sm:text-base">
+                                    <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-gray-700">
                                         Alamat Email <span className="text-red-500">*</span>
                                     </label>
                                     <input
@@ -147,18 +106,18 @@ export default function Create() {
                                         type="email"
                                         value={data.email}
                                         onChange={(e) => setData('email', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none sm:text-base"
                                         placeholder="contoh@email.com"
                                         required
+                                        className={`block w-full rounded-lg border px-3 py-2.5 text-sm shadow-sm transition focus:ring-2 focus:outline-none ${allErrors.email ? 'border-red-300 focus:border-red-500 focus:ring-red-500/30' : 'border-gray-300 focus:border-orange-500 focus:ring-orange-500/30'}`}
                                     />
-                                    {allErrors.email && <p className="mt-2 text-sm text-red-600">{allErrors.email}</p>}
+                                    {allErrors.email && <p className="mt-1 text-xs text-red-600">{allErrors.email}</p>}
                                 </div>
                             </div>
 
-                            {/* Password and Confirmation - Responsive Grid */}
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
+                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                                {/* Password */}
                                 <div>
-                                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 sm:text-base">
+                                    <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-gray-700">
                                         Password <span className="text-red-500">*</span>
                                     </label>
                                     <input
@@ -166,14 +125,16 @@ export default function Create() {
                                         type="password"
                                         value={data.password}
                                         onChange={(e) => setData('password', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none sm:text-base"
                                         placeholder="Minimal 8 karakter"
                                         required
+                                        className={`block w-full rounded-lg border px-3 py-2.5 text-sm shadow-sm transition focus:ring-2 focus:outline-none ${allErrors.password ? 'border-red-300 focus:border-red-500 focus:ring-red-500/30' : 'border-gray-300 focus:border-orange-500 focus:ring-orange-500/30'}`}
                                     />
-                                    {allErrors.password && <p className="mt-2 text-sm text-red-600">{allErrors.password}</p>}
+                                    {allErrors.password && <p className="mt-1 text-xs text-red-600">{allErrors.password}</p>}
                                 </div>
+
+                                {/* Konfirmasi */}
                                 <div>
-                                    <label htmlFor="password_confirmation" className="block text-sm font-medium text-gray-700 sm:text-base">
+                                    <label htmlFor="password_confirmation" className="mb-1.5 block text-sm font-medium text-gray-700">
                                         Konfirmasi Password <span className="text-red-500">*</span>
                                     </label>
                                     <input
@@ -181,31 +142,31 @@ export default function Create() {
                                         type="password"
                                         value={data.password_confirmation}
                                         onChange={(e) => setData('password_confirmation', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none sm:text-base"
                                         placeholder="Ulangi password"
                                         required
+                                        className={`block w-full rounded-lg border px-3 py-2.5 text-sm shadow-sm transition focus:ring-2 focus:outline-none ${allErrors.password_confirmation ? 'border-red-300 focus:border-red-500 focus:ring-red-500/30' : 'border-gray-300 focus:border-orange-500 focus:ring-orange-500/30'}`}
                                     />
                                     {allErrors.password_confirmation && (
-                                        <p className="mt-2 text-sm text-red-600">{allErrors.password_confirmation}</p>
+                                        <p className="mt-1 text-xs text-red-600">{allErrors.password_confirmation}</p>
                                     )}
                                 </div>
                             </div>
                         </div>
 
-                        {/* Action Buttons */}
-                        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-gray-200 pt-6 sm:flex-row sm:justify-end">
+                        {/* Actions */}
+                        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-gray-100 pt-6 sm:flex-row sm:justify-end">
                             <Link
                                 href={route('admin.users.index')}
-                                className="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:w-auto"
+                                className="inline-flex justify-center rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
                             >
                                 Batal
                             </Link>
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="inline-flex justify-center rounded-md bg-orange-600 px-6 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                                className="inline-flex justify-center rounded-xl bg-orange-600 px-6 py-2.5 text-sm font-semibold text-white shadow transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
                             >
-                                {processing ? 'Menyimpan...' : 'Simpan Pengguna'}
+                                {processing ? 'Menyimpan...' : 'Simpan Admin Desa'}
                             </button>
                         </div>
                     </form>

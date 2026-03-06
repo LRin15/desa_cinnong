@@ -1,7 +1,21 @@
 // resources/js/layouts/AuthenticatedLayout.tsx
 
 import { Head, Link } from '@inertiajs/react';
-import { FileText, Grid, Home, Image as ImageIcon, LogOut, Menu, MessageSquare, Newspaper, Users, X } from 'lucide-react';
+import {
+    Building,
+    ClipboardList,
+    Database,
+    FileText,
+    Grid,
+    Home,
+    Image as ImageIcon,
+    LogOut,
+    Menu,
+    MessageSquare,
+    Newspaper,
+    Users,
+    X,
+} from 'lucide-react';
 import { ReactNode, useState } from 'react';
 
 interface User {
@@ -25,7 +39,23 @@ export default function AuthenticatedLayout({ auth, children, title }: Authentic
         { name: 'Kelola Infografis', href: route('admin.infografis.index'), icon: ImageIcon, current: route().current('admin.infografis.*') },
         { name: 'Kelola Publikasi', href: route('admin.publikasi.index'), icon: FileText, current: route().current('admin.publikasi.*') },
         { name: 'Kelola Pengaduan', href: route('admin.pengaduan.index'), icon: MessageSquare, current: route().current('admin.pengaduan.*') },
+        { name: 'Kelola Layanan', href: route('admin.layanan.index'), icon: ClipboardList, current: route().current('admin.layanan.*') },
         { name: 'Kelola Pengguna', href: route('admin.users.index'), icon: Users, current: route().current('admin.users.*') },
+    ];
+
+    const settingsItems = [
+        {
+            name: 'Profil Desa',
+            href: route('admin.profil.edit'),
+            icon: Building,
+            current: route().current('admin.profil.*'),
+        },
+        {
+            name: 'Tabel Data',
+            href: '/admin/dynamic-tables',
+            icon: Database,
+            current: typeof window !== 'undefined' && window.location.pathname.includes('/admin/dynamic-tables'),
+        },
     ];
 
     return (
@@ -46,6 +76,20 @@ export default function AuthenticatedLayout({ auth, children, title }: Authentic
                     </div>
                     <nav className="mt-4">
                         {navItems.map((item) => (
+                            <Link
+                                key={item.name}
+                                href={item.href}
+                                className={`flex items-center px-6 py-3 text-sm font-medium transition-colors duration-200 ${
+                                    item.current ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                                }`}
+                            >
+                                <item.icon className="mr-3 h-5 w-5" />
+                                {item.name}
+                            </Link>
+                        ))}
+
+                        {/* Settings Menu */}
+                        {settingsItems.map((item) => (
                             <Link
                                 key={item.name}
                                 href={item.href}

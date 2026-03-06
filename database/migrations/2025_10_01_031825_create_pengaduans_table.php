@@ -13,13 +13,11 @@ return new class extends Migration
     {
         Schema::create('pengaduans', function (Blueprint $table) {
             $table->id();
-            $table->string('nama');
-            $table->string('email');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('telepon', 20);
             $table->string('judul');
             $table->text('isi_pengaduan');
-            $table->enum('status', ['belum_diproses', 'sedang_diproses', 'selesai'])
-                  ->default('belum_diproses');
+            $table->enum('status', ['menunggu', 'diproses', 'selesai'])->default('menunggu');
             $table->timestamps();
         });
     }

@@ -1,3 +1,6 @@
+// resources/js/Pages/Admin/DynamicTables/Charts.tsx
+
+import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     ArcElement,
@@ -126,12 +129,12 @@ export default function Charts() {
 
         const datasets = chartConfig.yAxis.map((yCol, index) => {
             const colors = [
-                'rgb(59, 130, 246)',
-                'rgb(34, 197, 94)',
-                'rgb(249, 115, 22)',
-                'rgb(168, 85, 247)',
-                'rgb(236, 72, 153)',
-                'rgb(14, 165, 233)',
+                'rgb(249, 115, 22)', // Orange-600
+                'rgb(59, 130, 246)', // Blue-500
+                'rgb(34, 197, 94)', // Green-500
+                'rgb(168, 85, 247)', // Purple-500
+                'rgb(236, 72, 153)', // Pink-500
+                'rgb(107, 114, 128)', // Gray-500
             ];
 
             const color = colors[index % colors.length];
@@ -156,7 +159,6 @@ export default function Charts() {
     };
 
     const handleAddChart = (chartData: ChartConfig) => {
-        // Validasi sudah dilakukan di ChartForm component
         const chartToAdd: ChartConfig = {
             ...chartData,
             id: Date.now().toString(),
@@ -186,7 +188,7 @@ export default function Charts() {
 
     const handleSaveCharts = () => {
         router.post(
-            `/admin/dynamic-tables/${table.id}/charts`,
+            route('admin.dynamic-tables.save-charts', table.id),
             {
                 charts: JSON.stringify(charts),
             },
@@ -243,7 +245,6 @@ export default function Charts() {
         };
 
         const handleSave = () => {
-            // Validasi field dengan pengecekan yang lebih robust
             const trimmedName = formData.name ? formData.name.trim() : '';
 
             if (trimmedName === '') {
@@ -261,7 +262,6 @@ export default function Charts() {
                 return;
             }
 
-            // Semua validasi passed, panggil onSave
             onSave(formData);
         };
 
@@ -388,38 +388,43 @@ export default function Charts() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <AuthenticatedLayout auth={auth} title={`Grafik - ${table.name}`}>
             <Head title={`Grafik - ${table.name}`} />
 
-            <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+            <div className="space-y-4 sm:space-y-6">
                 {/* Flash Messages */}
                 {flash?.success && (
-                    <div className="mb-6 rounded-md border border-green-200 bg-green-50 p-4">
-                        <p className="text-sm text-green-700">{flash.success}</p>
+                    <div className="rounded-md border border-green-200 bg-green-50 p-3 sm:p-4">
+                        <p className="text-sm text-green-700 sm:text-base">{flash.success}</p>
                     </div>
                 )}
                 {flash?.error && (
-                    <div className="mb-6 rounded-md border border-red-200 bg-red-50 p-4">
-                        <p className="text-sm text-red-700">{flash.error}</p>
+                    <div className="rounded-md border border-red-200 bg-red-50 p-3 sm:p-4">
+                        <p className="text-sm text-red-700 sm:text-base">{flash.error}</p>
                     </div>
                 )}
 
                 {/* Header */}
-                <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <Link href="/admin/dynamic-tables" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
-                            <ArrowLeft className="h-4 w-4" />
-                            Kembali ke Daftar Tabel
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3">
+                        <Link
+                            href={route('admin.dynamic-tables.index')}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-600 transition-colors hover:bg-gray-50 sm:h-10 sm:w-10"
+                            title="Kembali ke Daftar Tabel"
+                        >
+                            <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                         </Link>
-                        <h1 className="mt-2 text-2xl font-bold text-gray-900">{table.name}</h1>
-                        <p className="mt-1 text-sm text-gray-600">Kelola grafik dan visualisasi data</p>
+                        <div>
+                            <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">Grafik: {table.name}</h1>
+                            <p className="mt-1 text-xs text-gray-500 sm:text-sm">Kelola grafik dan visualisasi data</p>
+                        </div>
                     </div>
 
                     <div className="flex gap-2">
                         {!isAddingChart && (
                             <button
                                 onClick={() => setIsAddingChart(true)}
-                                className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-700"
+                                className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-orange-700 sm:px-4"
                             >
                                 <Plus className="h-4 w-4" />
                                 Tambah Grafik
@@ -428,7 +433,7 @@ export default function Charts() {
                         {charts.length > 0 && (
                             <button
                                 onClick={handleSaveCharts}
-                                className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700"
+                                className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-green-700 sm:px-4"
                             >
                                 <Save className="h-4 w-4" />
                                 Simpan Semua
@@ -439,7 +444,7 @@ export default function Charts() {
 
                 {/* Add Chart Form */}
                 {isAddingChart && (
-                    <div className="mb-6">
+                    <div>
                         <ChartForm chart={newChart} onSave={handleAddChart} onCancel={() => setIsAddingChart(false)} />
                     </div>
                 )}
@@ -451,7 +456,7 @@ export default function Charts() {
                         <h3 className="mt-4 text-lg font-medium text-gray-900">Belum Ada Data</h3>
                         <p className="mt-2 text-sm text-gray-500">Tambahkan data terlebih dahulu sebelum membuat grafik.</p>
                         <Link
-                            href={`/admin/dynamic-tables/${table.id}/insert`}
+                            href={route('admin.dynamic-tables.insert', table.id)}
                             className="mt-6 inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-700"
                         >
                             <Plus className="h-4 w-4" />
@@ -509,6 +514,6 @@ export default function Charts() {
                     </div>
                 )}
             </div>
-        </div>
+        </AuthenticatedLayout>
     );
 }
