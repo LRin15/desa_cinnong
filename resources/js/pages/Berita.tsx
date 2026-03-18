@@ -96,7 +96,7 @@ export default function Berita({ auth, beritaList, filters, settings }: BeritaPa
                 {/* Header Section */}
                 <section className="border-b border-gray-200 bg-gradient-to-br from-orange-50 to-orange-100">
                     <div className="container mx-auto px-3 py-12 text-center sm:px-4 sm:py-16 lg:px-8">
-                        <h1 className="mb-3 text-3xl font-bold text-gray-900 sm:mb-4 sm:text-4xl md:text-5xl">Berita & Pengumuman</h1>
+                        <h1 className="mb-3 text-3xl font-bold text-gray-900 sm:mb-4 sm:text-4xl md:text-5xl">Berita & Pengumuman Desa</h1>
                         <p className="mx-auto max-w-2xl text-base text-gray-700 sm:text-lg">
                             Ikuti perkembangan, kegiatan, dan informasi terbaru dari Pemerintah {namaDesa}.
                         </p>

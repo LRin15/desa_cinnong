@@ -1,9 +1,23 @@
+// resources/js/Pages/Pengguna/Profil.tsx
+import { FieldError, inputBase, inputPassword, inputWithIcon } from '@/components/ui/FieldError';
 import MainLayout from '@/layouts/MainLayout';
 import { Head, useForm } from '@inertiajs/react';
-import { AlertCircle, CheckCircle2, ChevronRight, Clock, FileText, LoaderCircle, Lock, Mail, MessageSquare, User, XCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronRight, Clock, Eye, EyeOff, FileText, LoaderCircle, Lock, Mail, MapPin, User, XCircle } from 'lucide-react';
 import { FormEventHandler, useState } from 'react';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface UserProfile {
+    nama_lengkap: string | null;
+    jenis_kelamin: 'Laki-laki' | 'Perempuan' | null;
+    tanggal_lahir: string | null;
+    usia: number | null;
+    alamat: string | null;
+    rt: string | null;
+    rw: string | null;
+    no_telepon: string | null;
+    pekerjaan: string | null;
+}
 
 interface UserData {
     id: number;
@@ -11,6 +25,7 @@ interface UserData {
     email: string;
     role: string;
     email_verified_at: string | null;
+    profile: UserProfile | null;
 }
 
 interface RiwayatLayanan {
@@ -23,24 +38,13 @@ interface RiwayatLayanan {
     updated_at: string;
 }
 
-interface RiwayatPengaduan {
-    id: number;
-    judul: string;
-    isi_pengaduan: string;
-    telepon: string;
-    status: 'menunggu' | 'diproses' | 'selesai';
-    created_at: string;
-    updated_at: string;
-}
-
 interface ProfilProps {
     auth: { user: UserData };
     status?: string;
     riwayatLayanan: RiwayatLayanan[];
-    riwayatPengaduan: RiwayatPengaduan[];
 }
 
-type TabId = 'profil' | 'layanan' | 'pengaduan';
+type TabId = 'profil' | 'layanan';
 
 // ─── Status configs ───────────────────────────────────────────────────────────
 
@@ -51,13 +55,7 @@ const layananStatusConfig = {
     ditolak: { label: 'Ditolak', color: 'bg-red-100 text-red-700 border-red-200', icon: XCircle },
 } as const;
 
-const pengaduanStatusConfig = {
-    menunggu: { label: 'Menunggu', color: 'bg-amber-100 text-amber-700 border-amber-200', icon: Clock },
-    diproses: { label: 'Diproses', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: LoaderCircle },
-    selesai: { label: 'Selesai', color: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: CheckCircle2 },
-} as const;
-
-// ─── Helper components ────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function StatusBadge({ status, config }: { status: string; config: Record<string, { label: string; color: string; icon: any }> }) {
     const cfg = config[status] ?? { label: status, color: 'bg-gray-100 text-gray-600 border-gray-200', icon: AlertCircle };
@@ -131,60 +129,44 @@ function LayananProgressBar({ status }: { status: string }) {
     );
 }
 
-function PengaduanProgressBar({ status }: { status: string }) {
-    const steps = [
-        { key: 'menunggu', label: 'Diterima' },
-        { key: 'diproses', label: 'Diproses' },
-        { key: 'selesai', label: 'Selesai' },
-    ];
-    const order = ['menunggu', 'diproses', 'selesai'];
-    const currentIdx = order.indexOf(status);
-
+// Label + children + error — sama dengan pola di form lain
+function FormGroup({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
     return (
-        <div className="mt-5">
-            <p className="mb-3 text-xs font-semibold tracking-wide text-gray-400 uppercase">Progres Pengaduan</p>
-            <div className="flex items-center">
-                {steps.map((step, i) => {
-                    const done = i <= currentIdx;
-                    const current = i === currentIdx;
-                    const last = i === steps.length - 1;
-                    return (
-                        <div key={step.key} className={`flex items-center ${!last ? 'flex-1' : ''}`}>
-                            <div className="flex flex-col items-center">
-                                <div
-                                    className={`flex h-7 w-7 items-center justify-center rounded-full border-2 text-xs font-bold transition-colors ${done ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 bg-white text-gray-400'} ${current ? 'ring-2 ring-blue-300 ring-offset-1' : ''}`}
-                                >
-                                    {done ? <CheckCircle2 className="h-3.5 w-3.5" /> : i + 1}
-                                </div>
-                                <span className={`mt-1 text-center text-xs font-medium ${done ? 'text-blue-600' : 'text-gray-400'}`}>
-                                    {step.label}
-                                </span>
-                            </div>
-                            {!last && <div className={`mb-4 h-0.5 flex-1 transition-colors ${i < currentIdx ? 'bg-blue-400' : 'bg-gray-200'}`} />}
-                        </div>
-                    );
-                })}
-            </div>
+        <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700">{label}</label>
+            {children}
+            <FieldError message={error} />
         </div>
     );
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function Profil({ auth, status, riwayatLayanan, riwayatPengaduan }: ProfilProps) {
+export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
     const [activeTab, setActiveTab] = useState<TabId>('profil');
     const [expandedLayanan, setExpandedLayanan] = useState<number | null>(null);
-    const [expandedPengaduan, setExpandedPengaduan] = useState<number | null>(null);
     const [showCurrentPwd, setShowCurrentPwd] = useState(false);
     const [showNewPwd, setShowNewPwd] = useState(false);
     const [showConfirmPwd, setShowConfirmPwd] = useState(false);
 
+    const profile = auth.user.profile;
+
     const { data, setData, patch, processing, errors, reset } = useForm({
+        // Akun
         name: auth.user.name,
         email: auth.user.email,
         current_password: '',
         password: '',
         password_confirmation: '',
+        // Profil
+        nama_lengkap: profile?.nama_lengkap ?? '',
+        jenis_kelamin: profile?.jenis_kelamin ?? '',
+        tanggal_lahir: profile?.tanggal_lahir ?? '',
+        alamat: profile?.alamat ?? '',
+        rt: profile?.rt ?? '',
+        rw: profile?.rw ?? '',
+        no_telepon: profile?.no_telepon ?? '',
+        pekerjaan: profile?.pekerjaan ?? '',
     });
 
     const submit: FormEventHandler = (e) => {
@@ -197,8 +179,10 @@ export default function Profil({ auth, status, riwayatLayanan, riwayatPengaduan 
     const tabs: { id: TabId; label: string; icon: any; count?: number }[] = [
         { id: 'profil', label: 'Profil & Keamanan', icon: User },
         { id: 'layanan', label: 'Riwayat Layanan', icon: FileText, count: riwayatLayanan.length },
-        { id: 'pengaduan', label: 'Riwayat Pengaduan', icon: MessageSquare, count: riwayatPengaduan.length },
     ];
+
+    const displayName = profile?.nama_lengkap || auth.user.name;
+    const avatarInitial = displayName.charAt(0).toUpperCase();
 
     const pwdFields = [
         {
@@ -234,34 +218,53 @@ export default function Profil({ auth, status, riwayatLayanan, riwayatPengaduan 
             <div className="min-h-screen bg-gray-50 py-8">
                 <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-                        {/* ════ SIDEBAR KIRI ════ */}
+                        {/* ════ SIDEBAR ════ */}
                         <aside className="w-full lg:w-64 lg:flex-shrink-0">
                             <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                                {/* Kartu identitas */}
+                                {/* Identitas */}
                                 <div className="bg-orange-600 px-5 py-6 text-center">
                                     <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 text-2xl font-bold text-white ring-2 ring-white/30">
-                                        {auth.user.name.charAt(0).toUpperCase()}
+                                        {avatarInitial}
                                     </div>
-                                    <p className="text-sm leading-tight font-semibold text-white">{auth.user.name}</p>
+                                    <p className="text-sm leading-tight font-semibold text-white">{displayName}</p>
                                     <p className="mt-1 text-xs break-all text-orange-100">{auth.user.email}</p>
-                                    <span className="mt-2 inline-block rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-medium text-white">
-                                        Pengguna Terdaftar
-                                    </span>
                                 </div>
 
-                                {/* Statistik ringkas */}
-                                <div className="grid grid-cols-2 divide-x divide-gray-100 border-b border-gray-100">
-                                    <div className="py-3 text-center">
-                                        <p className="text-lg font-bold text-orange-600">{riwayatLayanan.length}</p>
-                                        <p className="text-xs text-gray-500">Layanan</p>
+                                {/* Info ringkas */}
+                                {(profile?.alamat || profile?.pekerjaan || profile?.no_telepon) && (
+                                    <div className="space-y-2 border-b border-gray-100 px-4 py-3">
+                                        {profile?.pekerjaan && (
+                                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                <User className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+                                                <span className="truncate">{profile.pekerjaan}</span>
+                                            </div>
+                                        )}
+                                        {profile?.no_telepon && (
+                                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                <Mail className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+                                                <span className="truncate">{profile.no_telepon}</span>
+                                            </div>
+                                        )}
+                                        {profile?.alamat && (
+                                            <div className="flex items-start gap-2 text-xs text-gray-500">
+                                                <MapPin className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+                                                <span className="line-clamp-2">
+                                                    {profile.alamat}
+                                                    {profile.rt ? `, RT ${profile.rt}` : ''}
+                                                    {profile.rw ? `/RW ${profile.rw}` : ''}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="py-3 text-center">
-                                        <p className="text-lg font-bold text-blue-600">{riwayatPengaduan.length}</p>
-                                        <p className="text-xs text-gray-500">Pengaduan</p>
-                                    </div>
+                                )}
+
+                                {/* Stat */}
+                                <div className="border-b border-gray-100 py-3 text-center">
+                                    <p className="text-lg font-bold text-orange-600">{riwayatLayanan.length}</p>
+                                    <p className="text-xs text-gray-500">Total Permohonan Layanan</p>
                                 </div>
 
-                                {/* Navigasi tab vertikal */}
+                                {/* Tab nav */}
                                 <nav className="p-2">
                                     {tabs.map((tab) => {
                                         const Icon = tab.icon;
@@ -290,9 +293,9 @@ export default function Profil({ auth, status, riwayatLayanan, riwayatPengaduan 
                             </div>
                         </aside>
 
-                        {/* ════ KONTEN KANAN ════ */}
+                        {/* ════ KONTEN ════ */}
                         <div className="min-w-0 flex-1">
-                            {/* ── TAB: PROFIL ── */}
+                            {/* ── TAB PROFIL ── */}
                             {activeTab === 'profil' && (
                                 <div className="space-y-5">
                                     {status && (
@@ -302,56 +305,137 @@ export default function Profil({ auth, status, riwayatLayanan, riwayatPengaduan 
                                         </div>
                                     )}
 
-                                    <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                                        <h2 className="mb-5 text-base font-semibold text-gray-900">Informasi Akun</h2>
-                                        <form onSubmit={submit} className="space-y-4">
-                                            {/* Nama */}
-                                            <div>
-                                                <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-gray-700">
-                                                    Nama Lengkap
-                                                </label>
-                                                <div className="relative">
-                                                    <User className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                    <form onSubmit={submit} className="space-y-5">
+                                        {/* Informasi Akun */}
+                                        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                                            <h2 className="mb-5 text-base font-semibold text-gray-900">Informasi Akun</h2>
+                                            <div className="space-y-4">
+                                                <FormGroup label="Nama Tampilan (Akun)" error={errors.name}>
+                                                    <div className="relative">
+                                                        <User className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                                        <input
+                                                            type="text"
+                                                            value={data.name}
+                                                            onChange={(e) => setData('name', e.target.value)}
+                                                            placeholder="Nama tampilan"
+                                                            className={inputWithIcon(errors.name)}
+                                                        />
+                                                    </div>
+                                                </FormGroup>
+
+                                                <FormGroup label="Alamat Email" error={errors.email}>
+                                                    <div className="relative">
+                                                        <Mail className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                                        <input
+                                                            type="email"
+                                                            value={data.email}
+                                                            onChange={(e) => setData('email', e.target.value)}
+                                                            placeholder="contoh@email.com"
+                                                            className={inputWithIcon(errors.email)}
+                                                        />
+                                                    </div>
+                                                </FormGroup>
+                                            </div>
+                                        </div>
+
+                                        {/* Data Diri */}
+                                        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                                            <h2 className="mb-5 text-base font-semibold text-gray-900">Data Diri</h2>
+                                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                                <FormGroup label="Nama Lengkap (sesuai KTP)" error={errors.nama_lengkap}>
                                                     <input
-                                                        id="name"
                                                         type="text"
-                                                        value={data.name}
-                                                        onChange={(e) => setData('name', e.target.value)}
-                                                        className={`block w-full rounded-lg border py-2.5 pr-3 pl-9 text-sm transition focus:ring-2 focus:outline-none ${errors.name ? 'border-red-300 focus:border-red-500 focus:ring-red-500/30' : 'border-gray-300 focus:border-orange-500 focus:ring-orange-500/30'}`}
+                                                        value={data.nama_lengkap}
+                                                        onChange={(e) => setData('nama_lengkap', e.target.value)}
+                                                        placeholder="Nama sesuai KTP"
+                                                        className={inputBase(errors.nama_lengkap)}
                                                     />
-                                                </div>
-                                                {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name}</p>}
-                                            </div>
+                                                </FormGroup>
 
-                                            {/* Email */}
-                                            <div>
-                                                <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-gray-700">
-                                                    Alamat Email
-                                                </label>
-                                                <div className="relative">
-                                                    <Mail className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                                <FormGroup label="Jenis Kelamin" error={errors.jenis_kelamin}>
+                                                    <select
+                                                        value={data.jenis_kelamin}
+                                                        onChange={(e) => setData('jenis_kelamin', e.target.value)}
+                                                        className={inputBase(errors.jenis_kelamin)}
+                                                    >
+                                                        <option value="">-- Pilih --</option>
+                                                        <option value="Laki-laki">Laki-laki</option>
+                                                        <option value="Perempuan">Perempuan</option>
+                                                    </select>
+                                                </FormGroup>
+
+                                                <FormGroup label="Tanggal Lahir" error={errors.tanggal_lahir}>
                                                     <input
-                                                        id="email"
-                                                        type="email"
-                                                        value={data.email}
-                                                        onChange={(e) => setData('email', e.target.value)}
-                                                        className={`block w-full rounded-lg border py-2.5 pr-3 pl-9 text-sm transition focus:ring-2 focus:outline-none ${errors.email ? 'border-red-300 focus:border-red-500 focus:ring-red-500/30' : 'border-gray-300 focus:border-orange-500 focus:ring-orange-500/30'}`}
+                                                        type="date"
+                                                        value={data.tanggal_lahir}
+                                                        onChange={(e) => setData('tanggal_lahir', e.target.value)}
+                                                        className={inputBase(errors.tanggal_lahir)}
                                                     />
-                                                </div>
-                                                {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
-                                            </div>
+                                                </FormGroup>
 
-                                            {/* Ganti password */}
-                                            <div className="border-t border-gray-100 pt-4">
-                                                <p className="mb-4 text-sm font-medium text-gray-500">
-                                                    Ganti Kata Sandi{' '}
-                                                    <span className="font-normal text-gray-400">(kosongkan jika tidak ingin mengubah)</span>
-                                                </p>
+                                                <FormGroup label="Pekerjaan" error={errors.pekerjaan}>
+                                                    <input
+                                                        type="text"
+                                                        value={data.pekerjaan}
+                                                        onChange={(e) => setData('pekerjaan', e.target.value)}
+                                                        placeholder="Petani, Wiraswasta, dll"
+                                                        className={inputBase(errors.pekerjaan)}
+                                                    />
+                                                </FormGroup>
+
+                                                <FormGroup label="No. Telepon" error={errors.no_telepon}>
+                                                    <input
+                                                        type="tel"
+                                                        value={data.no_telepon}
+                                                        onChange={(e) => setData('no_telepon', e.target.value)}
+                                                        placeholder="08xxxxxxxxxx"
+                                                        className={inputBase(errors.no_telepon)}
+                                                    />
+                                                </FormGroup>
+
+                                                <div className="sm:col-span-2">
+                                                    <FormGroup label="Alamat Lengkap" error={errors.alamat}>
+                                                        <textarea
+                                                            value={data.alamat}
+                                                            onChange={(e) => setData('alamat', e.target.value)}
+                                                            rows={3}
+                                                            placeholder="Jalan, Nomor Rumah, Dusun"
+                                                            className={inputBase(errors.alamat)}
+                                                        />
+                                                    </FormGroup>
+                                                </div>
+
+                                                <FormGroup label="RT" error={errors.rt}>
+                                                    <input
+                                                        type="text"
+                                                        value={data.rt}
+                                                        onChange={(e) => setData('rt', e.target.value)}
+                                                        placeholder="000"
+                                                        maxLength={3}
+                                                        className={inputBase(errors.rt)}
+                                                    />
+                                                </FormGroup>
+
+                                                <FormGroup label="RW" error={errors.rw}>
+                                                    <input
+                                                        type="text"
+                                                        value={data.rw}
+                                                        onChange={(e) => setData('rw', e.target.value)}
+                                                        placeholder="000"
+                                                        maxLength={3}
+                                                        className={inputBase(errors.rw)}
+                                                    />
+                                                </FormGroup>
+                                            </div>
+                                        </div>
+
+                                        {/* Keamanan */}
+                                        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                                            <h2 className="mb-1 text-base font-semibold text-gray-900">Keamanan</h2>
+                                            <p className="mb-5 text-sm text-gray-400">Kosongkan jika tidak ingin mengubah kata sandi.</p>
+                                            <div className="space-y-4">
                                                 {pwdFields.map((field) => (
-                                                    <div key={field.id} className="mb-4">
-                                                        <label htmlFor={field.id} className="mb-1.5 block text-sm font-medium text-gray-700">
-                                                            {field.label}
-                                                        </label>
+                                                    <FormGroup key={field.id} label={field.label} error={errors[field.key]}>
                                                         <div className="relative">
                                                             <Lock className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                                             <input
@@ -360,7 +444,7 @@ export default function Profil({ auth, status, riwayatLayanan, riwayatPengaduan 
                                                                 value={data[field.key]}
                                                                 onChange={(e) => setData(field.key, e.target.value)}
                                                                 placeholder={field.ph}
-                                                                className={`block w-full rounded-lg border py-2.5 pr-10 pl-9 text-sm transition focus:ring-2 focus:outline-none ${errors[field.key] ? 'border-red-300 focus:border-red-500 focus:ring-red-500/30' : 'border-gray-300 focus:border-orange-500 focus:ring-orange-500/30'}`}
+                                                                className={inputPassword(errors[field.key])}
                                                             />
                                                             <button
                                                                 type="button"
@@ -368,28 +452,28 @@ export default function Profil({ auth, status, riwayatLayanan, riwayatPengaduan 
                                                                 tabIndex={-1}
                                                                 className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
                                                             >
-                                                                {field.show ? '🙈' : '👁️'}
+                                                                {field.show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                                             </button>
                                                         </div>
-                                                        {errors[field.key] && <p className="mt-1 text-xs text-red-600">{errors[field.key]}</p>}
-                                                    </div>
+                                                    </FormGroup>
                                                 ))}
                                             </div>
+                                        </div>
 
-                                            <button
-                                                type="submit"
-                                                disabled={processing}
-                                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white shadow transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
-                                            >
-                                                {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-                                                {processing ? 'Menyimpan...' : 'Simpan Perubahan'}
-                                            </button>
-                                        </form>
-                                    </div>
+                                        {/* Submit */}
+                                        <button
+                                            type="submit"
+                                            disabled={processing}
+                                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 py-3 text-sm font-semibold text-white shadow transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                            {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
+                                            {processing ? 'Menyimpan...' : 'Simpan Perubahan'}
+                                        </button>
+                                    </form>
                                 </div>
                             )}
 
-                            {/* ── TAB: RIWAYAT LAYANAN ── */}
+                            {/* ── TAB RIWAYAT LAYANAN ── */}
                             {activeTab === 'layanan' && (
                                 <div className="space-y-4">
                                     <div>
@@ -486,104 +570,11 @@ export default function Profil({ auth, status, riwayatLayanan, riwayatPengaduan 
                                     )}
                                 </div>
                             )}
-
-                            {/* ── TAB: RIWAYAT PENGADUAN ── */}
-                            {activeTab === 'pengaduan' && (
-                                <div className="space-y-4">
-                                    <div>
-                                        <h2 className="text-base font-semibold text-gray-900">Riwayat Pengaduan</h2>
-                                        <p className="text-sm text-gray-500">{riwayatPengaduan.length} pengaduan tercatat</p>
-                                    </div>
-
-                                    {riwayatPengaduan.length === 0 ? (
-                                        <EmptyState
-                                            icon={MessageSquare}
-                                            title="Belum ada pengaduan"
-                                            description="Anda belum pernah mengajukan pengaduan. Gunakan menu Pengaduan untuk menyampaikan aspirasi Anda."
-                                        />
-                                    ) : (
-                                        <div className="space-y-3">
-                                            {riwayatPengaduan.map((item) => {
-                                                const isOpen = expandedPengaduan === item.id;
-                                                return (
-                                                    <div
-                                                        key={item.id}
-                                                        className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md"
-                                                    >
-                                                        <button
-                                                            onClick={() => setExpandedPengaduan(isOpen ? null : item.id)}
-                                                            className="flex w-full items-center gap-4 px-5 py-4 text-left"
-                                                        >
-                                                            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-blue-50">
-                                                                <MessageSquare className="h-5 w-5 text-blue-500" />
-                                                            </div>
-                                                            <div className="min-w-0 flex-1">
-                                                                <p className="truncate text-sm font-semibold text-gray-900">{item.judul}</p>
-                                                                <p className="mt-0.5 text-xs text-gray-400">Dikirim {item.created_at}</p>
-                                                            </div>
-                                                            <div className="flex flex-shrink-0 items-center gap-3">
-                                                                <StatusBadge status={item.status} config={pengaduanStatusConfig} />
-                                                                <ChevronRight
-                                                                    className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`}
-                                                                />
-                                                            </div>
-                                                        </button>
-
-                                                        {isOpen && (
-                                                            <div className="border-t border-gray-100 bg-gray-50 px-5 py-4">
-                                                                <dl className="space-y-2 text-sm">
-                                                                    {[
-                                                                        {
-                                                                            dt: 'ID Pengaduan',
-                                                                            dd: `#${String(item.id).padStart(5, '0')}`,
-                                                                            mono: true,
-                                                                        },
-                                                                        { dt: 'No. Telepon', dd: item.telepon },
-                                                                        { dt: 'Tanggal Dikirim', dd: item.created_at },
-                                                                        { dt: 'Terakhir Diperbarui', dd: item.updated_at },
-                                                                    ].map(({ dt, dd, mono }) => (
-                                                                        <div key={dt} className="flex justify-between gap-4">
-                                                                            <dt className="text-gray-500">{dt}</dt>
-                                                                            <dd
-                                                                                className={`text-right font-medium text-gray-700 ${mono ? 'font-mono' : ''}`}
-                                                                            >
-                                                                                {dd}
-                                                                            </dd>
-                                                                        </div>
-                                                                    ))}
-                                                                    <div className="flex justify-between gap-4">
-                                                                        <dt className="text-gray-500">Status</dt>
-                                                                        <dd>
-                                                                            <StatusBadge status={item.status} config={pengaduanStatusConfig} />
-                                                                        </dd>
-                                                                    </div>
-                                                                </dl>
-
-                                                                <div className="mt-4 rounded-xl border border-gray-200 bg-white p-3">
-                                                                    <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase">
-                                                                        Isi Pengaduan
-                                                                    </p>
-                                                                    <p className="text-sm leading-relaxed text-gray-700">{item.isi_pengaduan}</p>
-                                                                </div>
-
-                                                                <PengaduanProgressBar status={item.status} />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
                         </div>
-                        {/* end konten kanan */}
                     </div>
-                    {/* end flex row */}
                 </div>
             </div>
 
-            {/* Loading overlay */}
             {processing && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
                     <div className="rounded-2xl bg-white p-6 shadow-2xl">

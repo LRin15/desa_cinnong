@@ -34,16 +34,6 @@ class PageController extends Controller
             'settings' => $settings,
         ]);
     }
-    
-    public function profilDesa()
-    {
-        // Ambil data settings untuk profil desa
-        $settings = Setting::pluck('value', 'key')->toArray();
-
-        return Inertia::render('ProfilDesa', [
-            'settings' => $settings,
-        ]);
-    }
 
     public function infografisDesa()
     {

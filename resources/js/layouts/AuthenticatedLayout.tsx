@@ -1,21 +1,7 @@
 // resources/js/layouts/AuthenticatedLayout.tsx
 
 import { Head, Link } from '@inertiajs/react';
-import {
-    Building,
-    ClipboardList,
-    Database,
-    FileText,
-    Grid,
-    Home,
-    Image as ImageIcon,
-    LogOut,
-    Menu,
-    MessageSquare,
-    Newspaper,
-    Users,
-    X,
-} from 'lucide-react';
+import { Building, ClipboardList, Database, FileText, Grid, Home, Image as ImageIcon, LogOut, Menu, Newspaper, Users, X } from 'lucide-react';
 import { ReactNode, useState } from 'react';
 
 interface User {
@@ -38,8 +24,13 @@ export default function AuthenticatedLayout({ auth, children, title }: Authentic
         { name: 'Kelola Berita', href: route('admin.berita.index'), icon: Newspaper, current: route().current('admin.berita.*') },
         { name: 'Kelola Infografis', href: route('admin.infografis.index'), icon: ImageIcon, current: route().current('admin.infografis.*') },
         { name: 'Kelola Publikasi', href: route('admin.publikasi.index'), icon: FileText, current: route().current('admin.publikasi.*') },
-        { name: 'Kelola Pengaduan', href: route('admin.pengaduan.index'), icon: MessageSquare, current: route().current('admin.pengaduan.*') },
-        { name: 'Kelola Layanan', href: route('admin.layanan.index'), icon: ClipboardList, current: route().current('admin.layanan.*') },
+        // "Kelola Pengaduan" dihapus — pengaduan kini masuk sebagai salah satu jenis layanan
+        {
+            name: 'Kelola Layanan',
+            href: route('admin.layanan.index'),
+            icon: ClipboardList,
+            current: route().current('admin.layanan.*') || route().current('admin.layanan-settings.*'),
+        },
         { name: 'Kelola Pengguna', href: route('admin.users.index'), icon: Users, current: route().current('admin.users.*') },
     ];
 
@@ -74,7 +65,9 @@ export default function AuthenticatedLayout({ auth, children, title }: Authentic
                             <X className="h-6 w-6" />
                         </button>
                     </div>
+
                     <nav className="mt-4">
+                        {/* Menu Utama */}
                         {navItems.map((item) => (
                             <Link
                                 key={item.name}
@@ -88,7 +81,10 @@ export default function AuthenticatedLayout({ auth, children, title }: Authentic
                             </Link>
                         ))}
 
-                        {/* Settings Menu */}
+                        {/* Divider */}
+                        <div className="mx-4 my-2 border-t border-gray-600" />
+
+                        {/* Pengaturan */}
                         {settingsItems.map((item) => (
                             <Link
                                 key={item.name}
@@ -103,9 +99,8 @@ export default function AuthenticatedLayout({ auth, children, title }: Authentic
                         ))}
 
                         {/* Divider */}
-                        <div className="mx-4 my-2 border-t border-gray-600"></div>
+                        <div className="mx-4 my-2 border-t border-gray-600" />
 
-                        {/* Tombol Kembali ke Halaman Utama */}
                         <Link
                             href={route('beranda')}
                             className="flex items-center px-6 py-3 text-sm font-medium text-gray-300 transition-colors duration-200 hover:bg-gray-700 hover:text-white"
@@ -114,7 +109,6 @@ export default function AuthenticatedLayout({ auth, children, title }: Authentic
                             Kembali ke Halaman Utama
                         </Link>
 
-                        {/* Tombol Logout */}
                         <Link
                             href={route('logout')}
                             method="post"
@@ -129,9 +123,9 @@ export default function AuthenticatedLayout({ auth, children, title }: Authentic
 
                 {/* Main Content */}
                 <div className="relative flex flex-1 flex-col overflow-y-auto">
-                    {/* Header */}
-                    <header className="flex h-16 items-center justify-between border-b bg-white px-4 sm:px-6">
-                        <button onClick={() => setSidebarOpen(true)} className="sm:hidden">
+                    {/* Header hanya untuk mobile — tombol buka sidebar */}
+                    <header className="flex h-14 items-center border-b bg-white px-4 sm:hidden">
+                        <button onClick={() => setSidebarOpen(true)}>
                             <Menu className="h-6 w-6" />
                         </button>
                     </header>

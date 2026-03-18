@@ -9,7 +9,7 @@ interface LayananSetting {
     key: string;
     name: string;
     is_active: boolean;
-    category: 'kependudukan' | 'umum';
+    category: 'kependudukan' | 'umum' | 'pengaduan';
 }
 
 interface LayananSettingsIndexProps {
@@ -23,6 +23,7 @@ interface LayananSettingsIndexProps {
     layananSettings: {
         kependudukan?: LayananSetting[];
         umum?: LayananSetting[];
+        pengaduan?: LayananSetting[];
     };
     flash?: {
         success?: string;
@@ -36,22 +37,11 @@ export default function LayananSettingsIndex({ auth, layananSettings, flash }: L
     const [bulkAction, setBulkAction] = useState<'activate' | 'deactivate' | null>(null);
 
     const handleToggle = (key: string, currentStatus: boolean) => {
-        router.post(
-            route('admin.layanan-settings.toggle'),
-            {
-                key: key,
-                is_active: !currentStatus,
-            },
-            {
-                preserveState: true,
-                preserveScroll: true,
-            },
-        );
+        router.post(route('admin.layanan-settings.toggle'), { key, is_active: !currentStatus }, { preserveState: true, preserveScroll: true });
     };
 
-    const handleSelectAll = (category: 'kependudukan' | 'umum', checked: boolean) => {
+    const handleSelectAll = (category: 'kependudukan' | 'umum' | 'pengaduan', checked: boolean) => {
         const categoryKeys = layananSettings[category]?.map((l) => l.key) || [];
-
         if (checked) {
             setSelectedKeys([...new Set([...selectedKeys, ...categoryKeys])]);
         } else {
@@ -78,13 +68,9 @@ export default function LayananSettingsIndex({ auth, layananSettings, flash }: L
 
     const confirmBulkAction = () => {
         if (!bulkAction) return;
-
         router.post(
             route('admin.layanan-settings.toggle-bulk'),
-            {
-                keys: selectedKeys,
-                is_active: bulkAction === 'activate',
-            },
+            { keys: selectedKeys, is_active: bulkAction === 'activate' },
             {
                 preserveState: false,
                 preserveScroll: false,
@@ -135,8 +121,11 @@ export default function LayananSettingsIndex({ auth, layananSettings, flash }: L
 
     const kependudukanLayanan = layananSettings.kependudukan || [];
     const umumLayanan = layananSettings.umum || [];
-    const totalActive = [...kependudukanLayanan, ...umumLayanan].filter((l) => l.is_active).length;
-    const totalInactive = [...kependudukanLayanan, ...umumLayanan].filter((l) => !l.is_active).length;
+    const pengaduanLayanan = layananSettings.pengaduan || [];
+
+    const totalActive = [...kependudukanLayanan, ...umumLayanan, ...pengaduanLayanan].filter((l) => l.is_active).length;
+    const totalInactive = [...kependudukanLayanan, ...umumLayanan, ...pengaduanLayanan].filter((l) => !l.is_active).length;
+    const totalAll = kependudukanLayanan.length + umumLayanan.length + pengaduanLayanan.length;
 
     return (
         <AuthenticatedLayout auth={auth} title="Kelola Layanan">
@@ -169,7 +158,7 @@ export default function LayananSettingsIndex({ auth, layananSettings, flash }: L
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-gray-600">Total Layanan</p>
-                                <p className="mt-1 text-2xl font-bold text-gray-900">{kependudukanLayanan.length + umumLayanan.length}</p>
+                                <p className="mt-1 text-2xl font-bold text-gray-900">{totalAll}</p>
                             </div>
                             <Settings className="h-8 w-8 text-gray-400" />
                         </div>
@@ -233,7 +222,7 @@ export default function LayananSettingsIndex({ auth, layananSettings, flash }: L
                             <label className="flex items-center space-x-2">
                                 <input
                                     type="checkbox"
-                                    checked={kependudukanLayanan.every((l) => selectedKeys.includes(l.key))}
+                                    checked={kependudukanLayanan.length > 0 && kependudukanLayanan.every((l) => selectedKeys.includes(l.key))}
                                     onChange={(e) => handleSelectAll('kependudukan', e.target.checked)}
                                     className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                                 />
@@ -252,7 +241,7 @@ export default function LayananSettingsIndex({ auth, layananSettings, flash }: L
                             <label className="flex items-center space-x-2">
                                 <input
                                     type="checkbox"
-                                    checked={umumLayanan.every((l) => selectedKeys.includes(l.key))}
+                                    checked={umumLayanan.length > 0 && umumLayanan.every((l) => selectedKeys.includes(l.key))}
                                     onChange={(e) => handleSelectAll('umum', e.target.checked)}
                                     className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                                 />
@@ -261,6 +250,27 @@ export default function LayananSettingsIndex({ auth, layananSettings, flash }: L
                         </div>
                     </div>
                     <div className="space-y-2 p-4">{umumLayanan.map((layanan) => renderLayananCard(layanan))}</div>
+                </div>
+
+                {/* Layanan Pengaduan & Aspirasi */}
+                <div className="rounded-lg border bg-white shadow-sm">
+                    <div className="border-b bg-gray-50 p-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-lg font-semibold text-gray-900">Layanan Pengaduan & Aspirasi</h3>
+                            </div>
+                            <label className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    checked={pengaduanLayanan.length > 0 && pengaduanLayanan.every((l) => selectedKeys.includes(l.key))}
+                                    onChange={(e) => handleSelectAll('pengaduan', e.target.checked)}
+                                    className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                                />
+                                <span className="text-sm text-gray-600">Pilih Semua</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div className="space-y-2 p-4">{pengaduanLayanan.map((layanan) => renderLayananCard(layanan))}</div>
                 </div>
             </div>
 

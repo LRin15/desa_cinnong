@@ -16,10 +16,10 @@ class LayananSettingsController extends Controller
             ->map(function ($setting) {
                 $data = json_decode($setting->value, true);
                 return [
-                    'id' => $setting->id,
-                    'key' => $setting->key,
-                    'name' => $data['name'] ?? '',
-                    'is_active' => $data['is_active'] ?? false,
+                    'id'       => $setting->id,
+                    'key'      => $setting->key,
+                    'name'     => $data['name'] ?? '',
+                    'is_active'=> $data['is_active'] ?? false,
                     'category' => $data['category'] ?? 'kependudukan',
                 ];
             })
@@ -29,7 +29,7 @@ class LayananSettingsController extends Controller
             'layananSettings' => $layananSettings,
             'flash' => [
                 'success' => session('success'),
-                'error' => session('error'),
+                'error'   => session('error'),
             ],
         ]);
     }
@@ -38,20 +38,18 @@ class LayananSettingsController extends Controller
     {
         try {
             $validated = $request->validate([
-                'key' => 'required|string',
+                'key'       => 'required|string',
                 'is_active' => 'required|boolean',
             ]);
 
             $setting = Setting::where('key', $validated['key'])->firstOrFail();
             $data = json_decode($setting->value, true);
             $data['is_active'] = $validated['is_active'];
-            
-            $setting->update([
-                'value' => json_encode($data)
-            ]);
+
+            $setting->update(['value' => json_encode($data)]);
 
             $status = $validated['is_active'] ? 'diaktifkan' : 'dinonaktifkan';
-            
+
             return back()->with('success', "Layanan '{$data['name']}' berhasil {$status}.");
 
         } catch (\Exception $e) {
@@ -64,8 +62,8 @@ class LayananSettingsController extends Controller
     {
         try {
             $validated = $request->validate([
-                'keys' => 'required|array',
-                'keys.*' => 'required|string',
+                'keys'      => 'required|array',
+                'keys.*'    => 'required|string',
                 'is_active' => 'required|boolean',
             ]);
 
@@ -81,7 +79,7 @@ class LayananSettingsController extends Controller
             }
 
             $status = $validated['is_active'] ? 'diaktifkan' : 'dinonaktifkan';
-            
+
             return back()->with('success', "{$count} layanan berhasil {$status}.");
 
         } catch (\Exception $e) {

@@ -1,20 +1,16 @@
 <?php
-// routes/web.php
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PageController;
-use App\Http\Controllers\DataDesaController; 
-use Illuminate\Foundation\Application;
+use App\Http\Controllers\DataDesaController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 use App\Http\Controllers\BeritaController;
 use App\Http\Controllers\InfografisController;
 use App\Http\Controllers\PublikasiController;
-use App\Http\Controllers\PengaduanController;
 use App\Http\Controllers\Admin\ProfilDesaController;
 use App\Http\Controllers\LayananController;
 
-// Rute Utama (publik)
+// ── Rute Publik ───────────────────────────────────────────────────────────────
 Route::get('/', [PageController::class, 'beranda'])->name('beranda');
 Route::get('/profil-desa', [ProfilDesaController::class, 'show'])->name('profil.show');
 Route::get('/data-desa', [DataDesaController::class, 'index'])->name('data.desa');
@@ -26,36 +22,42 @@ Route::get('/berita/{slug}', [BeritaController::class, 'show'])->name('berita.de
 Route::get('/publikasi', [PublikasiController::class, 'index'])->name('publikasi.index');
 Route::get('/publikasi/{publikasi}/download', [PublikasiController::class, 'download'])->name('publikasi.download');
 
-// ===== ROUTES YANG MEMERLUKAN LOGIN SEBAGAI PENGGUNA TERDAFTAR =====
+// ── Pengguna Terdaftar ────────────────────────────────────────────────────────
 Route::middleware(['auth', 'pengguna.terdaftar'])->group(function () {
 
-    // Pengaduan
-    Route::post('/pengaduan', [PengaduanController::class, 'store'])->name('pengaduan.store');
-
-    // Layanan Administrasi Kependudukan & Umum
+    // Semua layanan — Pengaduan & Aspirasi adalah salah satu jenis di sini
     Route::prefix('layanan')->name('layanan.')->group(function () {
-        Route::get('/surat-pengantar-ktp', [LayananController::class, 'ktp'])->name('ktp');
-        Route::get('/surat-pengantar-kk', [LayananController::class, 'kk'])->name('kk');
-        Route::get('/surat-keterangan-domisili', [LayananController::class, 'domisili'])->name('domisili');
-        Route::get('/surat-keterangan-usaha', [LayananController::class, 'usaha'])->name('usaha');
+        // Administrasi Kependudukan
+        Route::get('/surat-pengantar-ktp',         [LayananController::class, 'ktp'])->name('ktp');
+        Route::get('/surat-pengantar-kk',           [LayananController::class, 'kk'])->name('kk');
+        Route::get('/surat-keterangan-domisili',    [LayananController::class, 'domisili'])->name('domisili');
+        Route::get('/surat-keterangan-usaha',       [LayananController::class, 'usaha'])->name('usaha');
         Route::get('/surat-keterangan-tidak-mampu', [LayananController::class, 'sktm'])->name('sktm');
-        Route::get('/surat-keterangan-kelahiran', [LayananController::class, 'kelahiran'])->name('kelahiran');
-        Route::get('/surat-keterangan-kematian', [LayananController::class, 'kematian'])->name('kematian');
-        Route::get('/surat-pengantar-nikah', [LayananController::class, 'nikah'])->name('nikah');
-        Route::get('/surat-keterangan-pindah', [LayananController::class, 'pindah'])->name('pindah');
-        Route::get('/surat-izin-kegiatan', [LayananController::class, 'izinKegiatan'])->name('izin-kegiatan');
-        Route::get('/surat-rekomendasi-desa', [LayananController::class, 'rekomendasi'])->name('rekomendasi');
+        Route::get('/surat-keterangan-kelahiran',   [LayananController::class, 'kelahiran'])->name('kelahiran');
+        Route::get('/surat-keterangan-kematian',    [LayananController::class, 'kematian'])->name('kematian');
+
+        // Administrasi Umum
+        Route::get('/surat-pengantar-nikah',        [LayananController::class, 'nikah'])->name('nikah');
+        Route::get('/surat-keterangan-pindah',      [LayananController::class, 'pindah'])->name('pindah');
+        Route::get('/surat-izin-kegiatan',          [LayananController::class, 'izinKegiatan'])->name('izin-kegiatan');
+        Route::get('/surat-rekomendasi-desa',       [LayananController::class, 'rekomendasi'])->name('rekomendasi');
+
+        // Pengaduan & Aspirasi
+        Route::get('/pengaduan-aspirasi',           [LayananController::class, 'pengaduanAspirasi'])->name('pengaduan-aspirasi');
+
+        // Submit semua jenis layanan
         Route::post('/submit', [LayananController::class, 'submit'])->name('submit');
     });
 });
 
-// Rute otentikasi (untuk semua user yang login)
+// ── Akun (semua user login) ───────────────────────────────────────────────────
 Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/profile',    [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile',  [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::get('/akun/profil', [App\Http\Controllers\PenggunaTerdaftarController::class, 'index'])->name('pengguna.profil');
-    Route::patch('/akun/profil', [App\Http\Controllers\PenggunaTerdaftarController::class, 'update'])->name('pengguna.profil.update');
+
+    Route::get('/akun/profil',    [App\Http\Controllers\PenggunaTerdaftarController::class, 'index'])->name('pengguna.profil');
+    Route::patch('/akun/profil',  [App\Http\Controllers\PenggunaTerdaftarController::class, 'update'])->name('pengguna.profil.update');
 });
 
 require __DIR__.'/auth.php';

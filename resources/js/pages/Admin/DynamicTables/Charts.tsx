@@ -1,5 +1,6 @@
 // resources/js/Pages/Admin/DynamicTables/Charts.tsx
 
+import { FieldError, inputAdmin } from '@/components/ui/FieldError';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
@@ -16,11 +17,10 @@ import {
     Title,
     Tooltip,
 } from 'chart.js';
-import { ArrowLeft, BarChart3, Plus, Save, Settings, Trash2 } from 'lucide-react';
+import { ArrowLeft, BarChart3, Plus, Settings, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Bar, Doughnut, Line, Pie, Radar } from 'react-chartjs-2';
 
-// Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend, Filler, RadialLinearScale);
 
 interface Column {
@@ -30,7 +30,6 @@ interface Column {
     options?: string;
     subColumns?: Column[];
 }
-
 interface ChartConfig {
     id: string;
     name: string;
@@ -38,34 +37,29 @@ interface ChartConfig {
     xAxis: string;
     yAxis: string[];
 }
-
 interface TableData {
     id: number;
     data: Record<string, any>;
 }
 
 interface ChartsPageProps {
-    auth: {
-        user: {
-            id: number;
-            name: string;
-            email: string;
-        };
-    };
-    table: {
-        id: number;
-        name: string;
-        description: string | null;
-        columns: Column[];
-        charts: ChartConfig[];
-    };
+    auth: { user: { id: number; name: string; email: string } };
+    table: { id: number; name: string; description: string | null; columns: Column[]; charts: ChartConfig[] };
     tableData: TableData[];
-    flash?: {
-        success?: string;
-        error?: string;
-    };
+    flash?: { success?: string; error?: string };
     [key: string]: any;
 }
+
+const CHART_TYPES = [
+    { value: 'bar' as const, label: 'Bar Chart', icon: '📊' },
+    { value: 'line' as const, label: 'Line Chart', icon: '📈' },
+    { value: 'area' as const, label: 'Area Chart', icon: '📉' },
+    { value: 'pie' as const, label: 'Pie Chart', icon: '🥧' },
+    { value: 'doughnut' as const, label: 'Doughnut Chart', icon: '🍩' },
+    { value: 'radar' as const, label: 'Radar Chart', icon: '🎯' },
+];
+
+const COLORS = ['rgb(249,115,22)', 'rgb(59,130,246)', 'rgb(34,197,94)', 'rgb(168,85,247)', 'rgb(236,72,153)', 'rgb(107,114,128)'];
 
 export default function Charts() {
     const { auth, table, tableData, flash } = usePage<ChartsPageProps>().props;
@@ -74,310 +68,221 @@ export default function Charts() {
     const [isAddingChart, setIsAddingChart] = useState(false);
     const [editingChartId, setEditingChartId] = useState<string | null>(null);
 
-    // Flatten columns untuk mendapatkan semua kolom termasuk subColumns
+    // ── Flatten kolom termasuk subColumns ──────────────────────────────────────
     const flattenedColumns = useMemo(() => {
-        const flatten = (cols: Column[], prefix = ''): Array<{ name: string; displayName: string; type: string }> => {
-            let result: Array<{ name: string; displayName: string; type: string }> = [];
-
-            cols.forEach((col) => {
+        const flatten = (cols: Column[], prefix = ''): Array<{ name: string; displayName: string; type: string }> =>
+            cols.flatMap((col) => {
                 const fullName = prefix ? `${prefix}.${col.name}` : col.name;
-
-                if (col.type === 'group' && col.subColumns) {
-                    result = [...result, ...flatten(col.subColumns, fullName)];
-                } else {
-                    result.push({
-                        name: fullName,
-                        displayName: fullName,
-                        type: col.type,
-                    });
-                }
+                if (col.type === 'group' && col.subColumns) return flatten(col.subColumns, fullName);
+                return [{ name: fullName, displayName: fullName, type: col.type }];
             });
-
-            return result;
-        };
-
         return flatten(table.columns);
     }, [table.columns]);
 
-    // Filter kolom yang cocok untuk axis
-    const numericColumns = flattenedColumns.filter((col) => col.type === 'number');
-    const labelColumns = flattenedColumns.filter((col) => ['text', 'select', 'date'].includes(col.type));
+    const numericColumns = flattenedColumns.filter((c) => c.type === 'number');
+    const labelColumns = flattenedColumns.filter((c) => ['text', 'select', 'date'].includes(c.type));
 
-    const [newChart, setNewChart] = useState<ChartConfig>({
-        id: '',
-        name: '',
-        type: 'bar',
-        xAxis: '',
-        yAxis: [],
-    });
+    // ── Helper: ambil nilai nested ─────────────────────────────────────────────
+    const getNestedValue = (obj: any, path: string) => path.split('.').reduce((cur, k) => cur?.[k], obj);
 
-    const chartTypes = [
-        { value: 'bar' as const, label: 'Bar Chart', icon: '📊' },
-        { value: 'line' as const, label: 'Line Chart', icon: '📈' },
-        { value: 'area' as const, label: 'Area Chart', icon: '📉' },
-        { value: 'pie' as const, label: 'Pie Chart', icon: '🥧' },
-        { value: 'doughnut' as const, label: 'Doughnut Chart', icon: '🍩' },
-        { value: 'radar' as const, label: 'Radar Chart', icon: '🎯' },
-    ];
-
-    const getNestedValue = (obj: any, path: string) => {
-        return path.split('.').reduce((current, key) => current?.[key], obj);
-    };
-
-    const prepareChartData = (chartConfig: ChartConfig) => {
-        const labels = tableData.map((row) => getNestedValue(row.data, chartConfig.xAxis) || 'N/A');
-
-        const datasets = chartConfig.yAxis.map((yCol, index) => {
-            const colors = [
-                'rgb(249, 115, 22)', // Orange-600
-                'rgb(59, 130, 246)', // Blue-500
-                'rgb(34, 197, 94)', // Green-500
-                'rgb(168, 85, 247)', // Purple-500
-                'rgb(236, 72, 153)', // Pink-500
-                'rgb(107, 114, 128)', // Gray-500
-            ];
-
-            const color = colors[index % colors.length];
-
+    // ── Siapkan data untuk chart.js ────────────────────────────────────────────
+    const prepareChartData = (cfg: ChartConfig) => ({
+        labels: tableData.map((row) => getNestedValue(row.data, cfg.xAxis) ?? 'N/A'),
+        datasets: cfg.yAxis.map((yCol, i) => {
+            const color = COLORS[i % COLORS.length];
             return {
                 label: yCol,
                 data: tableData.map((row) => {
-                    const value = getNestedValue(row.data, yCol);
-                    return typeof value === 'number' ? value : parseFloat(value) || 0;
+                    const v = getNestedValue(row.data, yCol);
+                    return typeof v === 'number' ? v : parseFloat(v) || 0;
                 }),
                 backgroundColor:
-                    chartConfig.type === 'pie' || chartConfig.type === 'doughnut'
-                        ? colors.slice(0, tableData.length)
+                    cfg.type === 'pie' || cfg.type === 'doughnut'
+                        ? COLORS.slice(0, tableData.length)
                         : color.replace('rgb', 'rgba').replace(')', ', 0.5)'),
                 borderColor: color,
                 borderWidth: 2,
-                fill: chartConfig.type === 'area',
+                fill: cfg.type === 'area',
             };
-        });
+        }),
+    });
 
-        return { labels, datasets };
+    // ── Simpan satu grafik ke server ───────────────────────────────────────────
+    const persistCharts = (updatedCharts: ChartConfig[]) => {
+        router.post(route('admin.dynamic-tables.save-charts', table.id), {
+            charts: JSON.stringify(updatedCharts),
+        });
     };
 
     const handleAddChart = (chartData: ChartConfig) => {
-        const chartToAdd: ChartConfig = {
-            ...chartData,
-            id: Date.now().toString(),
-        };
-
-        setCharts([...charts, chartToAdd]);
-        setNewChart({
-            id: '',
-            name: '',
-            type: 'bar',
-            xAxis: '',
-            yAxis: [],
-        });
+        const added = [...charts, { ...chartData, id: Date.now().toString() }];
+        setCharts(added);
         setIsAddingChart(false);
+        persistCharts(added);
     };
 
-    const handleUpdateChart = (updatedChart: ChartConfig) => {
-        setCharts(charts.map((c) => (c.id === updatedChart.id ? updatedChart : c)));
+    const handleUpdateChart = (updated: ChartConfig) => {
+        const next = charts.map((c) => (c.id === updated.id ? updated : c));
+        setCharts(next);
         setEditingChartId(null);
+        persistCharts(next);
     };
 
-    const handleDeleteChart = (chartId: string) => {
-        if (confirm('Apakah Anda yakin ingin menghapus grafik ini?')) {
-            setCharts(charts.filter((c) => c.id !== chartId));
-        }
+    const handleDeleteChart = (id: string) => {
+        if (!confirm('Hapus grafik ini?')) return;
+        const next = charts.filter((c) => c.id !== id);
+        setCharts(next);
+        persistCharts(next);
     };
 
-    const handleSaveCharts = () => {
-        router.post(
-            route('admin.dynamic-tables.save-charts', table.id),
-            {
-                charts: JSON.stringify(charts),
-            },
-            {
-                onSuccess: () => {
-                    // Success handled by flash message
-                },
-                onError: (errors) => {
-                    console.error('Error saving charts:', errors);
-                },
-            },
-        );
-    };
-
-    const renderChart = (chartConfig: ChartConfig) => {
-        const data = prepareChartData(chartConfig);
-        const options = {
+    // ── Render chart.js component ──────────────────────────────────────────────
+    const renderChart = (cfg: ChartConfig) => {
+        const data = prepareChartData(cfg);
+        const opts = {
             responsive: true,
             maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    position: 'top' as const,
-                },
-                title: {
-                    display: true,
-                    text: chartConfig.name,
-                },
-            },
+            plugins: { legend: { position: 'top' as const }, title: { display: true, text: cfg.name } },
         };
-
-        switch (chartConfig.type) {
+        switch (cfg.type) {
             case 'bar':
-                return <Bar data={data} options={options} />;
+                return <Bar data={data} options={opts} />;
             case 'line':
-                return <Line data={data} options={options} />;
             case 'area':
-                return <Line data={data} options={options} />;
+                return <Line data={data} options={opts} />;
             case 'pie':
-                return <Pie data={data} options={options} />;
+                return <Pie data={data} options={opts} />;
             case 'doughnut':
-                return <Doughnut data={data} options={options} />;
+                return <Doughnut data={data} options={opts} />;
             case 'radar':
-                return <Radar data={data} options={options} />;
-            default:
-                return null;
+                return <Radar data={data} options={opts} />;
         }
     };
 
-    const ChartForm = ({ chart, onSave, onCancel }: { chart: ChartConfig; onSave: (chart: ChartConfig) => void; onCancel: () => void }) => {
-        const [formData, setFormData] = useState<ChartConfig>(chart);
+    // ── Form tambah / edit grafik ──────────────────────────────────────────────
+    const ChartForm = ({ chart, onSave, onCancel }: { chart: ChartConfig; onSave: (c: ChartConfig) => void; onCancel: () => void }) => {
+        const [form, setForm] = useState<ChartConfig>(chart);
+        const [errs, setErrs] = useState<{ name?: string; xAxis?: string; yAxis?: string }>({});
 
-        const handleTypeChange = (type: ChartConfig['type']) => {
-            setFormData({ ...formData, type });
+        const validate = () => {
+            const next: typeof errs = {};
+            if (!form.name.trim()) next.name = 'Nama grafik wajib diisi.';
+            if (!form.xAxis) next.xAxis = 'Sumbu X wajib dipilih.';
+            if (!form.yAxis.length) next.yAxis = 'Pilih minimal satu kolom untuk Sumbu Y.';
+            setErrs(next);
+            return !Object.keys(next).length;
         };
 
         const handleSave = () => {
-            const trimmedName = formData.name ? formData.name.trim() : '';
-
-            if (trimmedName === '') {
-                alert('Nama grafik wajib diisi');
-                return;
-            }
-
-            if (!formData.xAxis || formData.xAxis === '') {
-                alert('Sumbu X (Label) wajib dipilih');
-                return;
-            }
-
-            if (!formData.yAxis || formData.yAxis.length === 0) {
-                alert('Minimal pilih satu kolom untuk Sumbu Y (Nilai)');
-                return;
-            }
-
-            onSave(formData);
+            if (validate()) onSave(form);
         };
 
         return (
             <div className="rounded-lg border bg-white p-6 shadow-sm">
-                <h3 className="mb-4 text-lg font-semibold text-gray-900">{chart.id ? 'Edit Grafik' : 'Tambah Grafik Baru'}</h3>
+                <h3 className="mb-5 text-base font-semibold text-gray-900">{chart.id ? 'Edit Grafik' : 'Tambah Grafik Baru'}</h3>
 
-                <div className="space-y-4">
+                <div className="space-y-5">
+                    {/* Nama */}
                     <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                        <label className="block text-sm font-medium text-gray-700">
                             Nama Grafik <span className="text-red-500">*</span>
                         </label>
                         <input
                             type="text"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
+                            value={form.name}
                             placeholder="Contoh: Penjualan Bulanan"
+                            onChange={(ev) => setForm({ ...form, name: ev.target.value })}
+                            className={inputAdmin(errs.name)}
                         />
+                        <FieldError message={errs.name} />
                     </div>
 
+                    {/* Tipe grafik */}
                     <div>
                         <label className="mb-2 block text-sm font-medium text-gray-700">Tipe Grafik</label>
                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                            {chartTypes.map((type) => (
+                            {CHART_TYPES.map((t) => (
                                 <button
-                                    key={type.value}
+                                    key={t.value}
                                     type="button"
-                                    onClick={() => handleTypeChange(type.value)}
-                                    className={`flex items-center gap-2 rounded-md border p-3 transition ${
-                                        formData.type === type.value
-                                            ? 'border-orange-500 bg-orange-50 text-orange-700'
-                                            : 'border-gray-300 hover:bg-gray-50'
+                                    onClick={() => setForm({ ...form, type: t.value })}
+                                    className={`flex items-center gap-2 rounded-md border p-3 text-left transition ${
+                                        form.type === t.value ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-300 hover:bg-gray-50'
                                     }`}
                                 >
-                                    <span className="text-lg">{type.icon}</span>
-                                    <span className="text-sm font-medium">{type.label}</span>
+                                    <span className="text-lg">{t.icon}</span>
+                                    <span className="text-sm font-medium">{t.label}</span>
                                 </button>
                             ))}
                         </div>
                     </div>
 
+                    {/* Sumbu X */}
                     <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                        <label className="block text-sm font-medium text-gray-700">
                             Sumbu X (Label) <span className="text-red-500">*</span>
                         </label>
-                        <select
-                            value={formData.xAxis}
-                            onChange={(e) => setFormData({ ...formData, xAxis: e.target.value })}
-                            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
-                        >
+                        <select value={form.xAxis} onChange={(ev) => setForm({ ...form, xAxis: ev.target.value })} className={inputAdmin(errs.xAxis)}>
                             <option value="">Pilih kolom untuk label</option>
-                            {labelColumns.map((col) => (
-                                <option key={col.name} value={col.name}>
-                                    {col.displayName}
+                            {labelColumns.map((c) => (
+                                <option key={c.name} value={c.name}>
+                                    {c.displayName}
                                 </option>
                             ))}
                         </select>
-                        {labelColumns.length === 0 && (
-                            <p className="mt-1 text-sm text-red-500">
-                                Tidak ada kolom yang cocok untuk sumbu X. Tambahkan kolom dengan tipe text, select, atau date.
-                            </p>
+                        {labelColumns.length === 0 ? (
+                            <FieldError message="Tidak ada kolom yang cocok (text, select, atau date)." />
+                        ) : (
+                            <FieldError message={errs.xAxis} />
                         )}
                     </div>
 
+                    {/* Sumbu Y */}
                     <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                        <label className="block text-sm font-medium text-gray-700">
                             Sumbu Y (Nilai) <span className="text-red-500">*</span>
                         </label>
                         {numericColumns.length === 0 ? (
-                            <p className="text-sm text-red-500">
-                                Tidak ada kolom numerik tersedia. Tambahkan kolom dengan tipe number terlebih dahulu.
-                            </p>
+                            <FieldError message="Tidak ada kolom numerik. Tambahkan kolom bertipe number terlebih dahulu." />
                         ) : (
-                            <div className="max-h-48 space-y-2 overflow-y-auto rounded-md border border-gray-200 p-3">
-                                {numericColumns.map((col) => (
-                                    <label key={col.name} className="flex cursor-pointer items-center gap-2 rounded p-1 hover:bg-gray-50">
+                            <div
+                                className={`mt-1 max-h-48 space-y-1 overflow-y-auto rounded-md border p-3 ${errs.yAxis ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+                            >
+                                {numericColumns.map((c) => (
+                                    <label key={c.name} className="flex cursor-pointer items-center gap-2 rounded p-1 hover:bg-gray-50">
                                         <input
                                             type="checkbox"
-                                            checked={formData.yAxis.includes(col.name)}
-                                            onChange={(e) => {
-                                                if (e.target.checked) {
-                                                    setFormData({
-                                                        ...formData,
-                                                        yAxis: [...formData.yAxis, col.name],
-                                                    });
-                                                } else {
-                                                    setFormData({
-                                                        ...formData,
-                                                        yAxis: formData.yAxis.filter((y) => y !== col.name),
-                                                    });
-                                                }
-                                            }}
+                                            checked={form.yAxis.includes(c.name)}
+                                            onChange={(ev) =>
+                                                setForm({
+                                                    ...form,
+                                                    yAxis: ev.target.checked ? [...form.yAxis, c.name] : form.yAxis.filter((y) => y !== c.name),
+                                                })
+                                            }
                                             className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                                         />
-                                        <span className="text-sm text-gray-700">{col.displayName}</span>
+                                        <span className="text-sm text-gray-700">{c.displayName}</span>
                                     </label>
                                 ))}
                             </div>
                         )}
-                        {formData.yAxis.length > 0 && <p className="mt-1 text-sm text-gray-500">{formData.yAxis.length} kolom dipilih</p>}
+                        {form.yAxis.length > 0 && <p className="mt-1 text-xs text-gray-500">{form.yAxis.length} kolom dipilih</p>}
+                        <FieldError message={errs.yAxis} />
                     </div>
 
-                    <div className="flex gap-2 pt-4">
+                    {/* Tombol aksi */}
+                    <div className="flex gap-2 border-t border-gray-100 pt-4">
                         <button
                             type="button"
                             onClick={handleSave}
                             disabled={labelColumns.length === 0 || numericColumns.length === 0}
-                            className="flex-1 rounded-md bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                            className="flex-1 rounded-md bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            Simpan
+                            {chart.id ? 'Perbarui Grafik' : 'Simpan Grafik'}
                         </button>
                         <button
                             type="button"
                             onClick={onCancel}
-                            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                         >
                             Batal
                         </button>
@@ -387,20 +292,21 @@ export default function Charts() {
         );
     };
 
+    // ── Render utama ───────────────────────────────────────────────────────────
     return (
         <AuthenticatedLayout auth={auth} title={`Grafik - ${table.name}`}>
             <Head title={`Grafik - ${table.name}`} />
 
             <div className="space-y-4 sm:space-y-6">
-                {/* Flash Messages */}
+                {/* Flash */}
                 {flash?.success && (
                     <div className="rounded-md border border-green-200 bg-green-50 p-3 sm:p-4">
-                        <p className="text-sm text-green-700 sm:text-base">{flash.success}</p>
+                        <p className="text-sm text-green-700">{flash.success}</p>
                     </div>
                 )}
                 {flash?.error && (
                     <div className="rounded-md border border-red-200 bg-red-50 p-3 sm:p-4">
-                        <p className="text-sm text-red-700 sm:text-base">{flash.error}</p>
+                        <p className="text-sm text-red-700">{flash.error}</p>
                     </div>
                 )}
 
@@ -409,7 +315,7 @@ export default function Charts() {
                     <div className="flex items-center gap-3">
                         <Link
                             href={route('admin.dynamic-tables.index')}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-600 transition-colors hover:bg-gray-50 sm:h-10 sm:w-10"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 sm:h-10 sm:w-10"
                             title="Kembali ke Daftar Tabel"
                         >
                             <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -420,36 +326,28 @@ export default function Charts() {
                         </div>
                     </div>
 
-                    <div className="flex gap-2">
-                        {!isAddingChart && (
-                            <button
-                                onClick={() => setIsAddingChart(true)}
-                                className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-orange-700 sm:px-4"
-                            >
-                                <Plus className="h-4 w-4" />
-                                Tambah Grafik
-                            </button>
-                        )}
-                        {charts.length > 0 && (
-                            <button
-                                onClick={handleSaveCharts}
-                                className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-green-700 sm:px-4"
-                            >
-                                <Save className="h-4 w-4" />
-                                Simpan Semua
-                            </button>
-                        )}
-                    </div>
+                    {/* Tombol Simpan Semua dihapus — tiap grafik disimpan otomatis */}
+                    {!isAddingChart && (
+                        <button
+                            onClick={() => setIsAddingChart(true)}
+                            className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-3 py-2 text-sm font-semibold text-white hover:bg-orange-700 sm:px-4"
+                        >
+                            <Plus className="h-4 w-4" />
+                            Tambah Grafik
+                        </button>
+                    )}
                 </div>
 
-                {/* Add Chart Form */}
+                {/* Form tambah grafik */}
                 {isAddingChart && (
-                    <div>
-                        <ChartForm chart={newChart} onSave={handleAddChart} onCancel={() => setIsAddingChart(false)} />
-                    </div>
+                    <ChartForm
+                        chart={{ id: '', name: '', type: 'bar', xAxis: '', yAxis: [] }}
+                        onSave={handleAddChart}
+                        onCancel={() => setIsAddingChart(false)}
+                    />
                 )}
 
-                {/* Charts Display */}
+                {/* Konten: kosong / daftar grafik */}
                 {tableData.length === 0 ? (
                     <div className="rounded-lg border bg-white p-12 text-center shadow-sm">
                         <BarChart3 className="mx-auto h-12 w-12 text-gray-400" />
@@ -457,7 +355,7 @@ export default function Charts() {
                         <p className="mt-2 text-sm text-gray-500">Tambahkan data terlebih dahulu sebelum membuat grafik.</p>
                         <Link
                             href={route('admin.dynamic-tables.insert', table.id)}
-                            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-700"
+                            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
                         >
                             <Plus className="h-4 w-4" />
                             Tambah Data
@@ -470,7 +368,7 @@ export default function Charts() {
                         <p className="mt-2 text-sm text-gray-500">Buat grafik pertama Anda untuk memvisualisasikan data.</p>
                         <button
                             onClick={() => setIsAddingChart(true)}
-                            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-700"
+                            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
                         >
                             <Plus className="h-4 w-4" />
                             Buat Grafik
@@ -486,8 +384,8 @@ export default function Charts() {
                                     <>
                                         <div className="mb-4 flex items-start justify-between">
                                             <div>
-                                                <h3 className="text-lg font-semibold text-gray-900">{chart.name}</h3>
-                                                <p className="text-sm text-gray-500">{chartTypes.find((t) => t.value === chart.type)?.label}</p>
+                                                <h3 className="text-base font-semibold text-gray-900">{chart.name}</h3>
+                                                <p className="text-sm text-gray-500">{CHART_TYPES.find((t) => t.value === chart.type)?.label}</p>
                                             </div>
                                             <div className="flex gap-1">
                                                 <button

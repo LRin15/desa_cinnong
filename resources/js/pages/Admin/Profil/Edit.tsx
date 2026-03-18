@@ -1,14 +1,14 @@
+// resources/js/Pages/Admin/ProfilDesa/Edit.tsx
+
+import { FieldError, inputAdmin } from '@/components/ui/FieldError';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { ArrowLeft, BarChart3, Building2, Calendar, Image as ImageIcon, Mail, MapPin, Phone, Plus, Trash2, TrendingUp, Users } from 'lucide-react';
+import { BarChart3, Building2, Calendar, Image as ImageIcon, Mail, MapPin, Phone, Plus, Trash2, TrendingUp, Users } from 'lucide-react';
 import { FormEventHandler, useEffect, useState } from 'react';
-
-// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface Setting {
     [key: string]: string;
 }
-
 interface Official {
     id?: number;
     nama: string;
@@ -17,7 +17,6 @@ interface Official {
     foto_url: string | null;
     urutan: number;
 }
-
 interface EditProfilProps {
     auth: { user: { id: number; name: string; email: string } };
     settings: Setting;
@@ -28,8 +27,7 @@ interface EditProfilProps {
     [key: string]: unknown;
 }
 
-// ─── Helper: input field yang bisa dikunci ────────────────────────────────────
-
+// ── Field helper — kini menggunakan inputAdmin + FieldError ──────────────────
 function Field({
     label,
     id,
@@ -65,33 +63,24 @@ function Field({
                 id={id}
                 type={type}
                 value={value}
-                onChange={(e) => onChange(e.target.value)}
+                onChange={(ev) => onChange(ev.target.value)}
                 placeholder={locked ? undefined : placeholder}
                 disabled={locked}
                 step={step}
                 min={min}
-                className={`mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm shadow-sm transition focus:ring-2 focus:outline-none ${
+                className={
                     locked
-                        ? 'cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400 focus:ring-0'
-                        : 'border-gray-300 focus:border-orange-500 focus:ring-orange-500/30'
-                }`}
+                        ? 'mt-1 block w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-400 focus:outline-none'
+                        : inputAdmin(error)
+                }
             />
-            {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+            <FieldError message={error} />
         </div>
     );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
-
 export default function Edit() {
-    let pageProps: EditProfilProps;
-    try {
-        pageProps = usePage<EditProfilProps>().props;
-    } catch {
-        return <div className="p-4">Error loading page. Check console.</div>;
-    }
-
-    const { auth, settings, officials, isAdminBps, errors, flash } = pageProps;
+    const { auth, settings, officials, isAdminBps, errors, flash } = usePage<EditProfilProps>().props;
     const [showFlash, setShowFlash] = useState(true);
 
     useEffect(() => {
@@ -102,10 +91,6 @@ export default function Edit() {
         }
     }, [flash]);
 
-    if (!auth?.user || !settings || !officials) {
-        return <div className="p-4">Data tidak lengkap.</div>;
-    }
-
     const {
         data,
         setData,
@@ -114,12 +99,10 @@ export default function Edit() {
         errors: formErrors,
     } = useForm({
         _method: 'POST',
-        // ── Field eksklusif admin_bps ──
         nama_desa: settings.nama_desa || '',
         kecamatan: settings.kecamatan || '',
         kabupaten: settings.kabupaten || '',
         provinsi: settings.provinsi || '',
-        // ── Field semua admin ──
         jumlah_rt: settings.jumlah_rt || '',
         luas: settings.luas || '',
         email: settings.email || '',
@@ -146,7 +129,8 @@ export default function Edit() {
         })),
     });
 
-    const allErrors = { ...errors, ...formErrors };
+    const e = { ...errors, ...formErrors };
+    const locked = !isAdminBps;
 
     const handleOfficialChange = (index: number, field: keyof Official, value: any) => {
         const updated = [...data.officials];
@@ -154,39 +138,36 @@ export default function Edit() {
         setData('officials', updated);
     };
 
-    const addOfficial = () => {
+    const addOfficial = () =>
         setData('officials', [
             ...data.officials,
             { id: undefined, nama: '', jabatan: '', foto: null, foto_url: null, urutan: data.officials.length + 1 },
         ]);
-    };
 
-    const removeOfficial = (index: number) => {
-        const updated = data.officials.filter((_, i) => i !== index).map((o, i) => ({ ...o, urutan: i + 1 }));
-        setData('officials', updated);
-    };
+    const removeOfficial = (index: number) =>
+        setData(
+            'officials',
+            data.officials.filter((_, i) => i !== index).map((o, i) => ({ ...o, urutan: i + 1 })),
+        );
 
-    const submit: FormEventHandler = (e) => {
-        e.preventDefault();
+    const submit: FormEventHandler = (ev) => {
+        ev.preventDefault();
         post(route('admin.profil.update'), { forceFormData: true });
     };
 
-    // ── Shorthand: field locked jika bukan admin_bps ──
-    const locked = !isAdminBps;
+    const textareaClass = (err?: string) =>
+        `mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm shadow-sm focus:ring-2 focus:outline-none transition ${
+            err
+                ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-400 focus:ring-red-400/30'
+                : 'border-gray-300 focus:border-orange-500 focus:ring-orange-500/30'
+        }`;
 
     return (
         <AuthenticatedLayout auth={auth} title="Edit Profil Desa">
             <Head title="Edit Profil Desa" />
-
             <div className="space-y-6 px-4 sm:px-0">
                 {/* Header */}
                 <div className="flex items-center gap-3">
-                    <Link
-                        href={route('admin.dashboard')}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                    </Link>
                     <div>
                         <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">Edit Profil Desa</h1>
                         <p className="mt-0.5 text-sm text-gray-500">Perbarui informasi publik mengenai desa</p>
@@ -211,17 +192,16 @@ export default function Edit() {
                     </div>
                 )}
 
-                <form onSubmit={submit}>
+                <form onSubmit={submit} noValidate>
                     <div className="space-y-6">
-                        {/* ════ SECTION: INFORMASI DESA & UMUM (DIGABUNG) ════ */}
+                        {/* ════ INFORMASI DESA ════ */}
                         <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
                             <div className="border-b border-gray-100 px-6 py-5">
                                 <h2 className="text-base font-semibold text-gray-900">Informasi Desa</h2>
                                 <p className="mt-0.5 text-sm text-gray-500">Identitas, lokasi, kontak, serta visi, misi, dan sejarah desa</p>
                             </div>
-
                             <div className="space-y-6 p-6">
-                                {/* ── Identitas ── */}
+                                {/* Identitas */}
                                 <div>
                                     <p className="mb-3 text-xs font-semibold tracking-wide text-gray-400 uppercase">Identitas & Lokasi</p>
                                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -232,7 +212,7 @@ export default function Edit() {
                                             onChange={(v) => setData('nama_desa', v)}
                                             placeholder="Contoh: Desa Sukamaju"
                                             locked={locked}
-                                            error={allErrors.nama_desa}
+                                            error={e.nama_desa}
                                             icon={<Building2 className="h-3.5 w-3.5 text-gray-400" />}
                                         />
                                         <Field
@@ -242,7 +222,7 @@ export default function Edit() {
                                             onChange={(v) => setData('kecamatan', v)}
                                             placeholder="Contoh: Sukajaya"
                                             locked={locked}
-                                            error={allErrors.kecamatan}
+                                            error={e.kecamatan}
                                             icon={<MapPin className="h-3.5 w-3.5 text-gray-400" />}
                                         />
                                         <Field
@@ -252,7 +232,7 @@ export default function Edit() {
                                             onChange={(v) => setData('kabupaten', v)}
                                             placeholder="Contoh: Bandung"
                                             locked={locked}
-                                            error={allErrors.kabupaten}
+                                            error={e.kabupaten}
                                         />
                                         <Field
                                             label="Provinsi"
@@ -261,12 +241,12 @@ export default function Edit() {
                                             onChange={(v) => setData('provinsi', v)}
                                             placeholder="Contoh: Jawa Barat"
                                             locked={locked}
-                                            error={allErrors.provinsi}
+                                            error={e.provinsi}
                                         />
                                     </div>
                                 </div>
 
-                                {/* ── Data wilayah ── */}
+                                {/* Kontak */}
                                 <div className="border-t border-gray-100 pt-5">
                                     <p className="mb-3 text-xs font-semibold tracking-wide text-gray-400 uppercase">Data Wilayah & Kontak</p>
                                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -278,7 +258,7 @@ export default function Edit() {
                                             onChange={(v) => setData('jumlah_rt', v)}
                                             placeholder="Contoh: 12"
                                             min="0"
-                                            error={allErrors.jumlah_rt}
+                                            error={e.jumlah_rt}
                                         />
                                         <Field
                                             label="Luas Wilayah (Km²)"
@@ -289,7 +269,7 @@ export default function Edit() {
                                             placeholder="Contoh: 25.5"
                                             step="0.01"
                                             min="0"
-                                            error={allErrors.luas}
+                                            error={e.luas}
                                         />
                                         <Field
                                             label="Email"
@@ -298,7 +278,7 @@ export default function Edit() {
                                             value={data.email}
                                             onChange={(v) => setData('email', v)}
                                             placeholder="contoh@desa.id"
-                                            error={allErrors.email}
+                                            error={e.email}
                                             icon={<Mail className="h-3.5 w-3.5 text-gray-400" />}
                                         />
                                         <Field
@@ -308,44 +288,35 @@ export default function Edit() {
                                             value={data.telepon}
                                             onChange={(v) => setData('telepon', v)}
                                             placeholder="0812-3456-7890"
-                                            error={allErrors.telepon}
+                                            error={e.telepon}
                                             icon={<Phone className="h-3.5 w-3.5 text-gray-400" />}
                                         />
                                     </div>
                                 </div>
 
-                                {/* ── Visi, Misi, Sejarah ── */}
+                                {/* Visi Misi Sejarah */}
                                 <div className="border-t border-gray-100 pt-5">
                                     <p className="mb-3 text-xs font-semibold tracking-wide text-gray-400 uppercase">Visi, Misi & Sejarah</p>
                                     <div className="space-y-4">
-                                        <div>
-                                            <label htmlFor="sejarah" className="mb-1.5 block text-sm font-medium text-gray-700">
-                                                Sejarah
-                                            </label>
-                                            <textarea
-                                                id="sejarah"
-                                                value={data.sejarah}
-                                                onChange={(e) => setData('sejarah', e.target.value)}
-                                                rows={5}
-                                                placeholder="Masukkan sejarah singkat desa..."
-                                                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-500/30 focus:outline-none"
-                                            />
-                                            {allErrors.sejarah && <p className="mt-1 text-xs text-red-600">{allErrors.sejarah}</p>}
-                                        </div>
-                                        <div>
-                                            <label htmlFor="visi" className="mb-1.5 block text-sm font-medium text-gray-700">
-                                                Visi
-                                            </label>
-                                            <textarea
-                                                id="visi"
-                                                value={data.visi}
-                                                onChange={(e) => setData('visi', e.target.value)}
-                                                rows={3}
-                                                placeholder="Masukkan visi desa..."
-                                                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-500/30 focus:outline-none"
-                                            />
-                                            {allErrors.visi && <p className="mt-1 text-xs text-red-600">{allErrors.visi}</p>}
-                                        </div>
+                                        {[
+                                            { id: 'sejarah', label: 'Sejarah', rows: 5, ph: 'Masukkan sejarah singkat desa...' },
+                                            { id: 'visi', label: 'Visi', rows: 3, ph: 'Masukkan visi desa...' },
+                                        ].map(({ id, label, rows, ph }) => (
+                                            <div key={id}>
+                                                <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-gray-700">
+                                                    {label}
+                                                </label>
+                                                <textarea
+                                                    id={id}
+                                                    value={(data as any)[id]}
+                                                    rows={rows}
+                                                    placeholder={ph}
+                                                    onChange={(ev) => setData(id as any, ev.target.value)}
+                                                    className={textareaClass(e[id])}
+                                                />
+                                                <FieldError message={e[id]} />
+                                            </div>
+                                        ))}
                                         <div>
                                             <label htmlFor="misi" className="mb-1.5 block text-sm font-medium text-gray-700">
                                                 Misi <span className="font-normal text-gray-400">(satu misi per baris)</span>
@@ -353,19 +324,19 @@ export default function Edit() {
                                             <textarea
                                                 id="misi"
                                                 value={data.misi}
-                                                onChange={(e) => setData('misi', e.target.value)}
                                                 rows={5}
                                                 placeholder={'1. Misi pertama\n2. Misi kedua\n3. Misi ketiga...'}
-                                                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-500/30 focus:outline-none"
+                                                onChange={(ev) => setData('misi', ev.target.value)}
+                                                className={textareaClass(e.misi)}
                                             />
-                                            {allErrors.misi && <p className="mt-1 text-xs text-red-600">{allErrors.misi}</p>}
+                                            <FieldError message={e.misi} />
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* ════ SECTION: STATISTIK ════ */}
+                        {/* ════ STATISTIK ════ */}
                         <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
                             <div className="border-b border-gray-100 px-6 py-5">
                                 <h2 className="text-base font-semibold text-gray-900">
@@ -386,30 +357,23 @@ export default function Edit() {
                                             <h3 className="text-sm font-semibold text-gray-700">Statistik {num}</h3>
                                         </div>
                                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                            <div>
-                                                <label className="mb-1 block text-xs font-medium text-gray-600">Label</label>
-                                                <input
-                                                    type="text"
-                                                    value={(data as any)[`stat${num}_label`]}
-                                                    onChange={(e) => setData(`stat${num}_label` as any, e.target.value)}
-                                                    className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
-                                                    placeholder="Contoh: Total Penduduk"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="mb-1 block text-xs font-medium text-gray-600">Nilai</label>
-                                                <input
-                                                    type="text"
-                                                    value={(data as any)[`stat${num}_value`]}
-                                                    onChange={(e) => setData(`stat${num}_value` as any, e.target.value)}
-                                                    className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
-                                                    placeholder="Contoh: 1.868"
-                                                />
-                                            </div>
+                                            {['label', 'value'].map((field) => (
+                                                <div key={field}>
+                                                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                                                        {field === 'label' ? 'Label' : 'Nilai'}
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={(data as any)[`stat${num}_${field}`]}
+                                                        onChange={(ev) => setData(`stat${num}_${field}` as any, ev.target.value)}
+                                                        placeholder={field === 'label' ? 'Contoh: Total Penduduk' : 'Contoh: 1.868'}
+                                                        className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 ))}
-
                                 <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
                                     <div className="mb-3 flex items-center gap-2">
                                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100">
@@ -420,15 +384,15 @@ export default function Edit() {
                                     <input
                                         type="text"
                                         value={data.data_terakhir}
-                                        onChange={(e) => setData('data_terakhir', e.target.value)}
-                                        className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none sm:max-w-xs"
+                                        onChange={(ev) => setData('data_terakhir', ev.target.value)}
                                         placeholder="Contoh: 2025"
+                                        className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none sm:max-w-xs"
                                     />
                                 </div>
                             </div>
                         </div>
 
-                        {/* ════ SECTION: ASET GAMBAR ════ */}
+                        {/* ════ ASET GAMBAR ════ */}
                         <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
                             <div className="border-b border-gray-100 px-6 py-5">
                                 <h2 className="text-base font-semibold text-gray-900">Aset Gambar</h2>
@@ -461,7 +425,9 @@ export default function Edit() {
                                                 className="mb-3 h-40 w-full rounded-xl border object-cover"
                                             />
                                         )}
-                                        <div className="flex justify-center rounded-xl border-2 border-dashed border-gray-300 px-6 py-8 transition hover:border-orange-400">
+                                        <div
+                                            className={`flex justify-center rounded-xl border-2 border-dashed px-6 py-8 transition hover:border-orange-400 ${e[key] ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
+                                        >
                                             <div className="text-center">
                                                 {icon}
                                                 <label
@@ -473,7 +439,7 @@ export default function Edit() {
                                                         id={key}
                                                         type="file"
                                                         accept="image/*"
-                                                        onChange={(e) => setData(key, e.target.files?.[0] || null)}
+                                                        onChange={(ev) => setData(key, ev.target.files?.[0] || null)}
                                                         className="sr-only"
                                                     />
                                                 </label>
@@ -481,13 +447,13 @@ export default function Edit() {
                                                 {data[key] && <p className="mt-2 text-xs font-medium text-gray-600">{(data[key] as File).name}</p>}
                                             </div>
                                         </div>
-                                        {allErrors[key] && <p className="mt-1 text-xs text-red-600">{allErrors[key]}</p>}
+                                        <FieldError message={e[key]} />
                                     </div>
                                 ))}
                             </div>
                         </div>
 
-                        {/* ════ SECTION: STRUKTUR PEMERINTAHAN ════ */}
+                        {/* ════ STRUKTUR PEMERINTAHAN ════ */}
                         <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
                             <div className="flex items-center justify-between border-b border-gray-100 px-6 py-5">
                                 <div>
@@ -497,7 +463,7 @@ export default function Edit() {
                                 <button
                                     type="button"
                                     onClick={addOfficial}
-                                    className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-700"
+                                    className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
                                 >
                                     <Plus className="h-4 w-4" />
                                     Tambah Pegawai
@@ -525,7 +491,6 @@ export default function Edit() {
                                                 : typeof official.foto_url === 'string'
                                                   ? official.foto_url
                                                   : '';
-
                                         return (
                                             <div
                                                 key={index}
@@ -550,8 +515,8 @@ export default function Edit() {
                                                         <input
                                                             type="text"
                                                             value={official.nama}
-                                                            onChange={(e) => handleOfficialChange(index, 'nama', e.target.value)}
                                                             placeholder="Contoh: Ahmad Suryadi"
+                                                            onChange={(ev) => handleOfficialChange(index, 'nama', ev.target.value)}
                                                             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
                                                         />
                                                     </div>
@@ -560,8 +525,8 @@ export default function Edit() {
                                                         <input
                                                             type="text"
                                                             value={official.jabatan}
-                                                            onChange={(e) => handleOfficialChange(index, 'jabatan', e.target.value)}
                                                             placeholder="Contoh: Kepala Desa"
+                                                            onChange={(ev) => handleOfficialChange(index, 'jabatan', ev.target.value)}
                                                             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
                                                         />
                                                     </div>
@@ -578,7 +543,7 @@ export default function Edit() {
                                                             <input
                                                                 type="file"
                                                                 accept="image/*"
-                                                                onChange={(e) => handleOfficialChange(index, 'foto', e.target.files?.[0] || null)}
+                                                                onChange={(ev) => handleOfficialChange(index, 'foto', ev.target.files?.[0] || null)}
                                                                 className="flex-1 text-xs text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-orange-50 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-orange-700 hover:file:bg-orange-100"
                                                             />
                                                         </div>
@@ -591,7 +556,7 @@ export default function Edit() {
                             </div>
                         </div>
 
-                        {/* ── Tombol Aksi ── */}
+                        {/* Tombol Aksi */}
                         <div className="flex flex-col-reverse gap-3 rounded-2xl border border-gray-200 bg-white p-6 sm:flex-row sm:justify-end">
                             <Link
                                 href={route('admin.dashboard')}
@@ -602,7 +567,7 @@ export default function Edit() {
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-6 py-2.5 text-sm font-semibold text-white shadow transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-6 py-2.5 text-sm font-semibold text-white shadow hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 {processing && (
                                     <svg className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

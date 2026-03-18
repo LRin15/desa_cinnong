@@ -712,29 +712,98 @@ class LayananController extends Controller
     }
 
     // =========================================================
+    // LAYANAN PENGADUAN / ASPIRASI
+    // =========================================================
+
+    public function pengaduanAspirasi()
+    {
+        $fields = [
+            [
+                'name'        => 'nama_lengkap',
+                'label'       => 'Nama Lengkap',
+                'type'        => 'text',
+                'required'    => true,
+                'placeholder' => 'Masukkan nama lengkap Anda',
+            ],
+            [
+                'name'     => 'jenis_pesan',
+                'label'    => 'Jenis Pesan',
+                'type'     => 'select',
+                'required' => true,
+                'options'  => ['Pengaduan', 'Aspirasi', 'Saran', 'Pertanyaan'],
+            ],
+            [
+                'name'        => 'isi_pesan',
+                'label'       => 'Isi Pengaduan / Aspirasi',
+                'type'        => 'textarea',
+                'required'    => true,
+                'placeholder' => 'Tuliskan pengaduan atau aspirasi Anda secara lengkap dan jelas...',
+                'rows'        => 6,
+            ],
+        ];
+
+        return Inertia::render('Layanan/FormLayanan', [
+            'jenisLayanan' => 'Pengaduan & Aspirasi Masyarakat',
+            'deskripsi'    => 'Sampaikan pengaduan, aspirasi, saran, atau pertanyaan Anda kepada pihak desa',
+            'persyaratan'  => [
+                'Warga desa yang terdaftar',
+                'Pengaduan disampaikan dengan bahasa yang sopan',
+                'Sertakan informasi yang jelas dan lengkap',
+            ],
+            'formFields' => $fields,
+            'userInfo'   => $this->getUserInfo(),
+        ]);
+    }
+
+    // =========================================================
     // SUBMIT
     // =========================================================
 
     public function submit(Request $request)
     {
-        $rules = ['jenis_layanan' => 'required|string'];
+        $rules    = ['jenis_layanan' => 'required|string'];
+        $messages = [];
 
-        foreach ($request->all() as $key => $value) {
-            if ($key !== 'jenis_layanan' && $key !== '_token') {
-                if ($request->hasFile($key)) {
-                    if (is_array($request->file($key))) {
-                        $rules[$key]        = 'required|array';
-                        $rules[$key . '.*'] = 'file|max:5120';
-                    } else {
-                        $rules[$key] = 'nullable|file|max:5120';
-                    }
-                } else {
-                    $rules[$key] = 'nullable|string';
-                }
+        // field_required berisi JSON array nama field yang wajib diisi,
+        // dikirim dari FormLayanan.tsx sebagai hidden input.
+        $requiredFields = [];
+        if ($request->filled('field_required')) {
+            $decoded = json_decode($request->input('field_required'), true);
+            if (is_array($decoded)) {
+                $requiredFields = $decoded;
             }
         }
 
-        $validated = $request->validate($rules);
+        // Bangun rules — field yang ada di $requiredFields → required, lainnya → nullable
+        foreach ($request->all() as $key => $value) {
+            if (in_array($key, ['jenis_layanan', '_token', 'field_required'], true)) {
+                continue;
+            }
+
+            $isRequired = in_array($key, $requiredFields, true);
+
+            if ($request->hasFile($key)) {
+                if (is_array($request->file($key))) {
+                    $rules[$key]        = ($isRequired ? 'required' : 'nullable') . '|array';
+                    $rules[$key . '.*'] = 'file|mimes:jpg,jpeg,png,gif,pdf,doc,docx|max:5120';
+                } else {
+                    $rules[$key] = ($isRequired ? 'required' : 'nullable') . '|file|mimes:jpg,jpeg,png,gif,pdf,doc,docx|max:5120';
+                }
+            } else {
+                $rules[$key] = ($isRequired ? 'required' : 'nullable') . '|string|max:1000';
+            }
+        }
+
+        // Pesan validasi dalam Bahasa Indonesia
+        foreach ($requiredFields as $field) {
+            $messages["{$field}.required"] = 'Kolom ini wajib diisi.';
+        }
+        $messages['*.file']     = 'File yang diunggah tidak valid.';
+        $messages['*.mimes']    = 'Format file tidak didukung (jpg, png, pdf, doc).';
+        $messages['*.max']      = 'Ukuran file tidak boleh lebih dari 5 MB.';
+        $messages['*.max']      = 'Teks terlalu panjang (maks. 1000 karakter).';
+
+        $validated = $request->validate($rules, $messages);
 
         try {
             // Handle file uploads
@@ -759,7 +828,7 @@ class LayananController extends Controller
             }
 
             \App\Models\LayananSubmission::create([
-                'user_id'        => Auth::id(),   // ← simpan user_id dari sesi login
+                'user_id'        => Auth::id(),
                 'jenis_layanan'  => $validated['jenis_layanan'],
                 'form_data'      => $formData,
                 'uploaded_files' => $uploadedFiles,

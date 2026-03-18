@@ -5,11 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Berita;
 use App\Models\Infografis;
-use App\Models\Publikasi;
-use App\Models\User;
-use App\Models\Pengaduan;
 use App\Models\LayananSubmission;
+use App\Models\Publikasi;
 use App\Models\Setting;
+use App\Models\User;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
@@ -20,20 +19,12 @@ class DashboardController extends Controller
             'total_berita'     => Berita::count(),
             'total_infografis' => Infografis::count(),
             'total_publikasi'  => Publikasi::count(),
-
-            // Hanya hitung pengguna terdaftar (bukan admin)
             'total_pengguna'   => User::where('role', User::ROLE_PENGGUNA_TERDAFTAR)->count(),
-
-            'total_pengaduan'          => Pengaduan::count(),
-            'pengaduan_belum_diproses' => Pengaduan::where('status', 'menunggu')->count(),
-            'pengaduan_sedang_diproses'=> Pengaduan::where('status', 'diproses')->count(),
-            'pengaduan_selesai'        => Pengaduan::where('status', 'selesai')->count(),
-
-            'total_layanan'   => LayananSubmission::count(),
-            'layanan_pending' => LayananSubmission::where('status', 'pending')->count(),
-            'layanan_diproses'=> LayananSubmission::where('status', 'diproses')->count(),
-            'layanan_selesai' => LayananSubmission::where('status', 'selesai')->count(),
-            'layanan_ditolak' => LayananSubmission::where('status', 'ditolak')->count(),
+            'total_layanan'    => LayananSubmission::count(),
+            'layanan_pending'  => LayananSubmission::where('status', 'pending')->count(),
+            'layanan_diproses' => LayananSubmission::where('status', 'diproses')->count(),
+            'layanan_selesai'  => LayananSubmission::where('status', 'selesai')->count(),
+            'layanan_ditolak'  => LayananSubmission::where('status', 'ditolak')->count(),
         ];
 
         $settings = Setting::pluck('value', 'key')->toArray();

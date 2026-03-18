@@ -1,4 +1,5 @@
 // resources/js/Pages/Auth/Register.tsx
+import { FieldError, inputPassword, inputWithIcon } from '@/components/ui/FieldError';
 import MainLayout from '@/layouts/MainLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { Eye, EyeOff, LoaderCircle, Lock, Mail, MapPin, User } from 'lucide-react';
@@ -13,7 +14,7 @@ type RegisterForm = {
 
 export default function Register() {
     const [showPassword, setShowPassword] = useState(false);
-    const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
 
     const { data, setData, post, processing, errors, reset } = useForm<Required<RegisterForm>>({
         name: '',
@@ -24,17 +25,7 @@ export default function Register() {
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        post(route('register'), {
-            onFinish: () => reset('password', 'password_confirmation'),
-        });
-    };
-
-    const togglePasswordVisibility = () => {
-        setShowPassword(!showPassword);
-    };
-
-    const togglePasswordConfirmationVisibility = () => {
-        setShowPasswordConfirmation(!showPasswordConfirmation);
+        post(route('register'), { onFinish: () => reset('password', 'password_confirmation') });
     };
 
     return (
@@ -52,192 +43,136 @@ export default function Register() {
                         </div>
                         <h2 className="mb-2 text-2xl leading-tight font-bold text-gray-900 sm:text-3xl">Daftar Akun Baru</h2>
                         <p className="text-sm font-medium text-gray-600 sm:text-base">Sistem Informasi Desa Cinnong</p>
-                        <div className="mx-auto mt-2 h-1 w-12 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 sm:w-16"></div>
+                        <div className="mx-auto mt-2 h-1 w-12 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 sm:w-16" />
                     </div>
 
-                    {/* Register Form */}
+                    {/* Form */}
                     <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-xl sm:p-8">
-                        <form className="space-y-5 sm:space-y-6" onSubmit={submit} noValidate>
-                            {/* Name Field */}
+                        <form className="space-y-5" onSubmit={submit} noValidate>
+                            {/* Nama */}
                             <div>
-                                <label htmlFor="name" className="mb-2 block text-sm font-medium text-gray-700">
+                                <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-gray-700">
                                     Nama Lengkap
                                 </label>
                                 <div className="relative">
-                                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                        <User className="h-5 w-5 text-gray-400" />
-                                    </div>
+                                    <User className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                     <input
                                         id="name"
                                         type="text"
-                                        required
                                         autoFocus
                                         autoComplete="name"
                                         value={data.name}
                                         onChange={(e) => setData('name', e.target.value)}
                                         placeholder="Masukkan nama lengkap"
-                                        className={`block w-full rounded-lg border py-3 pr-3 pl-10 text-base transition duration-150 ease-in-out focus:ring-2 focus:outline-none ${
-                                            errors.name
-                                                ? 'border-red-300 text-red-900 focus:border-red-500 focus:ring-red-500/50'
-                                                : 'border-gray-300 focus:border-orange-500 focus:ring-orange-500/50'
-                                        }`}
+                                        className={inputWithIcon(errors.name)}
                                     />
                                 </div>
-                                {errors.name && (
-                                    <p className="mt-2 flex items-start gap-2 text-sm leading-relaxed text-red-600">
-                                        <span className="mt-0.5 flex-shrink-0 text-red-500">⚠</span>
-                                        <span>{errors.name}</span>
-                                    </p>
-                                )}
+                                <FieldError message={errors.name} />
                             </div>
 
-                            {/* Email Field */}
+                            {/* Email */}
                             <div>
-                                <label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-700">
+                                <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-gray-700">
                                     Alamat Email
                                 </label>
                                 <div className="relative">
-                                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                        <Mail className="h-5 w-5 text-gray-400" />
-                                    </div>
+                                    <Mail className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                     <input
                                         id="email"
                                         type="email"
-                                        required
                                         autoComplete="email"
                                         inputMode="email"
                                         value={data.email}
                                         onChange={(e) => setData('email', e.target.value)}
                                         placeholder="contoh@email.com"
-                                        className={`block w-full rounded-lg border py-3 pr-3 pl-10 text-base transition duration-150 ease-in-out focus:ring-2 focus:outline-none ${
-                                            errors.email
-                                                ? 'border-red-300 text-red-900 focus:border-red-500 focus:ring-red-500/50'
-                                                : 'border-gray-300 focus:border-orange-500 focus:ring-orange-500/50'
-                                        }`}
+                                        className={inputWithIcon(errors.email)}
                                     />
                                 </div>
-                                {errors.email && (
-                                    <p className="mt-2 flex items-start gap-2 text-sm leading-relaxed text-red-600">
-                                        <span className="mt-0.5 flex-shrink-0 text-red-500">⚠</span>
-                                        <span>{errors.email}</span>
-                                    </p>
-                                )}
+                                <FieldError message={errors.email} />
                             </div>
 
-                            {/* Password Field */}
+                            {/* Password */}
                             <div>
-                                <label htmlFor="password" className="mb-2 block text-sm font-medium text-gray-700">
+                                <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-gray-700">
                                     Kata Sandi
                                 </label>
                                 <div className="relative">
-                                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                        <Lock className="h-5 w-5 text-gray-400" />
-                                    </div>
+                                    <Lock className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                     <input
                                         id="password"
                                         type={showPassword ? 'text' : 'password'}
-                                        required
                                         autoComplete="new-password"
                                         value={data.password}
                                         onChange={(e) => setData('password', e.target.value)}
-                                        placeholder="Masukkan kata sandi"
-                                        minLength={8}
-                                        className={`block w-full rounded-lg border py-3 pr-12 pl-10 text-base transition duration-150 ease-in-out focus:ring-2 focus:outline-none ${
-                                            errors.password
-                                                ? 'border-red-300 text-red-900 focus:border-red-500 focus:ring-red-500/50'
-                                                : 'border-gray-300 focus:border-orange-500 focus:ring-orange-500/50'
-                                        }`}
+                                        placeholder="Minimal 8 karakter"
+                                        className={inputPassword(errors.password)}
                                     />
                                     <button
                                         type="button"
-                                        onClick={togglePasswordVisibility}
-                                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 transition-colors hover:text-gray-600"
+                                        onClick={() => setShowPassword(!showPassword)}
                                         tabIndex={-1}
+                                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
                                     >
-                                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                     </button>
                                 </div>
-                                {errors.password && (
-                                    <p className="mt-2 flex items-start gap-2 text-sm leading-relaxed text-red-600">
-                                        <span className="mt-0.5 flex-shrink-0 text-red-500">⚠</span>
-                                        <span>{errors.password}</span>
-                                    </p>
-                                )}
+                                <FieldError message={errors.password} />
                             </div>
 
-                            {/* Password Confirmation Field */}
+                            {/* Konfirmasi Password */}
                             <div>
-                                <label htmlFor="password_confirmation" className="mb-2 block text-sm font-medium text-gray-700">
+                                <label htmlFor="password_confirmation" className="mb-1.5 block text-sm font-medium text-gray-700">
                                     Konfirmasi Kata Sandi
                                 </label>
                                 <div className="relative">
-                                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                        <Lock className="h-5 w-5 text-gray-400" />
-                                    </div>
+                                    <Lock className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                     <input
                                         id="password_confirmation"
-                                        type={showPasswordConfirmation ? 'text' : 'password'}
-                                        required
+                                        type={showConfirm ? 'text' : 'password'}
                                         autoComplete="new-password"
                                         value={data.password_confirmation}
                                         onChange={(e) => setData('password_confirmation', e.target.value)}
                                         placeholder="Ulangi kata sandi"
-                                        minLength={8}
-                                        className={`block w-full rounded-lg border py-3 pr-12 pl-10 text-base transition duration-150 ease-in-out focus:ring-2 focus:outline-none ${
-                                            errors.password_confirmation
-                                                ? 'border-red-300 text-red-900 focus:border-red-500 focus:ring-red-500/50'
-                                                : 'border-gray-300 focus:border-orange-500 focus:ring-orange-500/50'
-                                        }`}
+                                        className={inputPassword(errors.password_confirmation)}
                                     />
                                     <button
                                         type="button"
-                                        onClick={togglePasswordConfirmationVisibility}
-                                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 transition-colors hover:text-gray-600"
+                                        onClick={() => setShowConfirm(!showConfirm)}
                                         tabIndex={-1}
+                                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
                                     >
-                                        {showPasswordConfirmation ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                        {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                     </button>
                                 </div>
-                                {errors.password_confirmation && (
-                                    <p className="mt-2 flex items-start gap-2 text-sm leading-relaxed text-red-600">
-                                        <span className="mt-0.5 flex-shrink-0 text-red-500">⚠</span>
-                                        <span>{errors.password_confirmation}</span>
-                                    </p>
-                                )}
+                                <FieldError message={errors.password_confirmation} />
                             </div>
 
-                            {/* Register Button */}
+                            {/* Submit */}
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="flex min-h-[48px] w-full transform items-center justify-center rounded-lg border border-transparent bg-gradient-to-r from-orange-600 to-orange-700 px-4 py-3 text-base font-semibold text-white shadow-lg transition-all duration-200 ease-in-out hover:scale-[1.02] hover:from-orange-700 hover:to-orange-800 hover:shadow-xl focus:ring-4 focus:ring-orange-500/50 focus:ring-offset-2 focus:outline-none active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 disabled:hover:from-orange-600 disabled:hover:to-orange-700 disabled:hover:shadow-lg sm:min-h-[52px] sm:text-lg"
+                                className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-orange-600 to-orange-700 px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:from-orange-700 hover:to-orange-800 hover:shadow-xl focus:ring-4 focus:ring-orange-500/50 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:text-base"
                             >
-                                {processing && <LoaderCircle className="mr-2 h-5 w-5 animate-spin" />}
+                                {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
                                 {processing ? 'Memproses...' : 'Daftar Akun'}
                             </button>
                         </form>
                     </div>
 
-                    {/* Login Link */}
-                    <div className="text-center">
-                        <p className="text-sm text-gray-600">
-                            Sudah punya akun?{' '}
-                            <Link
-                                href={route('login')}
-                                className="font-medium text-orange-600 transition-colors hover:text-orange-700 hover:underline"
-                            >
-                                Masuk sekarang
-                            </Link>
-                        </p>
-                    </div>
+                    {/* Login link */}
+                    <p className="text-center text-sm text-gray-600">
+                        Sudah punya akun?{' '}
+                        <Link href={route('login')} className="font-medium text-orange-600 hover:text-orange-700 hover:underline">
+                            Masuk sekarang
+                        </Link>
+                    </p>
                 </div>
             </div>
 
-            {/* Loading Overlay */}
             {processing && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
                     <div className="rounded-lg bg-white p-6 shadow-xl">
-                        <div className="flex flex-col items-center space-y-3">
+                        <div className="flex flex-col items-center gap-3">
                             <LoaderCircle className="h-8 w-8 animate-spin text-orange-600" />
                             <p className="text-sm font-medium text-gray-700">Sedang mendaftar...</p>
                         </div>

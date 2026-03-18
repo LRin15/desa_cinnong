@@ -3,38 +3,29 @@ import { Head } from '@inertiajs/react';
 import { Calendar, Eye, MapPin, Target, Users } from 'lucide-react';
 import { useState } from 'react';
 
-// --- DEFINISI TIPE DATA DARI BACKEND ---
-// Tipe untuk objek settings (key-value)
 interface Setting {
     [key: string]: string;
 }
 
-// Tipe untuk satu aparat desa
 interface Official {
     id: number;
     nama: string;
     jabatan: string;
-    foto: string | null; // URL foto bisa jadi null
+    foto: string | null;
 }
 
-// Tipe untuk props yang diterima halaman ini
 interface ProfilDesaProps {
+    auth?: any; // ← tambahkan auth agar navbar tahu status login
     settings: Setting;
     officials: Official[];
 }
 
-export default function ProfilDesa({ settings, officials }: ProfilDesaProps) {
+export default function ProfilDesa({ auth, settings, officials }: ProfilDesaProps) {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-    const openImageModal = (src: string) => {
-        setSelectedImage(src);
-    };
+    const openImageModal = (src: string) => setSelectedImage(src);
+    const closeImageModal = () => setSelectedImage(null);
 
-    const closeImageModal = () => {
-        setSelectedImage(null);
-    };
-
-    // Ambil data dinamis dari settings dengan fallback
     const namaDesa = settings.nama_desa || 'Desa Cinnong';
     const kecamatan = settings.kecamatan || 'Kecamatan Sibulue';
     const kabupaten = settings.kabupaten || 'Kabupaten Bone';
@@ -43,13 +34,15 @@ export default function ProfilDesa({ settings, officials }: ProfilDesaProps) {
     const luas = settings.luas || '16.29';
 
     return (
-        <MainLayout>
+        <MainLayout auth={auth}>
+            {' '}
+            {/* ← teruskan auth ke layout */}
             <Head title="Profil Desa" />
             <div className="min-h-screen py-4 sm:py-6 lg:py-8">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     {/* Header */}
                     <div className="mb-8 text-center sm:mb-12">
-                        <h1 className="mb-3 text-2xl leading-tight font-bold text-gray-900 sm:mb-4 sm:text-3xl lg:text-4xl">Profil {namaDesa}</h1>
+                        <h1 className="mb-3 text-2xl leading-tight font-bold text-gray-900 sm:mb-4 sm:text-3xl lg:text-4xl">Profil Desa</h1>
                         <p className="mx-auto max-w-2xl px-4 text-base leading-relaxed text-gray-600 sm:text-lg lg:text-xl">
                             Mengenal lebih dekat {namaDesa}, sejarah, visi misi, dan struktur pemerintahan desa
                         </p>
@@ -92,20 +85,17 @@ export default function ProfilDesa({ settings, officials }: ProfilDesaProps) {
                         <div className="flex justify-center">
                             <div className="w-full max-w-2xl rounded-lg bg-gray-50 p-3 sm:p-4">
                                 <img
-                                    src={settings.gambar_peta || '/images/peta.png'} // DATA DINAMIS + FALLBACK
+                                    src={settings.gambar_peta || '/images/peta.png'}
                                     alt={`Peta ${namaDesa} menunjukkan pembagian wilayah RT`}
                                     className="h-auto w-full cursor-pointer rounded-lg shadow-md transition-shadow hover:shadow-lg"
                                     style={{ maxHeight: '500px', objectFit: 'contain' }}
                                     onClick={() => openImageModal(settings.gambar_peta || '/images/peta.png')}
                                 />
-                                <p className="mt-3 text-center text-xs text-gray-600 sm:text-sm">
-                                    Peta wilayah {namaDesa} dengan pembagian {jumlahRt} RT (Ketuk untuk memperbesar)
-                                </p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Main Content Grid */}
+                    {/* Sejarah + Visi Misi */}
                     <div className="grid grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-2">
                         {/* Sejarah */}
                         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
@@ -115,12 +105,9 @@ export default function ProfilDesa({ settings, officials }: ProfilDesaProps) {
                                     <span>Sejarah Desa</span>
                                 </h3>
                             </div>
-                            <div>
-                                <p className="mb-4 text-sm leading-relaxed text-gray-700 sm:text-base">
-                                    {/* DATA DINAMIS + FALLBACK */}
-                                    {settings.sejarah || `Sejarah ${namaDesa} belum ditambahkan.`}
-                                </p>
-                            </div>
+                            <p className="text-sm leading-relaxed text-gray-700 sm:text-base">
+                                {settings.sejarah || `Sejarah ${namaDesa} belum ditambahkan.`}
+                            </p>
                         </div>
 
                         {/* Visi & Misi */}
@@ -131,29 +118,25 @@ export default function ProfilDesa({ settings, officials }: ProfilDesaProps) {
                                     <span>Visi</span>
                                 </h3>
                             </div>
-                            <div>
-                                <p className="mb-4 rounded-lg border-l-4 border-orange-500 bg-orange-50 p-3 text-sm leading-relaxed font-semibold text-gray-700 italic sm:mb-6 sm:p-4 sm:text-base">
-                                    {/* DATA DINAMIS + FALLBACK */}"{settings.visi || 'Visi belum ditambahkan.'}"
-                                </p>
-
-                                <h4 className="mb-3 flex items-center space-x-2 text-base font-semibold text-gray-900 sm:text-lg">
-                                    <Target className="h-4 w-4 flex-shrink-0 text-orange-600" />
-                                    <span>Misi</span>
-                                </h4>
-                                <ul className="space-y-2 text-sm text-gray-700 sm:space-y-3 sm:text-base">
-                                    {/* DATA DINAMIS DARI TEXTAREA, DIPISAH PER BARIS */}
-                                    {settings.misi ? (
-                                        settings.misi.split('\n').map((item, index) => (
-                                            <li key={index} className="flex items-start space-x-2">
-                                                <span className="mt-1 flex-shrink-0 font-bold text-orange-500">•</span>
-                                                <span>{item}</span>
-                                            </li>
-                                        ))
-                                    ) : (
-                                        <li>Misi belum ditambahkan.</li>
-                                    )}
-                                </ul>
-                            </div>
+                            <p className="mb-4 rounded-lg border-l-4 border-orange-500 bg-orange-50 p-3 text-sm leading-relaxed font-semibold text-gray-700 italic sm:mb-6 sm:p-4 sm:text-base">
+                                "{settings.visi || 'Visi belum ditambahkan.'}"
+                            </p>
+                            <h4 className="mb-3 flex items-center space-x-2 text-base font-semibold text-gray-900 sm:text-lg">
+                                <Target className="h-4 w-4 flex-shrink-0 text-orange-600" />
+                                <span>Misi</span>
+                            </h4>
+                            <ul className="space-y-2 text-sm text-gray-700 sm:space-y-3 sm:text-base">
+                                {settings.misi ? (
+                                    settings.misi.split('\n').map((item, index) => (
+                                        <li key={index} className="flex items-start space-x-2">
+                                            <span className="mt-1 flex-shrink-0 font-bold text-orange-500">•</span>
+                                            <span>{item}</span>
+                                        </li>
+                                    ))
+                                ) : (
+                                    <li>Misi belum ditambahkan.</li>
+                                )}
+                            </ul>
                         </div>
                     </div>
 
@@ -168,7 +151,7 @@ export default function ProfilDesa({ settings, officials }: ProfilDesaProps) {
                         <div className="mb-4 flex justify-center sm:mb-6">
                             <div className="w-full max-w-3xl space-y-4 rounded-lg bg-gray-50 p-3 sm:space-y-6 sm:p-4">
                                 <img
-                                    src={settings.gambar_tim || '/images/struktur.png'} // DATA DINAMIS + FALLBACK
+                                    src={settings.gambar_tim || '/images/struktur.png'}
                                     alt={`Foto bersama tim pemerintahan ${namaDesa}`}
                                     className="h-auto w-full cursor-pointer rounded-lg shadow-md transition-shadow hover:shadow-lg"
                                     style={{ maxHeight: '400px', objectFit: 'contain' }}
@@ -187,33 +170,29 @@ export default function ProfilDesa({ settings, officials }: ProfilDesaProps) {
                                 <span>Struktur Pemerintahan</span>
                             </h3>
                         </div>
-                        <div>
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
-                                {/* DATA DINAMIS MENGGUNAKAN LOOP */}
-                                {officials.map((official) => (
-                                    <div
-                                        key={official.id}
-                                        className="rounded-lg border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100 p-4 text-center sm:p-6"
-                                    >
-                                        <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-white shadow-lg sm:h-24 sm:w-24">
-                                            <img
-                                                src={official.foto || '/images/default-avatar.png'} // Data dinamis + fallback
-                                                alt={official.nama}
-                                                className="h-full w-full cursor-pointer object-cover"
-                                                onClick={() => openImageModal(official.foto || '/images/default-avatar.png')}
-                                            />
-                                        </div>
-                                        <h4 className="text-base font-bold text-gray-900 sm:text-lg">{official.nama}</h4>
-                                        <p className="text-sm font-semibold text-orange-700 sm:text-base">{official.jabatan}</p>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
+                            {officials.map((official) => (
+                                <div
+                                    key={official.id}
+                                    className="rounded-lg border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100 p-4 text-center sm:p-6"
+                                >
+                                    <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-white shadow-lg sm:h-24 sm:w-24">
+                                        <img
+                                            src={official.foto || '/images/default-avatar.png'}
+                                            alt={official.nama}
+                                            className="h-full w-full cursor-pointer object-cover"
+                                            onClick={() => openImageModal(official.foto || '/images/default-avatar.png')}
+                                        />
                                     </div>
-                                ))}
-                            </div>
+                                    <h4 className="text-base font-bold text-gray-900 sm:text-lg">{official.nama}</h4>
+                                    <p className="text-sm font-semibold text-orange-700 sm:text-base">{official.jabatan}</p>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
             </div>
-
-            {/* Fixed Image Modal (Tidak perlu diubah) */}
+            {/* Image Modal */}
             {selectedImage && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4" onClick={closeImageModal}>
                     <div className="relative flex h-full w-full items-center justify-center">

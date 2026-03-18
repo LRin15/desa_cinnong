@@ -1,6 +1,6 @@
 // resources/js/layouts/MainLayout.tsx
-import { Link, useForm, usePage } from '@inertiajs/react';
-import { CheckCircle, ChevronDown, ExternalLink, Lock, LogIn, Mail, MapPin, Menu, MessageSquare, X } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import { ChevronDown, ExternalLink, Lock, LogIn, Mail, MapPin, Menu, X } from 'lucide-react';
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 interface User {
@@ -26,13 +26,12 @@ interface VillageSettings {
 interface LayananSetting {
     name: string;
     is_active: boolean;
-    category: 'kependudukan' | 'umum';
+    category: 'kependudukan' | 'umum' | 'pengaduan';
 }
 
 interface MainLayoutProps {
     auth?: Auth;
     children: ReactNode;
-    villageSettings?: VillageSettings;
 }
 
 export default function MainLayout({ auth, children }: MainLayoutProps) {
@@ -42,28 +41,16 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
     }>().props;
 
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const [complaintModalOpen, setComplaintModalOpen] = useState(false);
-    const [successModalOpen, setSuccessModalOpen] = useState(false);
     const [layananDropdownOpen, setLayananDropdownOpen] = useState(false);
     const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
     const [mobileLayananOpen, setMobileLayananOpen] = useState(false);
-    // State untuk modal login prompt
     const [loginPromptOpen, setLoginPromptOpen] = useState(false);
-    const [loginPromptType, setLoginPromptType] = useState<'layanan' | 'pengaduan'>('layanan');
 
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    const { data, setData, post, processing, errors, reset } = useForm({
-        telepon: '',
-        judul: '',
-        isi_pengaduan: '',
-    });
-
-    // Cek apakah user adalah pengguna terdaftar
     const isPenggunaTerdaftar = auth?.user?.role === 'pengguna_terdaftar';
     const isLoggedIn = !!auth?.user;
 
-    // Handle click outside dropdown
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -71,59 +58,22 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                 setActiveSubmenu(null);
             }
         };
-
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const toggleMobileMenu = () => {
-        setMobileMenuOpen(!mobileMenuOpen);
-    };
-
+    const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
     const closeMobileMenu = () => {
         setMobileMenuOpen(false);
         setMobileLayananOpen(false);
     };
 
-    // Handler klik layanan — cek dulu apakah pengguna terdaftar
     const handleLayananClick = (e: React.MouseEvent) => {
         if (!isPenggunaTerdaftar) {
             e.preventDefault();
-            setLoginPromptType('layanan');
             setLoginPromptOpen(true);
             closeMobileMenu();
         }
-    };
-
-    // Handler klik pengaduan — cek dulu apakah pengguna terdaftar
-    const openComplaintModal = () => {
-        if (!isPenggunaTerdaftar) {
-            setLoginPromptType('pengaduan');
-            setLoginPromptOpen(true);
-            closeMobileMenu();
-            return;
-        }
-        setComplaintModalOpen(true);
-        closeMobileMenu();
-    };
-
-    const closeComplaintModal = () => {
-        setComplaintModalOpen(false);
-        reset();
-    };
-
-    const closeSuccessModal = () => {
-        setSuccessModalOpen(false);
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        post(route('pengaduan.store'), {
-            onSuccess: () => {
-                closeComplaintModal();
-                setSuccessModalOpen(true);
-            },
-        });
     };
 
     const namaDesa = villageSettings?.nama_desa || 'Desa Cinnong';
@@ -133,9 +83,9 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
     const kabupaten = villageSettings?.kabupaten || 'Kabupaten Bone';
     const kecamatan = villageSettings?.kecamatan || 'Kecamatan Sibulue';
 
-    // Filter layanan berdasarkan status aktif
+    // ── Layanan Kependudukan ──────────────────────────────────────
     const activeLayananKependudukan = useMemo(() => {
-        const allLayanan = [
+        const all = [
             { name: 'Surat Pengantar KTP', route: 'layanan.ktp', key: 'layanan_ktp' },
             { name: 'Surat Pengantar KK', route: 'layanan.kk', key: 'layanan_kk' },
             { name: 'Surat Keterangan Domisili', route: 'layanan.domisili', key: 'layanan_domisili' },
@@ -144,80 +94,55 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
             { name: 'Surat Keterangan Kelahiran', route: 'layanan.kelahiran', key: 'layanan_kelahiran' },
             { name: 'Surat Keterangan Kematian', route: 'layanan.kematian', key: 'layanan_kematian' },
         ];
-
-        return allLayanan.filter((layanan) => {
-            const setting = layananSettings?.[layanan.key];
-            return setting?.is_active === true;
-        });
+        return all.filter((l) => layananSettings?.[l.key]?.is_active === true);
     }, [layananSettings]);
 
+    // ── Layanan Umum ──────────────────────────────────────────────
     const activeLayananUmum = useMemo(() => {
-        const allLayanan = [
+        const all = [
             { name: 'Surat Pengantar Nikah', route: 'layanan.nikah', key: 'layanan_nikah' },
             { name: 'Surat Keterangan Pindah', route: 'layanan.pindah', key: 'layanan_pindah' },
             { name: 'Surat Izin Kegiatan', route: 'layanan.izin-kegiatan', key: 'layanan_izin_kegiatan' },
             { name: 'Surat Rekomendasi Desa', route: 'layanan.rekomendasi', key: 'layanan_rekomendasi' },
         ];
-
-        return allLayanan.filter((layanan) => {
-            const setting = layananSettings?.[layanan.key];
-            return setting?.is_active === true;
-        });
+        return all.filter((l) => layananSettings?.[l.key]?.is_active === true);
     }, [layananSettings]);
 
-    const hasActiveLayanan = activeLayananKependudukan.length > 0 || activeLayananUmum.length > 0;
+    // ── Layanan Pengaduan & Aspirasi ──────────────────────────────
+    const activeLayananPengaduan = useMemo(() => {
+        const all = [{ name: 'Pengaduan & Aspirasi Masyarakat', route: 'layanan.pengaduan-aspirasi', key: 'layanan_pengaduan_aspirasi' }];
+        return all.filter((l) => layananSettings?.[l.key]?.is_active === true);
+    }, [layananSettings]);
+
+    const hasActiveLayanan = activeLayananKependudukan.length > 0 || activeLayananUmum.length > 0 || activeLayananPengaduan.length > 0;
 
     return (
         <div className="flex min-h-screen flex-col bg-gray-100">
-            {/* Navigasi */}
+            {/* ── Navigasi ── */}
             <nav className="relative z-50 border-b border-gray-100 bg-[#ea580c]">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-14 items-center justify-between sm:h-16">
-                        <div className="flex items-center">
-                            <Link
-                                href={route('beranda')}
-                                className="truncate text-base font-bold text-[#ffffff] sm:text-lg"
-                                onClick={closeMobileMenu}
-                            >
-                                {namaDesa}
-                            </Link>
-                        </div>
+                        {/* Logo / Nama Desa */}
+                        <Link href={route('beranda')} onClick={closeMobileMenu} className="truncate text-base font-bold text-white sm:text-lg">
+                            {namaDesa}
+                        </Link>
 
                         {/* Desktop Navigation */}
                         <div className="hidden items-center space-x-6 lg:flex">
-                            <Link
-                                href={route('beranda')}
-                                className="text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]"
-                            >
-                                Beranda
-                            </Link>
-                            <Link
-                                href={route('profil.show')}
-                                className="text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]"
-                            >
-                                Profil Desa
-                            </Link>
-                            <Link
-                                href={route('data.desa')}
-                                className="text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]"
-                            >
-                                Data Desa
-                            </Link>
-                            <Link
-                                href={route('infografis.desa')}
-                                className="text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]"
-                            >
-                                Infografis
-                            </Link>
-                            <Link
-                                href={route('berita')}
-                                className="text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]"
-                            >
-                                Berita
-                            </Link>
+                            {[
+                                { label: 'Beranda', href: route('beranda') },
+                                { label: 'Profil Desa', href: route('profil.show') },
+                                { label: 'Data Desa', href: route('data.desa') },
+                                { label: 'Infografis', href: route('infografis.desa') },
+                                { label: 'Berita', href: route('berita') },
+                            ].map((item) => (
+                                <Link key={item.label} href={item.href} className="text-sm font-medium text-[#fed7aa] transition hover:text-white">
+                                    {item.label}
+                                </Link>
+                            ))}
                             <Link
                                 href={route('publikasi.index')}
-                                className="text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]"
+                                className="text-sm font-medium text-[#fed7aa] transition hover:text-white"
                                 preserveScroll={false}
                                 preserveState={false}
                             >
@@ -230,9 +155,7 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                     className="relative"
                                     ref={dropdownRef}
                                     onMouseEnter={() => {
-                                        if (isPenggunaTerdaftar) {
-                                            setLayananDropdownOpen(true);
-                                        }
+                                        if (isPenggunaTerdaftar) setLayananDropdownOpen(true);
                                     }}
                                     onMouseLeave={() => {
                                         setLayananDropdownOpen(false);
@@ -241,32 +164,31 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                 >
                                     <button
                                         onClick={handleLayananClick}
-                                        className="flex items-center text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]"
+                                        className="flex items-center text-sm font-medium text-[#fed7aa] transition hover:text-white"
                                     >
                                         Layanan
                                         {!isPenggunaTerdaftar && <Lock className="ml-1 h-3 w-3 opacity-70" />}
                                         {isPenggunaTerdaftar && <ChevronDown className="ml-1 h-4 w-4" />}
                                     </button>
 
-                                    {/* Dropdown Menu — hanya tampil jika pengguna terdaftar */}
                                     {layananDropdownOpen && isPenggunaTerdaftar && (
                                         <div className="absolute top-full left-0 mt-1 w-64 rounded-md bg-white shadow-lg">
+                                            {/* Kependudukan */}
                                             {activeLayananKependudukan.length > 0 && (
                                                 <div className="relative" onMouseEnter={() => setActiveSubmenu('kependudukan')}>
                                                     <div className="flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 hover:bg-orange-50">
                                                         <span>Layanan Administrasi Kependudukan</span>
                                                         <ChevronDown className="h-4 w-4 rotate-[-90deg]" />
                                                     </div>
-
                                                     {activeSubmenu === 'kependudukan' && (
                                                         <div className="absolute top-0 left-full ml-1 w-64 rounded-md bg-white shadow-lg">
-                                                            {activeLayananKependudukan.map((layanan, index) => (
+                                                            {activeLayananKependudukan.map((l, i) => (
                                                                 <Link
-                                                                    key={index}
-                                                                    href={route(layanan.route)}
+                                                                    key={i}
+                                                                    href={route(l.route)}
                                                                     className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600"
                                                                 >
-                                                                    {layanan.name}
+                                                                    {l.name}
                                                                 </Link>
                                                             ))}
                                                         </div>
@@ -278,22 +200,48 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                                 <div className="border-t border-gray-100" />
                                             )}
 
+                                            {/* Umum */}
                                             {activeLayananUmum.length > 0 && (
                                                 <div className="relative" onMouseEnter={() => setActiveSubmenu('umum')}>
                                                     <div className="flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 hover:bg-orange-50">
                                                         <span>Layanan Administrasi Umum</span>
                                                         <ChevronDown className="h-4 w-4 rotate-[-90deg]" />
                                                     </div>
-
                                                     {activeSubmenu === 'umum' && (
                                                         <div className="absolute top-0 left-full ml-1 w-64 rounded-md bg-white shadow-lg">
-                                                            {activeLayananUmum.map((layanan, index) => (
+                                                            {activeLayananUmum.map((l, i) => (
                                                                 <Link
-                                                                    key={index}
-                                                                    href={route(layanan.route)}
+                                                                    key={i}
+                                                                    href={route(l.route)}
                                                                     className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600"
                                                                 >
-                                                                    {layanan.name}
+                                                                    {l.name}
+                                                                </Link>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {(activeLayananKependudukan.length > 0 || activeLayananUmum.length > 0) &&
+                                                activeLayananPengaduan.length > 0 && <div className="border-t border-gray-100" />}
+
+                                            {/* Pengaduan & Aspirasi */}
+                                            {activeLayananPengaduan.length > 0 && (
+                                                <div className="relative" onMouseEnter={() => setActiveSubmenu('pengaduan')}>
+                                                    <div className="flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 hover:bg-orange-50">
+                                                        <span>Pengaduan &amp; Aspirasi</span>
+                                                        <ChevronDown className="h-4 w-4 rotate-[-90deg]" />
+                                                    </div>
+                                                    {activeSubmenu === 'pengaduan' && (
+                                                        <div className="absolute top-0 left-full ml-1 w-64 rounded-md bg-white shadow-lg">
+                                                            {activeLayananPengaduan.map((l, i) => (
+                                                                <Link
+                                                                    key={i}
+                                                                    href={route(l.route)}
+                                                                    className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600"
+                                                                >
+                                                                    {l.name}
                                                                 </Link>
                                                             ))}
                                                         </div>
@@ -304,14 +252,6 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                     )}
                                 </div>
                             )}
-
-                            <button
-                                onClick={openComplaintModal}
-                                className="flex items-center text-sm font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff]"
-                            >
-                                Pengaduan
-                                {!isPenggunaTerdaftar && <Lock className="ml-1 h-3 w-3 opacity-70" />}
-                            </button>
                         </div>
 
                         {/* Desktop Auth Buttons */}
@@ -322,14 +262,14 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                     {auth.user.role === 'pengguna_terdaftar' ? (
                                         <Link
                                             href={route('pengguna.profil')}
-                                            className="px-2 text-xs font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff] sm:text-sm"
+                                            className="px-2 text-xs font-medium text-[#fed7aa] transition hover:text-white sm:text-sm"
                                         >
                                             Profil
                                         </Link>
                                     ) : (
                                         <Link
                                             href={route('dashboard')}
-                                            className="px-2 text-xs font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:text-[#ffffff] sm:text-sm"
+                                            className="px-2 text-xs font-medium text-[#fed7aa] transition hover:text-white sm:text-sm"
                                         >
                                             Dashboard
                                         </Link>
@@ -338,7 +278,7 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                         href={route('logout')}
                                         method="post"
                                         as="button"
-                                        className="rounded-md bg-[#f97316] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition duration-150 ease-in-out hover:bg-[#c2410c] sm:text-sm"
+                                        className="rounded-md bg-[#f97316] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition hover:bg-[#c2410c] sm:text-sm"
                                     >
                                         Keluar
                                     </Link>
@@ -346,7 +286,7 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                             ) : (
                                 <Link
                                     href={route('login')}
-                                    className="rounded-md bg-white px-4 py-1.5 text-xs font-medium text-orange-600 shadow-sm transition duration-150 ease-in-out hover:bg-orange-50 sm:text-sm"
+                                    className="rounded-md bg-white px-4 py-1.5 text-xs font-medium text-orange-600 shadow-sm transition hover:bg-orange-50 sm:text-sm"
                                 >
                                     Masuk
                                 </Link>
@@ -376,45 +316,26 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                             </div>
                         )}
 
-                        <Link
-                            href={route('beranda')}
-                            onClick={closeMobileMenu}
-                            className="block rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
-                        >
-                            Beranda
-                        </Link>
-                        <Link
-                            href={route('profil.show')}
-                            onClick={closeMobileMenu}
-                            className="block rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
-                        >
-                            Profil Desa
-                        </Link>
-                        <Link
-                            href={route('data.desa')}
-                            onClick={closeMobileMenu}
-                            className="block rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
-                        >
-                            Data Desa
-                        </Link>
-                        <Link
-                            href={route('infografis.desa')}
-                            onClick={closeMobileMenu}
-                            className="block rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
-                        >
-                            Infografis
-                        </Link>
-                        <Link
-                            href={route('berita')}
-                            onClick={closeMobileMenu}
-                            className="block rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
-                        >
-                            Berita
-                        </Link>
+                        {[
+                            { label: 'Beranda', href: route('beranda') },
+                            { label: 'Profil Desa', href: route('profil.show') },
+                            { label: 'Data Desa', href: route('data.desa') },
+                            { label: 'Infografis', href: route('infografis.desa') },
+                            { label: 'Berita', href: route('berita') },
+                        ].map((item) => (
+                            <Link
+                                key={item.label}
+                                href={item.href}
+                                onClick={closeMobileMenu}
+                                className="block rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition hover:bg-white/10 hover:text-white"
+                            >
+                                {item.label}
+                            </Link>
+                        ))}
                         <Link
                             href={route('publikasi.index')}
                             onClick={closeMobileMenu}
-                            className="block rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
+                            className="block rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition hover:bg-white/10 hover:text-white"
                             preserveScroll={false}
                             preserveState={false}
                         >
@@ -432,7 +353,7 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                             setMobileLayananOpen(!mobileLayananOpen);
                                         }
                                     }}
-                                    className="flex w-full items-center justify-between rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
+                                    className="flex w-full items-center justify-between rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition hover:bg-white/10 hover:text-white"
                                 >
                                     <span className="flex items-center gap-2">
                                         Layanan
@@ -448,30 +369,44 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                         {activeLayananKependudukan.length > 0 && (
                                             <div className="py-2">
                                                 <p className="px-3 text-xs font-semibold text-orange-200 uppercase">Administrasi Kependudukan</p>
-                                                {activeLayananKependudukan.map((layanan, index) => (
+                                                {activeLayananKependudukan.map((l, i) => (
                                                     <Link
-                                                        key={index}
-                                                        href={route(layanan.route)}
+                                                        key={i}
+                                                        href={route(l.route)}
                                                         onClick={closeMobileMenu}
-                                                        className="block rounded-md px-3 py-2 text-sm text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
+                                                        className="block rounded-md px-3 py-2 text-sm text-[#fed7aa] transition hover:bg-white/10 hover:text-white"
                                                     >
-                                                        {layanan.name}
+                                                        {l.name}
                                                     </Link>
                                                 ))}
                                             </div>
                                         )}
-
                                         {activeLayananUmum.length > 0 && (
                                             <div className="border-t border-orange-600/20 py-2">
                                                 <p className="px-3 text-xs font-semibold text-orange-200 uppercase">Administrasi Umum</p>
-                                                {activeLayananUmum.map((layanan, index) => (
+                                                {activeLayananUmum.map((l, i) => (
                                                     <Link
-                                                        key={index}
-                                                        href={route(layanan.route)}
+                                                        key={i}
+                                                        href={route(l.route)}
                                                         onClick={closeMobileMenu}
-                                                        className="block rounded-md px-3 py-2 text-sm text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
+                                                        className="block rounded-md px-3 py-2 text-sm text-[#fed7aa] transition hover:bg-white/10 hover:text-white"
                                                     >
-                                                        {layanan.name}
+                                                        {l.name}
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {activeLayananPengaduan.length > 0 && (
+                                            <div className="border-t border-orange-600/20 py-2">
+                                                <p className="px-3 text-xs font-semibold text-orange-200 uppercase">Pengaduan &amp; Aspirasi</p>
+                                                {activeLayananPengaduan.map((l, i) => (
+                                                    <Link
+                                                        key={i}
+                                                        href={route(l.route)}
+                                                        onClick={closeMobileMenu}
+                                                        className="block rounded-md px-3 py-2 text-sm text-[#fed7aa] transition hover:bg-white/10 hover:text-white"
+                                                    >
+                                                        {l.name}
                                                     </Link>
                                                 ))}
                                             </div>
@@ -481,29 +416,31 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                             </div>
                         )}
 
-                        <button
-                            onClick={openComplaintModal}
-                            className="flex w-full items-center gap-2 rounded-md px-3 py-3 text-left text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
-                        >
-                            Pengaduan
-                            {!isPenggunaTerdaftar && <Lock className="h-3.5 w-3.5 opacity-70" />}
-                        </button>
-
                         {auth?.user ? (
                             <div className="mt-3 space-y-2 border-t border-orange-600/20 pt-3">
-                                <Link
-                                    href={route('dashboard')}
-                                    onClick={closeMobileMenu}
-                                    className="block rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
-                                >
-                                    Dashboard
-                                </Link>
+                                {auth.user.role === 'pengguna_terdaftar' ? (
+                                    <Link
+                                        href={route('pengguna.profil')}
+                                        onClick={closeMobileMenu}
+                                        className="block rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition hover:bg-white/10 hover:text-white"
+                                    >
+                                        Profil Saya
+                                    </Link>
+                                ) : (
+                                    <Link
+                                        href={route('dashboard')}
+                                        onClick={closeMobileMenu}
+                                        className="block rounded-md px-3 py-3 text-base font-medium text-[#fed7aa] transition hover:bg-white/10 hover:text-white"
+                                    >
+                                        Dashboard
+                                    </Link>
+                                )}
                                 <Link
                                     href={route('logout')}
                                     method="post"
                                     as="button"
                                     onClick={closeMobileMenu}
-                                    className="block w-full rounded-md px-3 py-3 text-left text-base font-medium text-[#fed7aa] transition duration-150 ease-in-out hover:bg-white/10 hover:text-[#ffffff]"
+                                    className="block w-full rounded-md px-3 py-3 text-left text-base font-medium text-[#fed7aa] transition hover:bg-white/10 hover:text-white"
                                 >
                                     Keluar
                                 </Link>
@@ -513,7 +450,7 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                 <Link
                                     href={route('login')}
                                     onClick={closeMobileMenu}
-                                    className="block rounded-md bg-white px-3 py-3 text-center text-base font-medium text-orange-600 transition duration-150 ease-in-out hover:bg-orange-50"
+                                    className="block rounded-md bg-white px-3 py-3 text-center text-base font-medium text-orange-600 transition hover:bg-orange-50"
                                 >
                                     Masuk
                                 </Link>
@@ -523,30 +460,23 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                 </div>
             </nav>
 
-            {/* ===================== MODAL LOGIN PROMPT ===================== */}
+            {/* ── Modal Login Prompt ── */}
             {loginPromptOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
                     <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl">
-                        {/* Header strip */}
                         <div className="bg-orange-600 px-6 py-5 text-center">
                             <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-white/20">
                                 <Lock className="h-7 w-7 text-white" />
                             </div>
                             <h3 className="text-lg font-bold text-white">Akses Terbatas</h3>
                         </div>
-
-                        {/* Body */}
                         <div className="px-6 py-6 text-center">
-                            <p className="mb-1 text-base font-semibold text-gray-900">
-                                {loginPromptType === 'layanan' ? 'Fitur Layanan Desa' : 'Fitur Pengaduan Masyarakat'}
-                            </p>
+                            <p className="mb-1 text-base font-semibold text-gray-900">Fitur Layanan Desa</p>
                             <p className="mb-6 text-sm leading-relaxed text-gray-500">
                                 {isLoggedIn
                                     ? 'Fitur ini hanya dapat diakses oleh pengguna dengan akun terdaftar sebagai warga desa.'
-                                    : 'Anda perlu masuk ke akun terlebih dahulu untuk mengakses fitur ini. Silakan login atau daftarkan diri Anda.'}
+                                    : 'Anda perlu masuk ke akun terlebih dahulu untuk mengakses fitur ini.'}
                             </p>
-
-                            {/* Buttons */}
                             <div className="space-y-3">
                                 {!isLoggedIn && (
                                     <>
@@ -577,133 +507,9 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                 </div>
             )}
 
-            {/* Modal Pengaduan */}
-            {complaintModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-                    <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-xl">
-                        {/* Header */}
-                        <div className="sticky top-0 flex items-center justify-between border-b bg-white p-4 sm:p-6">
-                            <div className="flex items-center">
-                                <MessageSquare className="mr-2 h-6 w-6 text-orange-600" />
-                                <h2 className="text-xl font-bold text-gray-900">Form Pengaduan Masyarakat</h2>
-                            </div>
-                            <button onClick={closeComplaintModal} className="rounded-full p-1 hover:bg-gray-100">
-                                <X className="h-6 w-6" />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleSubmit} className="p-4 sm:p-6">
-                            {/* Info akun pengirim — diambil otomatis dari sesi login */}
-                            <div className="mb-5 rounded-lg border border-orange-100 bg-orange-50 p-4">
-                                <p className="mb-2 text-xs font-semibold tracking-wide text-orange-600 uppercase">Pengaduan dikirim atas nama</p>
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-orange-200 text-sm font-bold text-orange-700">
-                                        {auth?.user?.name?.charAt(0).toUpperCase()}
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold text-gray-900">{auth?.user?.name}</p>
-                                        <p className="text-xs text-gray-500">{auth?.user?.email}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                {/* No. Telepon */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">
-                                        No. Telepon <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="tel"
-                                        value={data.telepon}
-                                        onChange={(e) => setData('telepon', e.target.value)}
-                                        placeholder="08xxxxxxxxxx"
-                                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-orange-500 focus:outline-none"
-                                        required
-                                    />
-                                    {errors.telepon && <p className="mt-1 text-sm text-red-600">{errors.telepon}</p>}
-                                </div>
-
-                                {/* Judul Pengaduan */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">
-                                        Judul Pengaduan <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={data.judul}
-                                        onChange={(e) => setData('judul', e.target.value)}
-                                        placeholder="Ringkasan singkat pengaduan Anda"
-                                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-orange-500 focus:outline-none"
-                                        required
-                                    />
-                                    {errors.judul && <p className="mt-1 text-sm text-red-600">{errors.judul}</p>}
-                                </div>
-
-                                {/* Isi Pengaduan */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">
-                                        Isi Pengaduan <span className="text-red-500">*</span>
-                                    </label>
-                                    <textarea
-                                        value={data.isi_pengaduan}
-                                        onChange={(e) => setData('isi_pengaduan', e.target.value)}
-                                        rows={6}
-                                        placeholder="Jelaskan pengaduan Anda secara detail..."
-                                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-orange-500 focus:outline-none"
-                                        required
-                                    />
-                                    {errors.isi_pengaduan && <p className="mt-1 text-sm text-red-600">{errors.isi_pengaduan}</p>}
-                                </div>
-                            </div>
-
-                            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                                <button
-                                    type="button"
-                                    onClick={closeComplaintModal}
-                                    className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                                >
-                                    Batal
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-50"
-                                >
-                                    {processing ? 'Mengirim...' : 'Kirim Pengaduan'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Success Modal */}
-            {successModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-                    <div className="w-full max-w-md rounded-lg bg-white shadow-xl">
-                        <div className="p-6 text-center sm:p-8">
-                            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-                                <CheckCircle className="h-10 w-10 text-green-600" />
-                            </div>
-                            <h3 className="mb-2 text-xl font-bold text-gray-900 sm:text-2xl">Pengaduan Berhasil Dikirim!</h3>
-                            <p className="mb-6 text-sm text-gray-600 sm:text-base">
-                                Terima kasih telah mengirimkan pengaduan Anda. Tim kami akan segera meninjau dan menindaklanjuti pengaduan Anda.
-                            </p>
-                            <button
-                                onClick={closeSuccessModal}
-                                className="mt-6 w-full rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-orange-700 sm:text-base"
-                            >
-                                Tutup
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             <main className="min-h-0 flex-1">{children}</main>
 
-            {/* Footer */}
+            {/* ── Footer ── */}
             <footer className="bg-[#ea580c] text-white">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 gap-4 py-6 sm:grid-cols-2 sm:gap-6 sm:py-8 lg:grid-cols-3">
@@ -714,59 +520,39 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                                 untuk transparansi dan kemudahan akses.
                             </p>
                         </div>
-
                         <div className="space-y-3">
                             <h3 className="text-xl font-bold">Menu Utama</h3>
                             <ul className="space-y-2 text-base">
-                                <li>
-                                    <Link href={route('beranda')} className="block py-1 text-orange-100 transition-colors hover:text-white">
-                                        Beranda
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link href={route('profil.show')} className="block py-1 text-orange-100 transition-colors hover:text-white">
-                                        Profil Desa
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link href={route('data.desa')} className="block py-1 text-orange-100 transition-colors hover:text-white">
-                                        Data Desa
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link href={route('infografis.desa')} className="block py-1 text-orange-100 transition-colors hover:text-white">
-                                        Infografis
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link href={route('berita')} className="block py-1 text-orange-100 transition-colors hover:text-white">
-                                        Berita
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link href={route('publikasi.index')} className="block py-1 text-orange-100 transition-colors hover:text-white">
-                                        Publikasi
-                                    </Link>
-                                </li>
+                                {[
+                                    { label: 'Beranda', href: route('beranda') },
+                                    { label: 'Profil Desa', href: route('profil.show') },
+                                    { label: 'Data Desa', href: route('data.desa') },
+                                    { label: 'Infografis', href: route('infografis.desa') },
+                                    { label: 'Berita', href: route('berita') },
+                                    { label: 'Publikasi', href: route('publikasi.index') },
+                                ].map((item) => (
+                                    <li key={item.label}>
+                                        <Link href={item.href} className="block py-1 text-orange-100 transition-colors hover:text-white">
+                                            {item.label}
+                                        </Link>
+                                    </li>
+                                ))}
                             </ul>
                         </div>
-
                         <div className="space-y-3 sm:col-span-2 lg:col-span-1">
                             <h3 className="text-xl font-bold">Kontak Kami</h3>
                             <div className="space-y-3 text-base">
                                 <div className="flex items-start space-x-3">
                                     <MapPin className="mt-1 h-5 w-5 flex-shrink-0 text-orange-200" />
-                                    <div>
-                                        <p className="leading-relaxed text-orange-100">
-                                            {namaDesa}
-                                            <br />
-                                            {kecamatan}
-                                            <br />
-                                            {kabupaten}
-                                            <br />
-                                            {provinsi}
-                                        </p>
-                                    </div>
+                                    <p className="leading-relaxed text-orange-100">
+                                        {namaDesa}
+                                        <br />
+                                        {kecamatan}
+                                        <br />
+                                        {kabupaten}
+                                        <br />
+                                        {provinsi}
+                                    </p>
                                 </div>
                                 <a
                                     href={`mailto:${emailDesa}`}
@@ -791,19 +577,16 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                             </div>
                         </div>
                     </div>
-
                     <div className="border-t border-orange-600/30 py-3 sm:py-4">
                         <div className="flex flex-col items-center justify-between space-y-2 text-center sm:text-left lg:flex-row lg:space-y-0">
                             <div className="text-sm text-orange-100">
-                                <p>© 2025 {namaDesa}. Sistem Informasi Desa.</p>
+                                <p>© {namaDesa}. Sistem Informasi Desa.</p>
                                 <p className="mt-1">Dibuat dengan ❤️ untuk transparansi dan kemudahan akses informasi.</p>
                             </div>
-                            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm">
-                                <a href="#" className="flex items-center space-x-1 text-orange-100 transition-colors hover:text-white">
-                                    <span>Situs Web Resmi</span>
-                                    <ExternalLink className="h-3 w-3" />
-                                </a>
-                            </div>
+                            <a href="#" className="flex items-center space-x-1 text-sm text-orange-100 transition-colors hover:text-white">
+                                <span>Situs Web Resmi</span>
+                                <ExternalLink className="h-3 w-3" />
+                            </a>
                         </div>
                     </div>
                 </div>

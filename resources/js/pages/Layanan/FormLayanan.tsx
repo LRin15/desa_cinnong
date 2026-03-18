@@ -1,4 +1,9 @@
 // resources/js/Pages/Layanan/FormLayanan.tsx
+// Validasi sepenuhnya server-side (Laravel + Inertia).
+// Tidak ada atribut `required` di elemen HTML agar browser tidak memunculkan
+// tooltip native "Please fill out this field." dan FieldError tampil konsisten.
+
+import { FieldError, inputBase } from '@/components/ui/FieldError';
 import MainLayout from '@/layouts/MainLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { CheckCircle, FileText, Upload, X } from 'lucide-react';
@@ -35,18 +40,19 @@ export default function FormLayanan({ auth, jenisLayanan, deskripsi, persyaratan
     const [successModalOpen, setSuccessModalOpen] = useState(false);
     const [filePreviews, setFilePreviews] = useState<{ [key: string]: string[] }>({});
 
-    // Inisialisasi data form — nama_lengkap di-prefill dari akun user
+    // Inisialisasi data form
+    // field_required: JSON array nama field wajib, dikirim ke server agar
+    // Laravel tahu mana yang harus divalidasi sebagai required.
     const initialData: Record<string, any> = {
         jenis_layanan: jenisLayanan,
+        field_required: JSON.stringify(formFields.filter((f) => f.required).map((f) => f.name)),
     };
-
     formFields.forEach((field) => {
         if (field.type === 'file') {
             initialData[field.name] = field.multiple ? [] : null;
         } else if (field.type === 'select' && field.options) {
             initialData[field.name] = field.options[0];
         } else if (field.name === 'nama_lengkap') {
-            // Pre-fill nama dari akun — pengguna tetap bisa mengubah jika berbeda dengan KTP
             initialData[field.name] = userInfo.name;
         } else {
             initialData[field.name] = '';
@@ -101,6 +107,7 @@ export default function FormLayanan({ auth, jenisLayanan, deskripsi, persyaratan
     };
 
     const handleSubmit = (e: React.FormEvent) => {
+        // Cegah validasi bawaan browser — validasi ditangani Laravel
         e.preventDefault();
         post(route('layanan.submit'), {
             forceFormData: true,
@@ -116,36 +123,40 @@ export default function FormLayanan({ auth, jenisLayanan, deskripsi, persyaratan
         const fieldError = errors[field.name];
         const handleChange = (value: any) => setData(field.name as never, value as never);
 
+        const label = (
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+                {field.label}
+                {field.required && <span className="ml-0.5 text-red-500">*</span>}
+                {field.name === 'nama_lengkap' && <span className="ml-2 text-xs font-normal text-orange-500">(dari akun Anda)</span>}
+            </label>
+        );
+
         switch (field.type) {
             case 'textarea':
                 return (
                     <div key={field.name}>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                            {field.label} {field.required && <span className="text-red-500">*</span>}
-                        </label>
+                        {label}
                         <textarea
                             value={data[field.name] || ''}
                             onChange={(e) => handleChange(e.target.value)}
                             rows={field.rows || 3}
-                            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-orange-500 focus:outline-none"
                             placeholder={field.placeholder}
-                            required={field.required}
+                            // ⛔ Tidak ada `required` — biarkan Laravel yang memvalidasi
+                            className={inputBase(fieldError)}
                         />
-                        {fieldError && <p className="mt-1 text-sm text-red-600">{fieldError}</p>}
+                        <FieldError message={fieldError} />
                     </div>
                 );
 
             case 'select':
                 return (
                     <div key={field.name}>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                            {field.label} {field.required && <span className="text-red-500">*</span>}
-                        </label>
+                        {label}
                         <select
                             value={data[field.name]}
                             onChange={(e) => handleChange(e.target.value)}
-                            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-orange-500 focus:outline-none"
-                            required={field.required}
+                            // ⛔ Tidak ada `required`
+                            className={inputBase(fieldError)}
                         >
                             {field.options?.map((option) => (
                                 <option key={option} value={option}>
@@ -153,35 +164,38 @@ export default function FormLayanan({ auth, jenisLayanan, deskripsi, persyaratan
                                 </option>
                             ))}
                         </select>
-                        {fieldError && <p className="mt-1 text-sm text-red-600">{fieldError}</p>}
+                        <FieldError message={fieldError} />
                     </div>
                 );
 
-            case 'file':
+            case 'file': {
                 const files = field.multiple ? data[field.name] || [] : data[field.name] ? [data[field.name]] : [];
                 const previews = filePreviews[field.name] || [];
 
                 return (
                     <div key={field.name}>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                            {field.label} {field.required && <span className="text-red-500">*</span>}
-                        </label>
-                        <div className="mt-2">
-                            <label className="flex cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 px-6 py-4 hover:border-orange-500 hover:bg-orange-50">
+                        {label}
+                        <div className="mt-1">
+                            <label
+                                className={`flex cursor-pointer items-center justify-center rounded-lg border-2 border-dashed px-6 py-4 transition hover:bg-orange-50 ${
+                                    fieldError ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-orange-400'
+                                }`}
+                            >
                                 <div className="text-center">
-                                    <Upload className="mx-auto h-8 w-8 text-gray-400" />
+                                    <Upload className={`mx-auto h-8 w-8 ${fieldError ? 'text-red-400' : 'text-gray-400'}`} />
                                     <p className="mt-2 text-sm text-gray-600">Klik untuk upload file</p>
                                 </div>
+                                {/* ⛔ Tidak ada `required` pada input file */}
                                 <input
                                     type="file"
                                     onChange={(e) => handleFileChange(field.name, e.target.files, !!field.multiple)}
                                     accept={field.accept}
                                     multiple={field.multiple}
                                     className="hidden"
-                                    required={field.required && files.length === 0}
                                 />
                             </label>
                         </div>
+
                         {files.length > 0 && (
                             <div className="mt-3 space-y-2">
                                 {files.map((file: File, index: number) => (
@@ -210,28 +224,26 @@ export default function FormLayanan({ auth, jenisLayanan, deskripsi, persyaratan
                                 ))}
                             </div>
                         )}
-                        {fieldError && <p className="mt-1 text-sm text-red-600">{fieldError}</p>}
+
+                        <FieldError message={fieldError} />
                     </div>
                 );
+            }
 
             default:
                 return (
                     <div key={field.name}>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                            {field.label} {field.required && <span className="text-red-500">*</span>}
-                            {/* Tanda pre-fill untuk nama_lengkap */}
-                            {field.name === 'nama_lengkap' && <span className="ml-2 text-xs font-normal text-orange-500">(dari akun Anda)</span>}
-                        </label>
+                        {label}
                         <input
                             type={field.type}
                             value={data[field.name] || ''}
                             onChange={(e) => handleChange(e.target.value)}
-                            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-orange-500 focus:ring-orange-500 focus:outline-none"
                             placeholder={field.placeholder}
                             maxLength={field.maxLength}
-                            required={field.required}
+                            // ⛔ Tidak ada `required` — validasi sepenuhnya di Laravel
+                            className={inputBase(fieldError)}
                         />
-                        {fieldError && <p className="mt-1 text-sm text-red-600">{fieldError}</p>}
+                        <FieldError message={fieldError} />
                     </div>
                 );
         }
@@ -244,16 +256,6 @@ export default function FormLayanan({ auth, jenisLayanan, deskripsi, persyaratan
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     {/* Breadcrumb */}
                     <div className="mb-8">
-                        <div className="mb-4 flex items-center space-x-3 text-sm text-gray-600">
-                            <a href={route('beranda')} className="hover:text-orange-600">
-                                Beranda
-                            </a>
-                            <span>/</span>
-                            <span>Layanan</span>
-                            <span>/</span>
-                            <span className="text-orange-600">{jenisLayanan}</span>
-                        </div>
-
                         {/* Header card */}
                         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
                             <div className="flex items-start space-x-4">
@@ -268,46 +270,18 @@ export default function FormLayanan({ auth, jenisLayanan, deskripsi, persyaratan
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-                        {/* Sidebar kiri: info akun + persyaratan */}
-                        <div className="lg:col-span-1">
-                            <div className="sticky top-8 space-y-4">
-                                {/* Kartu info akun pemohon */}
-                                <div className="rounded-lg border border-orange-100 bg-orange-50 p-5 shadow-sm">
-                                    <p className="mb-3 text-xs font-semibold tracking-wide text-orange-600 uppercase">Permohonan atas nama</p>
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-orange-200 text-sm font-bold text-orange-700">
-                                            {userInfo.name.charAt(0).toUpperCase()}
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="truncate text-sm font-semibold text-gray-900">{userInfo.name}</p>
-                                            <p className="truncate text-xs text-gray-500">{userInfo.email}</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Persyaratan */}
-                                <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-                                    <h2 className="mb-4 text-lg font-bold text-gray-900">Persyaratan</h2>
-                                    <ul className="space-y-3">
-                                        {persyaratan.map((item, index) => (
-                                            <li key={index} className="flex items-start space-x-2">
-                                                <div className="mt-1 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-orange-100">
-                                                    <div className="h-2 w-2 rounded-full bg-orange-600" />
-                                                </div>
-                                                <span className="text-sm text-gray-700">{item}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-
+                    <div>
                         {/* Form utama */}
-                        <div className="lg:col-span-2">
+                        <div>
                             <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
                                 <h2 className="mb-6 text-xl font-bold text-gray-900">Formulir Permohonan</h2>
-                                <form onSubmit={handleSubmit} className="space-y-6">
+
+                                {/*
+                                 * noValidate → matikan validasi bawaan browser sepenuhnya.
+                                 * Semua validasi dilakukan oleh Laravel dan ditampilkan
+                                 * melalui <FieldError /> yang konsisten di seluruh aplikasi.
+                                 */}
+                                <form onSubmit={handleSubmit} noValidate className="space-y-6">
                                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                         {formFields.map((field) => {
                                             const fullWidth =
