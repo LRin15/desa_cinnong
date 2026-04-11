@@ -48,6 +48,7 @@ Route::middleware(['auth', 'pengguna.terdaftar'])->group(function () {
         // Submit semua jenis layanan
         Route::post('/submit', [LayananController::class, 'submit'])->name('submit');
     });
+    Route::post('/akun/layanan/{layanan}/rating', [App\Http\Controllers\PenggunaTerdaftarController::class, 'submitRating'])->name('pengguna.layanan.rating');
 });
 
 // ── Akun (semua user login) ───────────────────────────────────────────────────

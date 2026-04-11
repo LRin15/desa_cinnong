@@ -1,12 +1,27 @@
 // resources/js/layouts/AuthenticatedLayout.tsx
 
 import { Head, Link } from '@inertiajs/react';
-import { Building, ClipboardList, Database, FileText, Grid, Home, Image as ImageIcon, LogOut, Menu, Newspaper, Users, X } from 'lucide-react';
+import {
+    Building,
+    ClipboardList,
+    Database,
+    FileText,
+    Grid,
+    Home,
+    Image as ImageIcon,
+    LogOut,
+    Menu,
+    Newspaper,
+    Settings,
+    Users,
+    X,
+} from 'lucide-react';
 import { ReactNode, useState } from 'react';
 
 interface User {
     name: string;
     email: string;
+    role?: string; // optional: halaman lain yang belum deklarasikan role tetap kompatibel
 }
 
 interface AuthenticatedLayoutProps {
@@ -19,19 +34,65 @@ interface AuthenticatedLayoutProps {
 export default function AuthenticatedLayout({ auth, children, title }: AuthenticatedLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
+    const isAdminBps = auth.user.role === 'admin_bps';
+
     const navItems = [
-        { name: 'Dashboard', href: route('admin.dashboard'), icon: Grid, current: route().current('admin.dashboard') },
-        { name: 'Kelola Berita', href: route('admin.berita.index'), icon: Newspaper, current: route().current('admin.berita.*') },
-        { name: 'Kelola Infografis', href: route('admin.infografis.index'), icon: ImageIcon, current: route().current('admin.infografis.*') },
-        { name: 'Kelola Publikasi', href: route('admin.publikasi.index'), icon: FileText, current: route().current('admin.publikasi.*') },
-        // "Kelola Pengaduan" dihapus — pengaduan kini masuk sebagai salah satu jenis layanan
         {
-            name: 'Kelola Layanan',
-            href: route('admin.layanan.index'),
-            icon: ClipboardList,
-            current: route().current('admin.layanan.*') || route().current('admin.layanan-settings.*'),
+            name: 'Dashboard',
+            href: route('admin.dashboard'),
+            icon: Grid,
+            current: route().current('admin.dashboard'),
         },
-        { name: 'Kelola Pengguna', href: route('admin.users.index'), icon: Users, current: route().current('admin.users.*') },
+
+        // Menu konten — hanya untuk admin_desa
+        ...(!isAdminBps
+            ? [
+                  {
+                      name: 'Kelola Berita',
+                      href: route('admin.berita.index'),
+                      icon: Newspaper,
+                      current: route().current('admin.berita.*'),
+                  },
+                  {
+                      name: 'Kelola Infografis',
+                      href: route('admin.infografis.index'),
+                      icon: ImageIcon,
+                      current: route().current('admin.infografis.*'),
+                  },
+                  {
+                      name: 'Kelola Publikasi',
+                      href: route('admin.publikasi.index'),
+                      icon: FileText,
+                      current: route().current('admin.publikasi.*'),
+                  },
+              ]
+            : []),
+
+        // Layanan: admin_desa → daftar permohonan, admin_bps → pengaturan jenis layanan
+        ...(isAdminBps
+            ? [
+                  {
+                      name: 'Pengaturan Layanan',
+                      href: route('admin.layanan-settings.index'),
+                      icon: Settings,
+                      current: route().current('admin.layanan-settings.*') || route().current('admin.layanan.*'),
+                  },
+              ]
+            : [
+                  {
+                      name: 'Kelola Layanan',
+                      href: route('admin.layanan.index'),
+                      icon: ClipboardList,
+                      current: route().current('admin.layanan.*') || route().current('admin.layanan-settings.*'),
+                  },
+              ]),
+
+        {
+            name: 'Kelola Pengguna',
+            href: route('admin.users.index'),
+            icon: Users,
+            current: route().current('admin.users.*'),
+        },
     ];
 
     const settingsItems = [
@@ -55,7 +116,9 @@ export default function AuthenticatedLayout({ auth, children, title }: Authentic
             <div className="flex h-screen bg-gray-100 font-sans text-gray-900">
                 {/* Sidebar */}
                 <aside
-                    className={`absolute z-20 h-full w-64 transform bg-gray-800 text-white transition-transform duration-300 sm:relative sm:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+                    className={`absolute z-20 h-full w-64 transform bg-gray-800 text-white transition-transform duration-300 sm:relative sm:translate-x-0 ${
+                        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                    }`}
                 >
                     <div className="flex h-16 items-center justify-between px-6">
                         <Link href={route('admin.dashboard')} className="text-2xl font-bold text-orange-400">
@@ -81,7 +144,6 @@ export default function AuthenticatedLayout({ auth, children, title }: Authentic
                             </Link>
                         ))}
 
-                        {/* Divider */}
                         <div className="mx-4 my-2 border-t border-gray-600" />
 
                         {/* Pengaturan */}
@@ -98,7 +160,6 @@ export default function AuthenticatedLayout({ auth, children, title }: Authentic
                             </Link>
                         ))}
 
-                        {/* Divider */}
                         <div className="mx-4 my-2 border-t border-gray-600" />
 
                         <Link
@@ -123,7 +184,6 @@ export default function AuthenticatedLayout({ auth, children, title }: Authentic
 
                 {/* Main Content */}
                 <div className="relative flex flex-1 flex-col overflow-y-auto">
-                    {/* Header hanya untuk mobile — tombol buka sidebar */}
                     <header className="flex h-14 items-center border-b bg-white px-4 sm:hidden">
                         <button onClick={() => setSidebarOpen(true)}>
                             <Menu className="h-6 w-6" />

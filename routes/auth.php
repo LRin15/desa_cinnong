@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -54,4 +55,13 @@ Route::middleware('auth')->group(function () {
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
+
+    // -------------------------------------------------------------------------
+    // Notifikasi in-app
+    // -------------------------------------------------------------------------
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/',                    [NotificationController::class, 'index'])       ->name('index');
+        Route::post('{id}/mark-read',      [NotificationController::class, 'markAsRead'])  ->name('mark-read');
+        Route::post('mark-all-read',       [NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
+    });
 });

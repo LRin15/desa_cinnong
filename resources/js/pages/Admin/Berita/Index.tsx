@@ -54,7 +54,6 @@ export default function Index() {
     const [showFilters, setShowFilters] = useState(false);
     const isInitialMount = useRef(true);
 
-    // Add error handling and debugging
     let pageProps;
     try {
         pageProps = usePage<BeritaIndexPageProps>().props;
@@ -72,73 +71,38 @@ export default function Index() {
 
     const { auth, berita, flash, filters } = pageProps;
 
-    // Search states
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
     const [selectedKategori, setSelectedKategori] = useState(filters.kategori || '');
 
-    // Debounced search
     useEffect(() => {
-        // Jika ini adalah render pertama, jangan lakukan apa-apa,
-        // cukup tandai bahwa render pertama sudah selesai.
         if (isInitialMount.current) {
             isInitialMount.current = false;
             return;
         }
-
-        // Untuk render selanjutnya (saat searchTerm/selectedKategori berubah),
-        // jalankan logika debounce.
         const timeoutId = setTimeout(() => {
             handleSearch();
         }, 500);
-
         return () => clearTimeout(timeoutId);
     }, [searchTerm, selectedKategori]);
 
     const handleSearch = () => {
         const params = new URLSearchParams();
-
-        if (searchTerm) {
-            params.set('search', searchTerm);
-        }
-
-        if (selectedKategori) {
-            params.set('kategori', selectedKategori);
-        }
-
+        if (searchTerm) params.set('search', searchTerm);
+        if (selectedKategori) params.set('kategori', selectedKategori);
         const queryString = params.toString();
         const url = queryString ? `/admin/berita?${queryString}` : '/admin/berita';
-
-        router.get(
-            url,
-            {},
-            {
-                preserveState: true,
-                replace: true,
-            },
-        );
+        router.get(url, {}, { preserveState: true, replace: true });
     };
 
     const clearSearch = () => {
         setSearchTerm('');
         setSelectedKategori('');
-        router.get(
-            '/admin/berita',
-            {},
-            {
-                preserveState: true,
-                replace: true,
-            },
-        );
+        router.get('/admin/berita', {}, { preserveState: true, replace: true });
     };
 
     const handleDeleteBerita = (item: BeritaItem) => {
         if (window.confirm(`Apakah Anda yakin ingin menghapus berita "${item.judul}"?`)) {
-            const deleteUrl = `/admin/berita/${item.id}`;
-
-            router.delete(deleteUrl, {
-                onSuccess: () => {
-                    // Success handled by flash messages
-                },
+            router.delete(`/admin/berita/${item.id}`, {
                 onError: (errors) => {
                     console.error('Error deleting berita:', errors);
                     alert('Terjadi kesalahan saat menghapus berita. Silakan coba lagi.');
@@ -147,7 +111,6 @@ export default function Index() {
         }
     };
 
-    // Safety checks
     if (!auth || !auth.user) {
         return (
             <div className="flex min-h-screen items-center justify-center p-4">
@@ -175,7 +138,6 @@ export default function Index() {
 
     const categories = [...new Set(beritaArray.map((item) => item.kategori))];
 
-    // Card component for mobile view
     const BeritaCard = ({ item }: { item: BeritaItem }) => (
         <div className="rounded-lg border bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
             <div className="flex gap-4">
@@ -226,7 +188,6 @@ export default function Index() {
         <AuthenticatedLayout auth={auth} title="Kelola Berita">
             <Head title="Kelola Berita" />
             <div className="space-y-4 px-4 sm:space-y-6 sm:px-0">
-                {/* Flash Messages */}
                 {flash?.success && (
                     <div className="rounded-md border border-green-200 bg-green-50 p-3 sm:p-4">
                         <p className="text-sm text-green-700 sm:text-base">{flash.success}</p>
@@ -255,7 +216,6 @@ export default function Index() {
                             </p>
                         )}
                     </div>
-
                     <div className="flex items-center gap-2">
                         <Link
                             href="/admin/berita/create"
@@ -269,7 +229,6 @@ export default function Index() {
 
                 {/* Search and Filter */}
                 <div className="rounded-lg border bg-white p-3 shadow-sm sm:p-4">
-                    {/* Search Input */}
                     <div className="relative">
                         <div className="absolute inset-y-0 left-0 flex items-center pl-3">
                             <Search className="h-4 w-4 text-gray-400 sm:h-5 sm:w-5" />
@@ -296,8 +255,6 @@ export default function Index() {
                             )}
                         </div>
                     </div>
-
-                    {/* Expandable Filters */}
                     {(showFilters || selectedKategori) && (
                         <div className="mt-3 border-t border-gray-200 pt-3">
                             <div className="flex flex-col gap-3 sm:flex-row">
@@ -319,7 +276,6 @@ export default function Index() {
                                         ))}
                                     </select>
                                 </div>
-
                                 {(searchTerm || selectedKategori) && (
                                     <div className="flex items-end">
                                         <button
@@ -380,19 +336,19 @@ export default function Index() {
                                     <table className="min-w-full divide-y divide-gray-200">
                                         <thead className="bg-gray-50">
                                             <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                                                <th className="px-6 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">
                                                     Gambar
                                                 </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                                                <th className="px-6 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">
                                                     Judul
                                                 </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                                                <th className="px-6 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">
                                                     Kategori
                                                 </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                                                <th className="px-6 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">
                                                     Tanggal Terbit
                                                 </th>
-                                                <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
+                                                <th className="px-6 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">
                                                     Aksi
                                                 </th>
                                             </tr>
@@ -400,32 +356,36 @@ export default function Index() {
                                         <tbody className="divide-y divide-gray-200 bg-white">
                                             {beritaArray.map((item) => (
                                                 <tr key={item.id} className="hover:bg-gray-50">
-                                                    <td className="px-6 py-4">
-                                                        {item.gambar ? (
-                                                            <img
-                                                                src={item.gambar}
-                                                                alt={item.judul}
-                                                                className="h-12 w-20 rounded-md border object-cover"
-                                                            />
-                                                        ) : (
-                                                            <div className="flex h-12 w-20 items-center justify-center rounded-md border bg-gray-100">
-                                                                <ImageIcon className="h-6 w-6 text-gray-400" />
-                                                            </div>
-                                                        )}
+                                                    <td className="px-6 py-4 text-center">
+                                                        <div className="flex justify-center">
+                                                            {item.gambar ? (
+                                                                <img
+                                                                    src={item.gambar}
+                                                                    alt={item.judul}
+                                                                    className="h-12 w-20 rounded-md border object-cover"
+                                                                />
+                                                            ) : (
+                                                                <div className="flex h-12 w-20 items-center justify-center rounded-md border bg-gray-100">
+                                                                    <ImageIcon className="h-6 w-6 text-gray-400" />
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </td>
-                                                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                                                    <td className="px-6 py-4 text-center text-sm font-medium text-gray-900">
                                                         <div className="max-w-xs truncate" title={item.judul}>
                                                             {item.judul}
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 text-sm text-gray-500">
+                                                    <td className="px-6 py-4 text-center text-sm text-gray-500">
                                                         <span className="inline-flex rounded-full bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-800">
                                                             {item.kategori}
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">{item.tanggal_terbit}</td>
-                                                    <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
-                                                        <div className="flex justify-end space-x-2">
+                                                    <td className="px-6 py-4 text-center text-sm whitespace-nowrap text-gray-500">
+                                                        {item.tanggal_terbit}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center text-sm font-medium whitespace-nowrap">
+                                                        <div className="flex justify-center space-x-2">
                                                             <Link
                                                                 href={`/admin/berita/${item.id}/edit`}
                                                                 className="rounded p-1 text-blue-600 transition-colors hover:text-blue-900"
@@ -453,7 +413,6 @@ export default function Index() {
                     )}
                 </div>
 
-                {/* Pagination */}
                 {berita.links && berita.links.length > 0 && beritaArray.length > 0 && (
                     <div className="mt-6">
                         <Pagination links={berita.links} />

@@ -21,6 +21,8 @@ interface TableData {
     columns: Column[];
     has_column_total?: boolean;
     has_row_total?: boolean;
+    source?: string;
+    notes?: string;
 }
 interface EditPageProps {
     auth: { user: { id: number; name: string; email: string } };
@@ -53,6 +55,8 @@ export default function Edit() {
         columns: Column[];
         has_column_total: boolean;
         has_row_total: boolean;
+        source: string;
+        notes: string;
         _method: string;
     }>({
         name: table.name || '',
@@ -60,6 +64,8 @@ export default function Edit() {
         columns: table.columns || [{ name: '', type: 'text', required: false, options: '' }],
         has_column_total: table.has_column_total || false,
         has_row_total: table.has_row_total || false,
+        source: table.source || '',
+        notes: table.notes || '',
         _method: 'put',
     });
 
@@ -291,6 +297,46 @@ export default function Edit() {
                                     className={inputAdminLg(e.description)}
                                 />
                                 <FieldError message={e.description} />
+                            </div>
+
+                            {/* Sumber & Catatan */}
+                            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                                <h3 className="mb-3 text-sm font-medium text-gray-900">Sumber &amp; Catatan Tabel</h3>
+                                <p className="mb-4 text-xs text-gray-500">
+                                    Informasi ini akan ditampilkan di bawah tabel pada halaman publik Data Desa.
+                                </p>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label htmlFor="source" className="block text-sm font-medium text-gray-700">
+                                            Sumber Data
+                                        </label>
+                                        <input
+                                            id="source"
+                                            type="text"
+                                            value={data.source}
+                                            onChange={(ev) => setData('source', ev.target.value)}
+                                            placeholder="Contoh: BPS Kabupaten, Dinas Kependudukan, Hasil Survei 2024"
+                                            className={inputAdminLg(undefined)}
+                                        />
+                                        <p className="mt-1 text-xs text-gray-400">Tuliskan asal atau referensi data pada tabel ini.</p>
+                                    </div>
+                                    <div>
+                                        <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
+                                            Catatan
+                                        </label>
+                                        <textarea
+                                            id="notes"
+                                            value={data.notes}
+                                            rows={3}
+                                            onChange={(ev) => setData('notes', ev.target.value)}
+                                            placeholder="Contoh: Data diperbarui setiap bulan. Angka dalam satuan jiwa."
+                                            className={inputAdminLg(undefined)}
+                                        />
+                                        <p className="mt-1 text-xs text-gray-400">
+                                            Keterangan tambahan, satuan, atau penjelasan khusus mengenai tabel.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Opsi Total */}

@@ -46,8 +46,6 @@ interface UsersIndexPageProps {
     [key: string]: unknown;
 }
 
-// ─── Status verifikasi badge ──────────────────────────────────────────────────
-
 function VerifiedBadge({ verifiedAt }: { verifiedAt: string | null }) {
     if (verifiedAt) {
         return (
@@ -64,8 +62,6 @@ function VerifiedBadge({ verifiedAt }: { verifiedAt: string | null }) {
         </span>
     );
 }
-
-// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function Index() {
     const isInitialMount = useRef(true);
@@ -113,10 +109,8 @@ export default function Index() {
     };
 
     const usersArray: UserItem[] = Array.isArray(users?.data) ? users.data : [];
-
     const pageTitle = targetRole === 'admin_desa' ? 'Kelola Admin Desa' : 'Daftar Pengguna Terdaftar';
 
-    // ── Mobile card ──
     const UserCard = ({ user }: { user: UserItem }) => (
         <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md">
             <div className="flex gap-4">
@@ -136,7 +130,6 @@ export default function Index() {
                     </p>
                     <div className="flex items-center justify-between">
                         <VerifiedBadge verifiedAt={user.email_verified_at} />
-                        {/* Aksi hanya untuk admin_bps */}
                         {!isReadOnly && (
                             <div className="flex gap-2">
                                 <Link
@@ -168,7 +161,6 @@ export default function Index() {
             <Head title={pageTitle} />
 
             <div className="space-y-5 px-4 sm:px-0">
-                {/* Flash */}
                 {flash?.success && (
                     <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{flash.success}</div>
                 )}
@@ -187,8 +179,6 @@ export default function Index() {
                             </p>
                         )}
                     </div>
-
-                    {/* Tambah — hanya admin_bps */}
                     {!isReadOnly && (
                         <Link
                             href={route('admin.users.create')}
@@ -257,23 +247,26 @@ export default function Index() {
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">Pengguna</th>
-                                        <th className="px-6 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">Email</th>
-                                        {/* Kolom Status hanya untuk admin_desa (read-only), Aksi hanya untuk admin_bps */}
+                                        <th className="px-6 py-3 text-center text-xs font-semibold tracking-wide text-gray-500 uppercase">
+                                            Pengguna
+                                        </th>
+                                        <th className="px-6 py-3 text-center text-xs font-semibold tracking-wide text-gray-500 uppercase">Email</th>
                                         {isReadOnly ? (
-                                            <th className="px-6 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
+                                            <th className="px-6 py-3 text-center text-xs font-semibold tracking-wide text-gray-500 uppercase">
                                                 Status
                                             </th>
                                         ) : (
-                                            <th className="px-6 py-3 text-right text-xs font-semibold tracking-wide text-gray-500 uppercase">Aksi</th>
+                                            <th className="px-6 py-3 text-center text-xs font-semibold tracking-wide text-gray-500 uppercase">
+                                                Aksi
+                                            </th>
                                         )}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
                                     {usersArray.map((user) => (
                                         <tr key={user.id} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
+                                            <td className="px-6 py-4 text-center">
+                                                <div className="flex items-center justify-center gap-3">
                                                     <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-orange-100 text-sm font-bold text-orange-700">
                                                         {user.name.charAt(0).toUpperCase()}
                                                     </div>
@@ -287,12 +280,14 @@ export default function Index() {
                                                     </p>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-500">{user.email}</td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-6 py-4 text-center text-sm text-gray-500">{user.email}</td>
+                                            <td className="px-6 py-4 text-center">
                                                 {isReadOnly ? (
-                                                    <VerifiedBadge verifiedAt={user.email_verified_at} />
+                                                    <div className="flex justify-center">
+                                                        <VerifiedBadge verifiedAt={user.email_verified_at} />
+                                                    </div>
                                                 ) : (
-                                                    <div className="flex justify-end gap-2">
+                                                    <div className="flex justify-center gap-2">
                                                         <Link
                                                             href={route('admin.users.edit', user.id)}
                                                             className="rounded-lg p-1.5 text-blue-600 hover:bg-blue-50"
@@ -320,7 +315,6 @@ export default function Index() {
                     </>
                 )}
 
-                {/* Pagination */}
                 {users.links && users.links.length > 0 && usersArray.length > 0 && <Pagination links={users.links} />}
             </div>
         </AuthenticatedLayout>

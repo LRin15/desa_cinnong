@@ -17,7 +17,6 @@ class DataDesaController extends Controller
     {
         $search = $request->get('search');
 
-        // Ambil semua tabel dinamis beserta datanya dengan fitur pencarian
         $tables = DynamicTable::with('tableData')
             ->when($search, function ($query, $search) {
                 return $query->where(function ($q) use ($search) {
@@ -46,11 +45,12 @@ class DataDesaController extends Controller
                     'data_count' => $table->tableData->count(),
                     'has_column_total' => $table->has_column_total ?? false,
                     'has_row_total' => $table->has_row_total ?? false,
+                    'source' => $table->source ?? null,
+                    'notes' => $table->notes ?? null,
                     'created_at' => $table->created_at->format('d F Y'),
                 ];
             });
 
-        // Ambil data settings untuk nama desa
         $settings = Setting::pluck('value', 'key')->toArray();
 
         return Inertia::render('DataDesa', [
@@ -89,6 +89,8 @@ class DataDesaController extends Controller
                 'id' => $table->id,
                 'name' => $table->name,
                 'description' => $table->description,
+                'source' => $table->source ?? null,
+                'notes' => $table->notes ?? null,
                 'created_at' => $table->created_at->format('Y-m-d H:i:s'),
             ],
             'columns' => $table->columns,
@@ -145,28 +147,23 @@ class DataDesaController extends Controller
                 }
             }
 
-            // Tambahkan header untuk kolom total jika ada
             if ($table->has_column_total ?? false) {
                 $headers[] = 'Total';
             }
 
             $headers[] = 'Tanggal Input';
 
-            // Write headers
             fputcsv($handle, $headers);
 
-            // Write data rows
             foreach ($table->tableData as $index => $row) {
                 $flatData = $this->flattenData($row->data);
                 $rowData = [$index + 1];
 
-                // Hitung total baris jika diperlukan
                 $rowTotal = 0;
 
                 foreach ($fieldMapping as $mapping) {
                     $value = $flatData[$mapping['field']] ?? '';
                     
-                    // Format value berdasarkan tipe
                     if ($mapping['type'] === 'date' && $value) {
                         try {
                             $value = date('d/m/Y', strtotime($value));
@@ -182,7 +179,6 @@ class DataDesaController extends Controller
                     $rowData[] = $value;
                 }
 
-                // Tambahkan kolom total jika ada
                 if ($table->has_column_total ?? false) {
                     $rowData[] = $rowTotal;
                 }
@@ -192,7 +188,6 @@ class DataDesaController extends Controller
                 fputcsv($handle, $rowData);
             }
 
-            // Write total row jika diperlukan
             if ($table->has_row_total ?? false) {
                 $totalRow = ['TOTAL'];
                 
@@ -208,7 +203,6 @@ class DataDesaController extends Controller
                     }
                 }
 
-                // Grand total jika ada kolom total
                 if ($table->has_column_total ?? false) {
                     $grandTotal = 0;
                     foreach ($fieldMapping as $mapping) {
@@ -225,6 +219,15 @@ class DataDesaController extends Controller
                 $totalRow[] = '';
 
                 fputcsv($handle, $totalRow);
+            }
+
+            // Tambahkan baris kosong lalu info sumber & catatan di akhir CSV
+            fputcsv($handle, []);
+            if ($table->source) {
+                fputcsv($handle, ['Sumber: ' . $table->source]);
+            }
+            if ($table->notes) {
+                fputcsv($handle, ['Catatan: ' . $table->notes]);
             }
 
             fclose($handle);
@@ -259,7 +262,6 @@ class DataDesaController extends Controller
      */
     private function sanitizeFilename(string $filename): string
     {
-        // Remove or replace invalid characters
         $filename = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $filename);
         $filename = preg_replace('/_+/', '_', $filename);
         $filename = trim($filename, '_');

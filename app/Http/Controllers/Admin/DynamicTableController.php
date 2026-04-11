@@ -80,6 +80,8 @@ class DynamicTableController extends Controller
                 'columns.*.subColumns.*.options' => 'nullable|string',
                 'has_column_total' => 'boolean',
                 'has_row_total' => 'boolean',
+                'source' => 'nullable|string|max:500',
+                'notes' => 'nullable|string|max:2000',
             ], [
                 'name.required' => 'Nama tabel wajib diisi.',
                 'columns.required' => 'Minimal harus ada 1 kolom.',
@@ -105,6 +107,8 @@ class DynamicTableController extends Controller
                 'columns' => $validatedData['columns'],
                 'has_column_total' => $validatedData['has_column_total'] ?? false,
                 'has_row_total' => $validatedData['has_row_total'] ?? false,
+                'source' => $validatedData['source'] ?? null,
+                'notes' => $validatedData['notes'] ?? null,
             ]);
 
             return redirect()->route('admin.dynamic-tables.index')
@@ -137,6 +141,8 @@ class DynamicTableController extends Controller
                 'columns' => $dynamicTable->columns,
                 'has_column_total' => $dynamicTable->has_column_total ?? false,
                 'has_row_total' => $dynamicTable->has_row_total ?? false,
+                'source' => $dynamicTable->source ?? '',
+                'notes' => $dynamicTable->notes ?? '',
             ]
         ]);
     }
@@ -162,6 +168,8 @@ class DynamicTableController extends Controller
                 'columns.*.subColumns.*.options' => 'nullable|string',
                 'has_column_total' => 'boolean',
                 'has_row_total' => 'boolean',
+                'source' => 'nullable|string|max:500',
+                'notes' => 'nullable|string|max:2000',
             ]);
 
             $dynamicTable->update([
@@ -170,6 +178,8 @@ class DynamicTableController extends Controller
                 'columns' => $validatedData['columns'],
                 'has_column_total' => $validatedData['has_column_total'] ?? false,
                 'has_row_total' => $validatedData['has_row_total'] ?? false,
+                'source' => $validatedData['source'] ?? null,
+                'notes' => $validatedData['notes'] ?? null,
             ]);
 
             return redirect()->route('admin.dynamic-tables.index')
@@ -207,7 +217,6 @@ class DynamicTableController extends Controller
      */
     public function showInsertForm(DynamicTable $dynamicTable)
     {
-        // Ubah dari latest() menjadi oldest()
         $tableData = $dynamicTable->tableData()->oldest()->paginate(10)->through(fn ($row) => [
             'id' => $row->id,
             'data' => $row->data,
@@ -237,21 +246,17 @@ class DynamicTableController extends Controller
     public function insertData(Request $request, DynamicTable $dynamicTable)
     {
         try {
-            // Ambil isi dari objek 'data' yang dikirim Frontend
             $inputData = $request->input('data'); 
 
             $rules = [];
             
-            // Fungsi rekursif untuk membangun rules validasi
             $buildRules = function($columns, $prefix = '') use (&$buildRules, &$rules) {
                 foreach ($columns as $column) {
                     $colName = $prefix . $column['name'];
                     
                     if ($column['type'] === 'group' && isset($column['subColumns'])) {
-                        // Untuk grup, validasi subColumns secara rekursif
                         $buildRules($column['subColumns'], $colName . '.');
                     } else {
-                        // Untuk kolom biasa, tambahkan rule
                         $rules[$colName] = $column['required'] ? 'required' : 'nullable';
                     }
                 }
@@ -259,10 +264,8 @@ class DynamicTableController extends Controller
             
             $buildRules($dynamicTable->columns);
 
-            // Validasi isi array tersebut
             $validated = \Validator::make($inputData, $rules)->validate();
 
-            // Simpan hanya hasil validasi
             DynamicTableData::create([
                 'dynamic_table_id' => $dynamicTable->id,
                 'data' => $validated, 
@@ -280,21 +283,17 @@ class DynamicTableController extends Controller
     public function updateData(Request $request, DynamicTable $dynamicTable, DynamicTableData $data)
     {
         try {
-            // Ambil isi dari objek 'data' yang dikirim Frontend
             $inputData = $request->input('data');
 
             $rules = [];
             
-            // Fungsi rekursif untuk membangun rules validasi
             $buildRules = function($columns, $prefix = '') use (&$buildRules, &$rules) {
                 foreach ($columns as $column) {
                     $colName = $prefix . $column['name'];
                     
                     if ($column['type'] === 'group' && isset($column['subColumns'])) {
-                        // Untuk grup, validasi subColumns secara rekursif
                         $buildRules($column['subColumns'], $colName . '.');
                     } else {
-                        // Untuk kolom biasa, tambahkan rule
                         $rules[$colName] = $column['required'] ? 'required' : 'nullable';
                     }
                 }
@@ -302,10 +301,8 @@ class DynamicTableController extends Controller
             
             $buildRules($dynamicTable->columns);
 
-            // Validasi isi array tersebut
             $validated = \Validator::make($inputData, $rules)->validate();
 
-            // Update data
             $data->update([
                 'data' => $validated,
             ]);
@@ -333,7 +330,6 @@ class DynamicTableController extends Controller
 
     public function charts(DynamicTable $dynamicTable)
     {
-        // Ambil semua data untuk grafik
         $allData = $dynamicTable->tableData()->oldest()->get()->map(function ($row) {
             return [
                 'id' => $row->id,
@@ -363,23 +359,18 @@ class DynamicTableController extends Controller
     public function saveCharts(Request $request, DynamicTable $dynamicTable)
     {
         try {
-            // Ambil data charts
             $chartsInput = $request->input('charts');
             
-            // Jika charts dikirim sebagai string JSON, decode dulu
             if (is_string($chartsInput)) {
                 $chartsData = json_decode($chartsInput, true);
                 
-                // Check jika JSON decode gagal
                 if (json_last_error() !== JSON_ERROR_NONE) {
                     throw new \Exception('Invalid JSON format: ' . json_last_error_msg());
                 }
             } else {
-                // Jika sudah array, langsung gunakan
                 $chartsData = $chartsInput;
             }
 
-            // Validasi data
             $validatedData = Validator::make(['charts' => $chartsData], [
                 'charts' => 'required|array',
                 'charts.*.id' => 'required|string',
@@ -390,7 +381,6 @@ class DynamicTableController extends Controller
                 'charts.*.yAxis.*' => 'required|string',
             ])->validate();
 
-            // Update tabel dengan konfigurasi grafik
             $dynamicTable->update([
                 'charts' => $validatedData['charts'],
             ]);

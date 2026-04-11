@@ -17,40 +17,34 @@ class LayananSubmission extends Model
         'uploaded_files',
         'status',
         'catatan_admin',
+        'result_files',
+        'rating',
+        'feedback',
+        'rated_at',
     ];
 
     protected $casts = [
         'form_data'      => 'array',
         'uploaded_files' => 'array',
+        'result_files'   => 'array',
+        'rated_at'       => 'datetime',
     ];
 
-    /**
-     * Relasi ke User (pengguna terdaftar yang mengajukan permohonan)
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Accessor: nama pemohon dari relasi user
-     */
     public function getNamaPemohonAttribute(): string
     {
         return $this->user?->name ?? '-';
     }
 
-    /**
-     * Accessor: email pemohon dari relasi user
-     */
     public function getEmailPemohonAttribute(): string
     {
         return $this->user?->email ?? '-';
     }
 
-    /**
-     * Accessor: status dalam Bahasa Indonesia
-     */
     public function getStatusLabelAttribute(): string
     {
         return match ($this->status) {
@@ -62,9 +56,6 @@ class LayananSubmission extends Model
         };
     }
 
-    /**
-     * Accessor: warna badge status
-     */
     public function getStatusColorAttribute(): string
     {
         return match ($this->status) {
@@ -74,5 +65,15 @@ class LayananSubmission extends Model
             'ditolak'  => 'red',
             default    => 'gray',
         };
+    }
+
+    public function hasResult(): bool
+    {
+        return !empty($this->result_files) || !empty($this->result_link);
+    }
+
+    public function hasRating(): bool
+    {
+        return $this->rating !== null;
     }
 }

@@ -1,7 +1,5 @@
 <?php
 
-// app/Http/Controllers/Admin/ProfilDesaController.php
-
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
@@ -10,13 +8,82 @@ use App\Models\VillageOfficial;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ProfilDesaController extends Controller
 {
-    // Menampilkan halaman profil desa untuk publik
+    /**
+     * Direktori penyimpanan gambar profil desa — di bawah public/ langsung,
+     * konsisten dengan cara BeritaController menyimpan public/images/berita.
+     */
+    protected string $uploadPath = 'images/profil';
+
+    // ── Helper: path absolut ──────────────────────────────────────────────────
+
+    private function absPath(string $filename): string
+    {
+        return public_path($this->uploadPath . '/' . $filename);
+    }
+
+    private function assetUrl(string $filename): string
+    {
+        return asset($this->uploadPath . '/' . $filename);
+    }
+
+    /** Pastikan direktori upload ada. */
+    private function ensureDir(): void
+    {
+        $dir = public_path($this->uploadPath);
+        if (!File::exists($dir)) {
+            File::makeDirectory($dir, 0755, true);
+        }
+    }
+
+    /**
+     * Simpan satu file gambar ke public/images/profil.
+     * Kembalikan nama file unik yang disimpan.
+     */
+    private function storeImage(\Illuminate\Http\UploadedFile $file): string
+    {
+        $this->ensureDir();
+        $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+        $file->move(public_path($this->uploadPath), $filename);
+        return $filename;
+    }
+
+    /**
+     * Hapus file lama jika ada.
+     * Nilai yang disimpan di DB bisa berupa:
+     *   - URL penuh   : "http://…/images/profil/xxx.jpg"
+     *   - Path storage: "/storage/profil/xxx.jpg"  (format lama)
+     *   - Nama file   : "xxx.jpg"
+     */
+    private function deleteOldFile(?string $stored): void
+    {
+        if (!$stored) return;
+
+        // Coba ekstrak nama file dari URL asset (format baru)
+        $base = basename(parse_url($stored, PHP_URL_PATH));
+        $newPath = public_path($this->uploadPath . '/' . $base);
+        if (File::exists($newPath)) {
+            File::delete($newPath);
+            return;
+        }
+
+        // Format lama: /storage/... → storage/app/public/...
+        if (str_starts_with($stored, '/storage/')) {
+            $legacyPath = storage_path('app/public/' . ltrim(str_replace('/storage/', '', $stored), '/'));
+            if (File::exists($legacyPath)) {
+                File::delete($legacyPath);
+            }
+        }
+    }
+
+    // ── Controller actions ────────────────────────────────────────────────────
+
     public function show()
     {
         $settings  = Setting::pluck('value', 'key');
@@ -28,29 +95,28 @@ class ProfilDesaController extends Controller
         ]);
     }
 
-    // Menampilkan form edit di dashboard admin
     public function edit()
     {
         $settings  = Setting::pluck('value', 'key');
-        $officials = VillageOfficial::orderBy('urutan')->get()->map(function ($official) {
-            return [
-                'id'       => $official->id,
-                'nama'     => $official->nama,
-                'jabatan'  => $official->jabatan,
-                'foto'     => $official->foto,
-                'foto_url' => $official->foto,
-                'urutan'   => $official->urutan,
-            ];
-        });
+        $officials = VillageOfficial::orderBy('urutan')->get()->map(fn ($o) => [
+            'id'      => $o->id,
+            'nama'    => $o->nama,
+            'jabatan' => $o->jabatan,
+            'foto'    => $o->foto,
+            'urutan'  => $o->urutan,
+        ]);
 
         return Inertia::render('Admin/Profil/Edit', [
             'settings'   => $settings,
             'officials'  => $officials,
-            'isAdminBps' => Auth::user()->isAdminBps(), // ← kirim ke frontend
+            'isAdminBps' => Auth::user()->isAdminBps(),
+            'flash'      => [
+                'success' => session('success'),
+                'error'   => session('error'),
+            ],
         ]);
     }
 
-    // Menyimpan perubahan dari form edit
     public function update(Request $request)
     {
         try {
@@ -58,7 +124,6 @@ class ProfilDesaController extends Controller
 
             $isAdminBps = Auth::user()->isAdminBps();
 
-            // Validasi field yang hanya boleh diedit admin_bps
             $rules = [
                 'jumlah_rt'    => 'nullable|integer|min:0',
                 'luas'         => 'nullable|numeric|min:0',
@@ -67,14 +132,16 @@ class ProfilDesaController extends Controller
                 'sejarah'      => 'nullable|string',
                 'visi'         => 'nullable|string',
                 'misi'         => 'nullable|string',
+                // Gambar profil disimpan di public/images/profil
                 'gambar_peta'  => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
                 'gambar_tim'   => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
                 'officials'    => 'nullable|array',
-                'officials.*.id'      => 'nullable|integer|exists:village_officials,id',
-                'officials.*.nama'    => 'nullable|string|max:255',
-                'officials.*.jabatan' => 'nullable|string|max:255',
-                'officials.*.foto'    => 'nullable|image|mimes:jpeg,png,jpg|max:1024',
-                'officials.*.urutan'  => 'nullable|integer',
+                'officials.*.id'            => 'nullable|integer|exists:village_officials,id',
+                'officials.*.nama'          => 'nullable|string|max:255',
+                'officials.*.jabatan'       => 'nullable|string|max:255',
+                'officials.*.foto'          => 'nullable|image|mimes:jpeg,png,jpg|max:1024',
+                'officials.*.existing_foto' => 'nullable|string',
+                'officials.*.urutan'        => 'nullable|integer',
                 'stat1_label'   => 'nullable|string|max:100',
                 'stat1_value'   => 'nullable|string|max:100',
                 'stat2_label'   => 'nullable|string|max:100',
@@ -84,20 +151,26 @@ class ProfilDesaController extends Controller
                 'data_terakhir' => 'nullable|string|max:100',
             ];
 
-            // Field eksklusif admin_bps
+            $messages = [
+                'officials.*.foto.max'   => 'Ukuran foto aparatur maksimal 1MB.',
+                'officials.*.foto.mimes' => 'Foto aparatur harus berformat JPEG, PNG, atau JPG.',
+                'gambar_peta.max'        => 'Ukuran gambar peta maksimal 2MB.',
+                'gambar_tim.max'         => 'Ukuran gambar tim maksimal 2MB.',
+            ];
+
             if ($isAdminBps) {
-                $rules['nama_desa']  = 'nullable|string|max:255';
-                $rules['kecamatan']  = 'nullable|string|max:255';
-                $rules['kabupaten']  = 'nullable|string|max:255';
-                $rules['provinsi']   = 'nullable|string|max:255';
+                $rules['nama_desa'] = 'nullable|string|max:255';
+                $rules['kecamatan'] = 'nullable|string|max:255';
+                $rules['kabupaten'] = 'nullable|string|max:255';
+                $rules['provinsi']  = 'nullable|string|max:255';
             }
 
-            $request->validate($rules);
+            $request->validate($rules, $messages);
 
             DB::beginTransaction();
 
-            // Settings yang bisa diedit semua admin
-            $commonSettings = [
+            // ── Settings teks ─────────────────────────────────────────────────
+            $commonSettings  = [
                 'jumlah_rt', 'luas', 'email', 'telepon',
                 'sejarah', 'visi', 'misi',
                 'stat1_label', 'stat1_value',
@@ -105,11 +178,8 @@ class ProfilDesaController extends Controller
                 'stat3_label', 'stat3_value',
                 'data_terakhir',
             ];
-
-            // Settings eksklusif admin_bps
             $bpsOnlySettings = ['nama_desa', 'kecamatan', 'kabupaten', 'provinsi'];
-
-            $settingsKeys = $isAdminBps
+            $settingsKeys    = $isAdminBps
                 ? array_merge($commonSettings, $bpsOnlySettings)
                 : $commonSettings;
 
@@ -119,79 +189,86 @@ class ProfilDesaController extends Controller
                 }
             }
 
-            // Handle upload gambar peta
+            // ── Gambar peta ───────────────────────────────────────────────────
             if ($request->hasFile('gambar_peta')) {
-                $oldSetting = Setting::where('key', 'gambar_peta')->first();
-                if ($oldSetting?->value) {
-                    $oldPath = str_replace('/storage/', '', $oldSetting->value);
-                    if (Storage::disk('public')->exists($oldPath)) {
-                        Storage::disk('public')->delete($oldPath);
-                    }
-                }
-                $path = $request->file('gambar_peta')->store('profil', 'public');
-                Setting::updateOrCreate(['key' => 'gambar_peta'], ['value' => Storage::url($path)]);
+                // Hapus file lama
+                $old = Setting::where('key', 'gambar_peta')->value('value');
+                $this->deleteOldFile($old);
+
+                // Simpan file baru ke public/images/profil
+                $filename = $this->storeImage($request->file('gambar_peta'));
+                Setting::updateOrCreate(
+                    ['key' => 'gambar_peta'],
+                    ['value' => $this->assetUrl($filename)]
+                );
             }
 
-            // Handle upload gambar tim
+            // ── Gambar tim ────────────────────────────────────────────────────
             if ($request->hasFile('gambar_tim')) {
-                $oldSetting = Setting::where('key', 'gambar_tim')->first();
-                if ($oldSetting?->value) {
-                    $oldPath = str_replace('/storage/', '', $oldSetting->value);
-                    if (Storage::disk('public')->exists($oldPath)) {
-                        Storage::disk('public')->delete($oldPath);
-                    }
-                }
-                $path = $request->file('gambar_tim')->store('profil', 'public');
-                Setting::updateOrCreate(['key' => 'gambar_tim'], ['value' => Storage::url($path)]);
+                $old = Setting::where('key', 'gambar_tim')->value('value');
+                $this->deleteOldFile($old);
+
+                $filename = $this->storeImage($request->file('gambar_tim'));
+                Setting::updateOrCreate(
+                    ['key' => 'gambar_tim'],
+                    ['value' => $this->assetUrl($filename)]
+                );
             }
 
-            // Update data aparat desa
+            // ── Officials ─────────────────────────────────────────────────────
             if ($request->has('officials') && is_array($request->officials)) {
-                $submittedIds = collect($request->officials)
-                    ->filter(fn ($o) => !empty($o['nama']) && !empty($o['jabatan']))
-                    ->pluck('id')
-                    ->filter()
-                    ->toArray();
+                $officialsData = collect($request->officials)
+                    ->filter(fn ($o) => !empty($o['nama']) && !empty($o['jabatan']));
 
-                if (count($submittedIds) > 0) {
-                    VillageOfficial::whereNotIn('id', $submittedIds)->delete();
+                $submittedIds = $officialsData->pluck('id')->filter()->values()->toArray();
+
+                // Hapus official yang tidak ada lagi di form (beserta file fotonya)
+                $toDelete = count($submittedIds) > 0
+                    ? VillageOfficial::whereNotIn('id', $submittedIds)->get()
+                    : VillageOfficial::all();
+
+                foreach ($toDelete as $del) {
+                    $this->deleteOldFile($del->foto);
+                    $del->delete();
                 }
 
-                foreach ($request->officials as $index => $officialData) {
-                    if (empty($officialData['nama']) || empty($officialData['jabatan'])) continue;
-
-                    $fotoPath = $officialData['foto_url'] ?? null;
+                foreach ($officialsData as $index => $officialData) {
+                    $officialId = $officialData['id'] ?? null;
+                    // Pertahankan foto lama jika tidak ada upload baru
+                    $fotoUrl = $officialData['existing_foto'] ?? null;
 
                     if ($request->hasFile("officials.{$index}.foto")) {
-                        if (!empty($officialData['id'])) {
-                            $old = VillageOfficial::find($officialData['id']);
-                            if ($old?->foto) {
-                                $oldPath = str_replace('/storage/', '', $old->foto);
-                                if (Storage::disk('public')->exists($oldPath)) {
-                                    Storage::disk('public')->delete($oldPath);
-                                }
-                            }
+                        // Hapus foto lama jika ada
+                        if ($officialId) {
+                            $oldOfficial = VillageOfficial::find($officialId);
+                            $this->deleteOldFile($oldOfficial?->foto);
                         }
-                        $path     = $request->file("officials.{$index}.foto")->store('officials', 'public');
-                        $fotoPath = Storage::url($path);
+
+                        // Simpan foto baru ke public/images/profil
+                        $filename = $this->storeImage($request->file("officials.{$index}.foto"));
+                        $fotoUrl  = $this->assetUrl($filename);
                     }
 
-                    VillageOfficial::updateOrCreate(
-                        ['id' => $officialData['id'] ?? null],
-                        [
-                            'nama'    => $officialData['nama'],
-                            'jabatan' => $officialData['jabatan'],
-                            'foto'    => $fotoPath,
-                            'urutan'  => $officialData['urutan'] ?? ($index + 1),
-                        ]
-                    );
+                    $payload = [
+                        'nama'    => $officialData['nama'],
+                        'jabatan' => $officialData['jabatan'],
+                        'foto'    => $fotoUrl,
+                        'urutan'  => $officialData['urutan'] ?? ($index + 1),
+                    ];
+
+                    if ($officialId) {
+                        VillageOfficial::where('id', $officialId)->update($payload);
+                    } else {
+                        VillageOfficial::create($payload);
+                    }
                 }
             }
 
             DB::commit();
             Log::info('=== UPDATE PROFIL DESA SUCCESS ===');
 
-            return redirect()->back()->with('success', 'Profil desa berhasil diperbarui!');
+            return redirect()->route('admin.profil.edit')
+                ->with('success', 'Profil desa berhasil diperbarui!');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
@@ -202,10 +279,12 @@ class ProfilDesaController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('UPDATE PROFIL DESA ERROR: ' . $e->getMessage());
+            Log::error('UPDATE PROFIL DESA ERROR: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
             return redirect()->back()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
-                ->withInput();
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 }

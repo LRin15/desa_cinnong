@@ -15,6 +15,8 @@ class DynamicTable extends Model
         'has_column_total',
         'has_row_total',
         'charts',
+        'source', 
+        'notes',  
     ];
 
     protected $casts = [

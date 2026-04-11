@@ -129,7 +129,6 @@ export default function ProfilDesa({ auth, settings, officials }: ProfilDesaProp
                                 {settings.misi ? (
                                     settings.misi.split('\n').map((item, index) => (
                                         <li key={index} className="flex items-start space-x-2">
-                                            <span className="mt-1 flex-shrink-0 font-bold text-orange-500">•</span>
                                             <span>{item}</span>
                                         </li>
                                     ))

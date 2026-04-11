@@ -29,8 +29,9 @@ Route::middleware(['admin.only'])->prefix('admin')->name('admin.')->group(functi
 
     // Kelola Layanan Submissions (termasuk Pengaduan & Aspirasi)
     Route::get('/layanan',                         [AdminLayananController::class, 'index'])->name('layanan.index');
-    Route::put('/layanan/{layanan}/update-status', [AdminLayananController::class, 'updateStatus'])->name('layanan.update-status');
+    Route::match(['PUT', 'POST'], '/layanan/{layanan}/update-status', [AdminLayananController::class, 'updateStatus'])->name('layanan.update-status');
     Route::delete('/layanan/{layanan}',            [AdminLayananController::class, 'destroy'])->name('layanan.destroy');
+    Route::delete('/admin/layanan/{layanan}/result-file', [App\Http\Controllers\Admin\LayananController::class, 'deleteResultFile'])->name('admin.layanan.delete-result-file');
 
     // Pengaturan Layanan (aktif / nonaktif)
     Route::get('/layanan-settings',              [LayananSettingsController::class, 'index'])->name('layanan-settings.index');

@@ -3,7 +3,23 @@
 import Pagination from '@/components/Pagination';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { AlertCircle, CheckCircle, Clock, Eye, FileText, Filter, Search, Settings, X, XCircle } from 'lucide-react';
+import {
+    AlertCircle,
+    CheckCircle,
+    Clock,
+    Download,
+    Eye,
+    FileText,
+    Filter,
+    Paperclip,
+    Search,
+    Settings,
+    Star,
+    Trash2,
+    Upload,
+    X,
+    XCircle,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface LayananSubmission {
@@ -19,7 +35,12 @@ interface LayananSubmission {
     uploaded_files?: { [key: string]: string | string[] };
     status: 'pending' | 'diproses' | 'selesai' | 'ditolak';
     catatan_admin?: string;
+    result_files?: string[];
+    rating?: number;
+    feedback?: string;
+    rated_at?: string;
     created_at: string;
+    updated_at: string;
 }
 
 interface PaginationLink {
@@ -29,13 +50,7 @@ interface PaginationLink {
 }
 
 interface LayananIndexProps {
-    auth: {
-        user: {
-            id: number;
-            name: string;
-            email: string;
-        };
-    };
+    auth: { user: { id: number; name: string; email: string; role: string } };
     layanan: {
         data: LayananSubmission[];
         links?: PaginationLink[];
@@ -47,16 +62,24 @@ interface LayananIndexProps {
         to?: number;
     };
     jenisLayananList: string[];
-    filters: {
-        search?: string;
-        jenis_layanan?: string;
-        status?: string;
-    };
-    flash?: {
-        success?: string;
-        error?: string;
-    };
+    filters: { search?: string; jenis_layanan?: string; status?: string };
+    flash?: { success?: string; error?: string };
 }
+
+// ─── helpers ────────────────────────────────────────────────────────────────
+
+function StarDisplay({ rating }: { rating: number }) {
+    return (
+        <div className="flex items-center gap-0.5">
+            {[1, 2, 3, 4, 5].map((s) => (
+                <Star key={s} className={`h-3.5 w-3.5 ${s <= rating ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`} />
+            ))}
+            <span className="ml-1 text-xs font-semibold text-gray-600">{rating}/5</span>
+        </div>
+    );
+}
+
+// ─── main ────────────────────────────────────────────────────────────────────
 
 export default function LayananIndex({ auth, layanan, jenisLayananList, filters, flash }: LayananIndexProps) {
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
@@ -64,37 +87,40 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
     const [selectedStatus, setSelectedStatus] = useState(filters.status || '');
     const [selectedLayanan, setSelectedLayanan] = useState<LayananSubmission | null>(null);
     const [showFilters, setShowFilters] = useState(false);
+
+    // Modal states
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [showRejectModal, setShowRejectModal] = useState(false);
+    const [showSelesaiModal, setShowSelesaiModal] = useState(false);
     const [confirmData, setConfirmData] = useState<{ item: LayananSubmission; newStatus: string } | null>(null);
     const [rejectReason, setRejectReason] = useState('');
+
+    // Form selesai: file only (link dihapus)
+    const [selesaiFiles, setSelesaiFiles] = useState<File[]>([]);
+    const [selesaiCatatan, setSelesaiCatatan] = useState('');
+    const [selesaiSubmitting, setSelesaiSubmitting] = useState(false);
+    const [fileError, setFileError] = useState('');
+
     const isInitialMount = useRef(true);
 
-    // Debounced search
+    const isAdminBps = auth.user.role === 'admin_bps';
+
     useEffect(() => {
         if (isInitialMount.current) {
             isInitialMount.current = false;
             return;
         }
-
-        const timeoutId = setTimeout(() => {
-            handleSearch();
-        }, 500);
-
-        return () => clearTimeout(timeoutId);
+        const id = setTimeout(() => handleSearch(), 500);
+        return () => clearTimeout(id);
     }, [searchTerm, selectedJenisLayanan, selectedStatus]);
 
     const handleSearch = () => {
         const params = new URLSearchParams();
-
         if (searchTerm) params.set('search', searchTerm);
         if (selectedJenisLayanan) params.set('jenis_layanan', selectedJenisLayanan);
         if (selectedStatus) params.set('status', selectedStatus);
-
-        const queryString = params.toString();
-        const url = queryString ? route('admin.layanan.index') + `?${queryString}` : route('admin.layanan.index');
-
-        router.get(url, {}, { preserveState: true, replace: true });
+        const qs = params.toString();
+        router.get(qs ? `${route('admin.layanan.index')}?${qs}` : route('admin.layanan.index'), {}, { preserveState: true, replace: true });
     };
 
     const clearSearch = () => {
@@ -108,6 +134,12 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
         if (newStatus === 'ditolak') {
             setConfirmData({ item, newStatus });
             setShowRejectModal(true);
+        } else if (newStatus === 'selesai') {
+            setConfirmData({ item, newStatus });
+            setSelesaiCatatan(item.catatan_admin || '');
+            setSelesaiFiles([]);
+            setFileError('');
+            setShowSelesaiModal(true);
         } else {
             setConfirmData({ item, newStatus });
             setShowConfirmModal(true);
@@ -116,7 +148,6 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
 
     const confirmStatusChange = () => {
         if (!confirmData) return;
-
         router.put(
             route('admin.layanan.update-status', confirmData.item.id),
             {
@@ -127,7 +158,6 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
             },
             {
                 preserveState: false,
-                preserveScroll: false,
                 onSuccess: () => {
                     setShowConfirmModal(false);
                     setConfirmData(null);
@@ -141,7 +171,6 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
             alert('Alasan penolakan harus diisi');
             return;
         }
-
         router.put(
             route('admin.layanan.update-status', confirmData.item.id),
             {
@@ -153,7 +182,6 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
             },
             {
                 preserveState: false,
-                preserveScroll: false,
                 onSuccess: () => {
                     setShowRejectModal(false);
                     setConfirmData(null);
@@ -163,68 +191,111 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
         );
     };
 
-    const cancelStatusChange = () => {
+    const confirmSelesai = () => {
+        if (!confirmData) return;
+        setSelesaiSubmitting(true);
+
+        const formData = new FormData();
+        formData.append('status', 'selesai');
+        formData.append('_method', 'PUT');
+        if (selesaiCatatan) formData.append('catatan_admin', selesaiCatatan);
+        selesaiFiles.forEach((f) => formData.append('result_files[]', f));
+
+        if (searchTerm) formData.append('search', searchTerm);
+        if (selectedJenisLayanan) formData.append('jenis_layanan_filter', selectedJenisLayanan);
+        if (selectedStatus) formData.append('status_filter', selectedStatus);
+
+        router.post(route('admin.layanan.update-status', confirmData.item.id), formData, {
+            forceFormData: true,
+            preserveState: false,
+            onSuccess: () => {
+                setShowSelesaiModal(false);
+                setConfirmData(null);
+                setSelesaiFiles([]);
+                setSelesaiCatatan('');
+                setFileError('');
+                setSelesaiSubmitting(false);
+            },
+            onError: () => setSelesaiSubmitting(false),
+        });
+    };
+
+    const cancelAll = () => {
         setShowConfirmModal(false);
         setShowRejectModal(false);
+        setShowSelesaiModal(false);
         setConfirmData(null);
         setRejectReason('');
+        setSelesaiFiles([]);
+        setSelesaiCatatan('');
+        setFileError('');
+    };
+
+    const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1 MB
+
+    const handleFileAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        const oversized = Array.from(files).filter((f) => f.size > MAX_FILE_SIZE);
+        if (oversized.length > 0) {
+            const names = oversized.map((f) => f.name).join(', ');
+            setFileError(`File berikut melebihi batas maksimal 1 MB: ${names}`);
+            e.target.value = '';
+            return;
+        }
+
+        setFileError('');
+        const newFiles = Array.from(files);
+        setSelesaiFiles((prev) => [...prev, ...newFiles]);
+        e.target.value = '';
+    };
+
+    const removeFile = (idx: number) => {
+        setSelesaiFiles((prev) => prev.filter((_, i) => i !== idx));
+        setFileError('');
     };
 
     const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'pending':
-                return (
-                    <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
-                        <Clock className="mr-1 h-3 w-3" />
-                        Menunggu
-                    </span>
-                );
-            case 'diproses':
-                return (
-                    <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                        <AlertCircle className="mr-1 h-3 w-3" />
-                        Sedang Diproses
-                    </span>
-                );
-            case 'selesai':
-                return (
-                    <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                        <CheckCircle className="mr-1 h-3 w-3" />
-                        Selesai
-                    </span>
-                );
-            case 'ditolak':
-                return (
-                    <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
-                        <XCircle className="mr-1 h-3 w-3" />
-                        Ditolak
-                    </span>
-                );
-        }
+        const map: Record<string, { cls: string; icon: React.ReactNode; label: string }> = {
+            pending: { cls: 'bg-yellow-100 text-yellow-800', icon: <Clock className="mr-1 h-3 w-3" />, label: 'Menunggu' },
+            diproses: { cls: 'bg-blue-100 text-blue-800', icon: <AlertCircle className="mr-1 h-3 w-3" />, label: 'Sedang Diproses' },
+            selesai: { cls: 'bg-green-100 text-green-800', icon: <CheckCircle className="mr-1 h-3 w-3" />, label: 'Selesai' },
+            ditolak: { cls: 'bg-red-100 text-red-800', icon: <XCircle className="mr-1 h-3 w-3" />, label: 'Ditolak' },
+        };
+        const cfg = map[status] ?? { cls: 'bg-gray-100 text-gray-800', icon: null, label: status };
+        return (
+            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${cfg.cls}`}>
+                {cfg.icon}
+                {cfg.label}
+            </span>
+        );
     };
 
-    // Card component for mobile view
+    const layananArray = layanan?.data || [];
+
+    // ── Card (mobile) ────────────────────────────────────────────────────────
     const LayananCard = ({ item }: { item: LayananSubmission }) => (
         <div className="rounded-lg border bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
             <div className="mb-3 flex items-start justify-between">
                 <div className="flex-1">
-                    <h3 className="mb-2 line-clamp-2 text-sm font-semibold text-gray-900 sm:text-base">{item.jenis_layanan}</h3>
-                    <p className="mb-1 text-xs text-gray-600 sm:text-sm">{item.form_data.nama_lengkap}</p>
-                    <p className="mb-2 text-xs text-gray-500">{new Date(item.created_at).toLocaleDateString('id-ID')}</p>
+                    <h3 className="mb-1 text-sm font-semibold text-gray-900">{item.jenis_layanan}</h3>
+                    <p className="text-xs text-gray-600">{item.form_data.nama_lengkap}</p>
+                    <p className="text-xs text-gray-400">{new Date(item.created_at).toLocaleDateString('id-ID')}</p>
                 </div>
                 <div>{getStatusBadge(item.status)}</div>
             </div>
-            <div className="mb-3 flex flex-wrap gap-2 text-xs text-gray-500">
-                {item.form_data.email && <span>Email: {item.form_data.email}</span>}
-                {item.form_data.no_telepon && <span>Telp: {item.form_data.no_telepon}</span>}
-            </div>
+            {item.rating && (
+                <div className="mb-2">
+                    <StarDisplay rating={item.rating} />
+                </div>
+            )}
             <div className="flex gap-2">
                 <button
                     onClick={() => setSelectedLayanan(item)}
                     className="inline-flex flex-1 items-center justify-center rounded-md bg-blue-100 px-3 py-2 text-xs font-medium text-blue-700 hover:bg-blue-200"
                 >
-                    <Eye className="mr-1 h-3 w-3" />
-                    Detail
+                    <Eye className="mr-1 h-3 w-3" /> Detail
                 </button>
                 {item.status !== 'selesai' && item.status !== 'ditolak' && (
                     <select
@@ -242,22 +313,20 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
         </div>
     );
 
-    const layananArray = layanan?.data || [];
-
     return (
         <AuthenticatedLayout auth={auth} title="Kelola Permohonan Layanan">
             <Head title="Kelola Permohonan Layanan" />
 
             <div className="space-y-4 px-4 sm:space-y-6 sm:px-0">
-                {/* Flash Messages */}
+                {/* Flash */}
                 {flash?.success && (
                     <div className="rounded-md border border-green-200 bg-green-50 p-3 sm:p-4">
-                        <p className="text-sm text-green-700 sm:text-base">{flash.success}</p>
+                        <p className="text-sm text-green-700">{flash.success}</p>
                     </div>
                 )}
                 {flash?.error && (
                     <div className="rounded-md border border-red-200 bg-red-50 p-3 sm:p-4">
-                        <p className="text-sm text-red-700 sm:text-base">{flash.error}</p>
+                        <p className="text-sm text-red-700">{flash.error}</p>
                     </div>
                 )}
 
@@ -269,7 +338,7 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                             <p className="mt-1 text-xs text-gray-500 sm:text-sm">
                                 {layanan.from && layanan.to ? (
                                     <>
-                                        Menampilkan {layanan.from} - {layanan.to} dari {layanan.total} permohonan
+                                        Menampilkan {layanan.from}–{layanan.to} dari {layanan.total} permohonan
                                         {(searchTerm || selectedJenisLayanan || selectedStatus) && ' (difilter)'}
                                     </>
                                 ) : (
@@ -278,133 +347,106 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                             </p>
                         )}
                     </div>
-
-                    {/* Button to Settings */}
-                    <Link
-                        href={route('admin.layanan-settings.index')}
-                        className="inline-flex items-center justify-center rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-orange-700 focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:outline-none sm:w-auto"
-                    >
-                        <Settings className="mr-2 h-4 w-4" />
-                        Kelola Jenis Layanan
-                    </Link>
+                    {isAdminBps && (
+                        <Link
+                            href={route('admin.layanan-settings.index')}
+                            className="inline-flex items-center justify-center rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-orange-700 sm:w-auto"
+                        >
+                            <Settings className="mr-2 h-4 w-4" /> Kelola Jenis Layanan
+                        </Link>
+                    )}
                 </div>
 
-                {/* Info Banner */}
-                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                    <div className="flex items-start">
-                        <div className="flex-shrink-0">
-                            <Settings className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <div className="ml-3 flex-1">
-                            <h3 className="text-sm font-medium text-blue-800">Kelola Jenis Layanan</h3>
-                            <p className="mt-1 text-sm text-blue-700">
-                                Anda dapat mengaktifkan atau menonaktifkan jenis layanan yang tersedia di website. Layanan yang dinonaktifkan tidak
-                                akan muncul di menu navigasi.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Statistics Cards */}
+                {/* Stats */}
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">Menunggu</p>
-                                <p className="mt-1 text-2xl font-bold text-yellow-600">{layananArray.filter((p) => p.status === 'pending').length}</p>
+                    {[
+                        {
+                            label: 'Menunggu',
+                            value: layananArray.filter((p) => p.status === 'pending').length,
+                            color: 'text-yellow-600',
+                            icon: Clock,
+                        },
+                        {
+                            label: 'Diproses',
+                            value: layananArray.filter((p) => p.status === 'diproses').length,
+                            color: 'text-blue-600',
+                            icon: AlertCircle,
+                        },
+                        {
+                            label: 'Selesai',
+                            value: layananArray.filter((p) => p.status === 'selesai').length,
+                            color: 'text-green-600',
+                            icon: CheckCircle,
+                        },
+                        {
+                            label: 'Ditolak',
+                            value: layananArray.filter((p) => p.status === 'ditolak').length,
+                            color: 'text-red-600',
+                            icon: XCircle,
+                        },
+                    ].map(({ label, value, color, icon: Icon }) => (
+                        <div key={label} className="rounded-lg border bg-white p-4 shadow-sm">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-600">{label}</p>
+                                    <p className={`mt-1 text-2xl font-bold ${color}`}>{value}</p>
+                                </div>
+                                <Icon className={`h-8 w-8 ${color}`} />
                             </div>
-                            <Clock className="h-8 w-8 text-yellow-600" />
                         </div>
-                    </div>
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">Diproses</p>
-                                <p className="mt-1 text-2xl font-bold text-blue-600">{layananArray.filter((p) => p.status === 'diproses').length}</p>
-                            </div>
-                            <AlertCircle className="h-8 w-8 text-blue-600" />
-                        </div>
-                    </div>
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">Selesai</p>
-                                <p className="mt-1 text-2xl font-bold text-green-600">{layananArray.filter((p) => p.status === 'selesai').length}</p>
-                            </div>
-                            <CheckCircle className="h-8 w-8 text-green-600" />
-                        </div>
-                    </div>
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">Ditolak</p>
-                                <p className="mt-1 text-2xl font-bold text-red-600">{layananArray.filter((p) => p.status === 'ditolak').length}</p>
-                            </div>
-                            <XCircle className="h-8 w-8 text-red-600" />
-                        </div>
-                    </div>
+                    ))}
                 </div>
 
-                {/* Search and Filter */}
+                {/* Search */}
                 <div className="rounded-lg border bg-white p-3 shadow-sm sm:p-4">
                     <div className="relative">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-                            <Search className="h-4 w-4 text-gray-400 sm:h-5 sm:w-5" />
-                        </div>
+                        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                         <input
                             type="text"
                             placeholder="Cari berdasarkan nama, NIK, atau email..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="block w-full rounded-lg border border-gray-300 py-2.5 pr-10 pl-9 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none sm:py-3 sm:pl-10"
+                            className="block w-full rounded-lg border border-gray-300 py-2.5 pr-10 pl-9 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
                         />
                         <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                             {searchTerm ? (
-                                <button onClick={() => setSearchTerm('')} className="text-gray-400 transition-colors hover:text-gray-600">
-                                    <X className="h-4 w-4 sm:h-5 sm:w-5" />
+                                <button onClick={() => setSearchTerm('')} className="text-gray-400 hover:text-gray-600">
+                                    <X className="h-4 w-4" />
                                 </button>
                             ) : (
                                 <button
                                     onClick={() => setShowFilters(!showFilters)}
-                                    className={`transition-colors ${showFilters ? 'text-orange-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                    className={showFilters ? 'text-orange-600' : 'text-gray-400 hover:text-gray-600'}
                                 >
-                                    <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
+                                    <Filter className="h-4 w-4" />
                                 </button>
                             )}
                         </div>
                     </div>
-
                     {(showFilters || selectedJenisLayanan || selectedStatus) && (
                         <div className="mt-3 border-t border-gray-200 pt-3">
                             <div className="flex flex-col gap-3 sm:flex-row">
                                 <div className="flex-1">
-                                    <label htmlFor="jenis_layanan" className="mb-1 block text-xs font-medium text-gray-700">
-                                        Jenis Layanan
-                                    </label>
+                                    <label className="mb-1 block text-xs font-medium text-gray-700">Jenis Layanan</label>
                                     <select
-                                        id="jenis_layanan"
                                         value={selectedJenisLayanan}
                                         onChange={(e) => setSelectedJenisLayanan(e.target.value)}
-                                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
+                                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:outline-none"
                                     >
-                                        <option value="">Semua Jenis Layanan</option>
-                                        {jenisLayananList.map((jenis) => (
-                                            <option key={jenis} value={jenis}>
-                                                {jenis}
+                                        <option value="">Semua</option>
+                                        {jenisLayananList.map((j) => (
+                                            <option key={j} value={j}>
+                                                {j}
                                             </option>
                                         ))}
                                     </select>
                                 </div>
-
                                 <div className="flex-1">
-                                    <label htmlFor="status" className="mb-1 block text-xs font-medium text-gray-700">
-                                        Status
-                                    </label>
+                                    <label className="mb-1 block text-xs font-medium text-gray-700">Status</label>
                                     <select
-                                        id="status"
                                         value={selectedStatus}
                                         onChange={(e) => setSelectedStatus(e.target.value)}
-                                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
+                                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:outline-none"
                                     >
                                         <option value="">Semua Status</option>
                                         <option value="pending">Menunggu</option>
@@ -413,15 +455,13 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                                         <option value="ditolak">Ditolak</option>
                                     </select>
                                 </div>
-
                                 {(searchTerm || selectedJenisLayanan || selectedStatus) && (
                                     <div className="flex items-end">
                                         <button
                                             onClick={clearSearch}
-                                            className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                                            className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                                         >
-                                            <X className="mr-1 h-4 w-4" />
-                                            Clear
+                                            <X className="mr-1 h-4 w-4" /> Clear
                                         </button>
                                     </div>
                                 )}
@@ -430,104 +470,99 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                     )}
                 </div>
 
-                {/* Content Area */}
+                {/* Content */}
                 <div className="min-h-[400px]">
                     {layananArray.length === 0 ? (
-                        <div className="rounded-lg border bg-white shadow-sm">
-                            <div className="py-12 text-center">
-                                <FileText className="mx-auto h-12 w-12 text-gray-400" />
-                                <h3 className="mt-4 text-base font-medium text-gray-900 sm:text-lg">
-                                    {searchTerm || selectedJenisLayanan || selectedStatus
-                                        ? 'Tidak ada permohonan yang sesuai dengan pencarian'
-                                        : 'Tidak ada permohonan layanan'}
-                                </h3>
-                                <p className="mx-auto mt-2 max-w-md text-sm text-gray-500">
-                                    {searchTerm || selectedJenisLayanan || selectedStatus
-                                        ? 'Coba ubah kata kunci pencarian atau filter.'
-                                        : 'Belum ada permohonan layanan dari masyarakat.'}
-                                </p>
-                            </div>
+                        <div className="rounded-lg border bg-white py-12 text-center shadow-sm">
+                            <FileText className="mx-auto h-12 w-12 text-gray-400" />
+                            <h3 className="mt-4 text-base font-medium text-gray-900">Tidak ada permohonan</h3>
                         </div>
                     ) : (
                         <>
-                            {/* Mobile Card View */}
-                            <div className="block space-y-3 sm:space-y-4 lg:hidden">
+                            {/* Mobile */}
+                            <div className="block space-y-3 lg:hidden">
                                 {layananArray.map((item) => (
                                     <LayananCard key={item.id} item={item} />
                                 ))}
                             </div>
 
-                            {/* Desktop Table View */}
-                            <div className="hidden overflow-hidden rounded-lg border bg-white shadow-sm lg:block">
-                                <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
-                                            <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
-                                                    Tanggal
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
-                                                    Pemohon
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
-                                                    Jenis Layanan
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
-                                                    Status
-                                                </th>
-                                                <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
-                                                    Aksi
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-200 bg-white">
-                                            {layananArray.map((item) => (
-                                                <tr key={item.id} className="hover:bg-gray-50">
-                                                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-900">
-                                                        {new Date(item.created_at).toLocaleDateString('id-ID')}
-                                                    </td>
-                                                    <td className="px-6 py-4 text-sm text-gray-900">
-                                                        <div className="font-medium">{item.form_data.nama_lengkap}</div>
-                                                        <div className="text-gray-500">{item.form_data.email || item.form_data.no_telepon}</div>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-sm text-gray-900">
-                                                        <div className="max-w-xs truncate">{item.jenis_layanan}</div>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-sm whitespace-nowrap">{getStatusBadge(item.status)}</td>
-                                                    <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
-                                                        <div className="flex justify-end gap-2">
-                                                            <button
-                                                                onClick={() => setSelectedLayanan(item)}
-                                                                className="inline-flex items-center rounded-md bg-blue-100 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-200"
-                                                            >
-                                                                <Eye className="mr-1 h-3 w-3" />
-                                                                Detail
-                                                            </button>
-                                                            {item.status !== 'selesai' && item.status !== 'ditolak' && (
-                                                                <select
-                                                                    value={item.status}
-                                                                    onChange={(e) => handleStatusChange(item, e.target.value)}
-                                                                    className="rounded-md border border-gray-300 px-2 py-1 text-xs focus:border-orange-500 focus:outline-none"
-                                                                >
-                                                                    <option value="pending">Menunggu</option>
-                                                                    <option value="diproses">Sedang Diproses</option>
-                                                                    <option value="selesai">Selesai</option>
-                                                                    <option value="ditolak">Ditolak</option>
-                                                                </select>
-                                                            )}
-                                                        </div>
-                                                    </td>
+                            {/* Desktop */}
+                            <div className="hidden lg:block">
+                                <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                                    <div className="overflow-x-auto">
+                                        <table className="min-w-full divide-y divide-gray-200">
+                                            <thead className="bg-gray-50">
+                                                <tr>
+                                                    {['Tanggal', 'Pemohon', 'Jenis Layanan', 'Status', 'Penilaian', 'Aksi'].map((h) => (
+                                                        <th
+                                                            key={h}
+                                                            className="px-6 py-3 text-center text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase"
+                                                        >
+                                                            {h}
+                                                        </th>
+                                                    ))}
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-200 bg-white">
+                                                {layananArray.map((item) => (
+                                                    <tr key={item.id} className="hover:bg-gray-50">
+                                                        <td className="px-6 py-4 text-center text-sm whitespace-nowrap text-gray-900">
+                                                            {new Date(item.created_at).toLocaleDateString('id-ID')}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-center text-sm text-gray-900">
+                                                            <div className="font-medium">{item.form_data.nama_lengkap}</div>
+                                                            <div className="text-gray-500">{item.form_data.email || item.form_data.no_telepon}</div>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-center text-sm text-gray-900">
+                                                            <div className="max-w-xs truncate">{item.jenis_layanan}</div>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-center text-sm whitespace-nowrap">
+                                                            {getStatusBadge(item.status)}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-center text-sm whitespace-nowrap">
+                                                            {item.rating ? (
+                                                                <div className="flex justify-center">
+                                                                    <StarDisplay rating={item.rating} />
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-xs text-gray-400">
+                                                                    {item.status === 'selesai' ? 'Belum dinilai' : '–'}
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-4 text-center text-sm whitespace-nowrap">
+                                                            <div className="flex items-center justify-center gap-2">
+                                                                <button
+                                                                    onClick={() => setSelectedLayanan(item)}
+                                                                    className="inline-flex shrink-0 items-center rounded-md bg-blue-100 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-200"
+                                                                >
+                                                                    <Eye className="mr-1 h-3 w-3" /> Detail
+                                                                </button>
+                                                                {item.status !== 'selesai' && item.status !== 'ditolak' && (
+                                                                    <select
+                                                                        value={item.status}
+                                                                        onChange={(e) => handleStatusChange(item, e.target.value)}
+                                                                        className="w-36 shrink-0 rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-orange-500 focus:outline-none"
+                                                                    >
+                                                                        <option value="pending">Menunggu</option>
+                                                                        <option value="diproses">Sedang Diproses</option>
+                                                                        <option value="selesai">Selesai</option>
+                                                                        <option value="ditolak">Ditolak</option>
+                                                                    </select>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </>
                     )}
                 </div>
 
-                {/* Pagination */}
                 {layanan.links && layanan.links.length > 0 && layananArray.length > 0 && (
                     <div className="mt-6">
                         <Pagination links={layanan.links} />
@@ -535,50 +570,44 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                 )}
             </div>
 
-            {/* Confirmation Modal */}
+            {/* ═══ MODAL: Konfirmasi biasa ═══ */}
             {showConfirmModal && confirmData && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
                     <div className="w-full max-w-md rounded-lg bg-white shadow-xl">
-                        <div className="border-b p-4 sm:p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 sm:text-xl">Konfirmasi Perubahan Status</h3>
+                        <div className="border-b p-6">
+                            <h3 className="text-lg font-semibold">Konfirmasi Perubahan Status</h3>
                         </div>
-
-                        <div className="space-y-4 p-4 sm:p-6">
-                            <p className="text-sm text-gray-700 sm:text-base">Apakah Anda yakin ingin mengubah status permohonan ini?</p>
-
-                            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 sm:p-4">
-                                <div className="mb-3 flex items-center justify-between">
-                                    <span className="text-xs font-medium text-gray-600 sm:text-sm">Dari:</span>
+                        <div className="space-y-4 p-6">
+                            <p className="text-sm text-gray-700">Apakah Anda yakin ingin mengubah status permohonan ini?</p>
+                            <div className="space-y-3 rounded-lg border bg-gray-50 p-4">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-medium text-gray-600">Dari:</span>
                                     {getStatusBadge(confirmData.item.status)}
                                 </div>
-                                <div className="flex items-center justify-between border-t border-gray-200 pt-3">
-                                    <span className="text-xs font-medium text-gray-600 sm:text-sm">Menjadi:</span>
+                                <div className="flex items-center justify-between border-t pt-3">
+                                    <span className="text-xs font-medium text-gray-600">Menjadi:</span>
                                     {getStatusBadge(confirmData.newStatus)}
                                 </div>
                             </div>
-
-                            <div className="space-y-2 rounded-lg border border-orange-100 bg-orange-50 p-3 sm:p-4">
-                                <div>
-                                    <span className="text-xs font-medium text-gray-700">Pemohon:</span>
-                                    <p className="mt-0.5 text-sm font-semibold text-gray-900">{confirmData.item.form_data.nama_lengkap}</p>
-                                </div>
-                                <div>
-                                    <span className="text-xs font-medium text-gray-700">Jenis Layanan:</span>
-                                    <p className="mt-0.5 text-sm text-gray-900">{confirmData.item.jenis_layanan}</p>
-                                </div>
+                            <div className="space-y-2 rounded-lg border border-orange-100 bg-orange-50 p-4">
+                                <p className="text-xs font-medium text-gray-700">
+                                    Pemohon: <span className="font-semibold text-gray-900">{confirmData.item.form_data.nama_lengkap}</span>
+                                </p>
+                                <p className="text-xs font-medium text-gray-700">
+                                    Layanan: <span className="text-gray-900">{confirmData.item.jenis_layanan}</span>
+                                </p>
                             </div>
                         </div>
-
-                        <div className="flex gap-3 border-t bg-gray-50 p-4 sm:p-6">
+                        <div className="flex gap-3 border-t bg-gray-50 p-6">
                             <button
-                                onClick={cancelStatusChange}
-                                className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:text-base"
+                                onClick={cancelAll}
+                                className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
                             >
                                 Batal
                             </button>
                             <button
                                 onClick={confirmStatusChange}
-                                className="flex-1 rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-orange-700 sm:text-base"
+                                className="flex-1 rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-orange-700"
                             >
                                 Ya, Ubah Status
                             </button>
@@ -587,28 +616,20 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                 </div>
             )}
 
-            {/* Reject Modal */}
+            {/* ═══ MODAL: Tolak ═══ */}
             {showRejectModal && confirmData && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
                     <div className="w-full max-w-md rounded-lg bg-white shadow-xl">
-                        <div className="border-b p-4 sm:p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 sm:text-xl">Tolak Permohonan</h3>
+                        <div className="border-b p-6">
+                            <h3 className="text-lg font-semibold">Tolak Permohonan</h3>
                         </div>
-
-                        <div className="space-y-4 p-4 sm:p-6">
-                            <p className="text-sm text-gray-700 sm:text-base">Silakan masukkan alasan penolakan permohonan layanan ini:</p>
-
-                            <div className="space-y-2 rounded-lg border border-orange-100 bg-orange-50 p-3 sm:p-4">
-                                <div>
-                                    <span className="text-xs font-medium text-gray-700">Pemohon:</span>
-                                    <p className="mt-0.5 text-sm font-semibold text-gray-900">{confirmData.item.form_data.nama_lengkap}</p>
-                                </div>
-                                <div>
-                                    <span className="text-xs font-medium text-gray-700">Jenis Layanan:</span>
-                                    <p className="mt-0.5 text-sm text-gray-900">{confirmData.item.jenis_layanan}</p>
-                                </div>
+                        <div className="space-y-4 p-6">
+                            <div className="space-y-1 rounded-lg border border-orange-100 bg-orange-50 p-4">
+                                <p className="text-xs font-medium text-gray-700">
+                                    Pemohon: <span className="font-semibold">{confirmData.item.form_data.nama_lengkap}</span>
+                                </p>
+                                <p className="text-xs font-medium text-gray-700">Layanan: {confirmData.item.jenis_layanan}</p>
                             </div>
-
                             <div>
                                 <label className="mb-2 block text-sm font-medium text-gray-700">
                                     Alasan Penolakan <span className="text-red-500">*</span>
@@ -617,25 +638,23 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                                     value={rejectReason}
                                     onChange={(e) => setRejectReason(e.target.value)}
                                     rows={4}
-                                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
-                                    placeholder="Jelaskan alasan penolakan permohonan ini..."
-                                    required
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:outline-none"
+                                    placeholder="Jelaskan alasan penolakan..."
                                 />
                                 {!rejectReason.trim() && <p className="mt-1 text-xs text-red-600">Alasan penolakan wajib diisi</p>}
                             </div>
                         </div>
-
-                        <div className="flex gap-3 border-t bg-gray-50 p-4 sm:p-6">
+                        <div className="flex gap-3 border-t bg-gray-50 p-6">
                             <button
-                                onClick={cancelStatusChange}
-                                className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:text-base"
+                                onClick={cancelAll}
+                                className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
                             >
                                 Batal
                             </button>
                             <button
                                 onClick={confirmReject}
                                 disabled={!rejectReason.trim()}
-                                className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 sm:text-base"
+                                className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 Tolak Permohonan
                             </button>
@@ -644,19 +663,142 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                 </div>
             )}
 
-            {/* Detail Modal */}
+            {/* ═══ MODAL: Selesai — upload hasil ═══ */}
+            {showSelesaiModal && confirmData && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+                    <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white shadow-xl">
+                        <div className="sticky top-0 flex items-center justify-between border-b bg-white px-6 py-4">
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-900">Selesaikan Permohonan</h3>
+                                <p className="mt-0.5 text-xs text-gray-500">Lampirkan hasil layanan untuk pemohon (opsional)</p>
+                            </div>
+                            <button onClick={cancelAll} className="rounded-full p-1 hover:bg-gray-100">
+                                <X className="h-5 w-5 text-gray-500" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-5 p-6">
+                            {/* Info pemohon */}
+                            <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                                <div className="mb-2 flex items-center gap-2">
+                                    <CheckCircle className="h-4 w-4 text-green-600" />
+                                    <span className="text-sm font-semibold text-green-800">Menandai sebagai Selesai</span>
+                                </div>
+                                <p className="text-xs text-green-700">
+                                    Pemohon: <strong>{confirmData.item.form_data.nama_lengkap}</strong>
+                                </p>
+                                <p className="text-xs text-green-700">Layanan: {confirmData.item.jenis_layanan}</p>
+                            </div>
+
+                            {/* ── Upload file hasil ── */}
+                            <div>
+                                <p className="mb-2 block text-sm font-medium text-gray-700">
+                                    <Paperclip className="mr-1 inline h-4 w-4" />
+                                    Upload File Hasil Layanan
+                                    <span className="ml-1 text-xs font-normal text-gray-400">(opsional, maks. 1 MB/file)</span>
+                                </p>
+
+                                {/* Drop-zone */}
+                                <label
+                                    htmlFor="selesai-file-upload"
+                                    className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 py-6 transition-colors hover:border-orange-400 hover:bg-orange-50"
+                                >
+                                    <Upload className="mb-2 h-8 w-8 text-gray-400" />
+                                    <p className="text-sm text-gray-600">Klik untuk memilih file</p>
+                                    <p className="text-xs text-gray-400">JPG, PNG, PDF, DOC, DOCX • Maks. 1 MB per file</p>
+                                </label>
+                                <input
+                                    id="selesai-file-upload"
+                                    type="file"
+                                    multiple
+                                    accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx"
+                                    className="hidden"
+                                    onChange={handleFileAdd}
+                                />
+
+                                {/* Pesan error ukuran file */}
+                                {fileError && (
+                                    <div className="mt-2 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5">
+                                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+                                        <p className="text-xs font-medium text-red-600">{fileError}</p>
+                                    </div>
+                                )}
+
+                                {/* Daftar file terpilih */}
+                                {selesaiFiles.length > 0 && (
+                                    <ul className="mt-3 space-y-2">
+                                        {selesaiFiles.map((f, i) => (
+                                            <li
+                                                key={i}
+                                                className="flex items-center justify-between rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
+                                            >
+                                                <div className="flex min-w-0 items-center gap-2">
+                                                    <FileText className="h-4 w-4 shrink-0 text-gray-400" />
+                                                    <span className="truncate text-gray-700">{f.name}</span>
+                                                    <span className="shrink-0 text-xs text-gray-400">({(f.size / 1024).toFixed(0)} KB)</span>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeFile(i)}
+                                                    className="ml-2 shrink-0 text-red-400 hover:text-red-600"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+
+                                {selesaiFiles.length > 0 && <p className="mt-2 text-xs text-gray-500">{selesaiFiles.length} file dipilih</p>}
+                            </div>
+
+                            {/* Catatan */}
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-gray-700">
+                                    Catatan untuk Pemohon <span className="text-xs font-normal text-gray-400">(opsional)</span>
+                                </label>
+                                <textarea
+                                    value={selesaiCatatan}
+                                    onChange={(e) => setSelesaiCatatan(e.target.value)}
+                                    rows={3}
+                                    placeholder="Contoh: Surat sudah selesai, silakan diunduh atau ambil di kantor desa."
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="sticky bottom-0 flex gap-3 border-t bg-gray-50 px-6 py-4">
+                            <button
+                                onClick={cancelAll}
+                                className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={confirmSelesai}
+                                disabled={selesaiSubmitting || !!fileError}
+                                className="flex-1 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {selesaiSubmitting ? 'Menyimpan...' : '✓ Selesaikan Permohonan'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ═══ MODAL: Detail ═══ */}
             {selectedLayanan && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
                     <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg bg-white shadow-xl">
                         <div className="sticky top-0 flex items-center justify-between border-b bg-white p-6">
-                            <h2 className="text-xl font-bold text-gray-900">Detail Permohonan Layanan</h2>
+                            <h2 className="text-xl font-bold text-gray-900">Detail Permohonan</h2>
                             <button onClick={() => setSelectedLayanan(null)} className="rounded-full p-1 hover:bg-gray-100">
                                 <X className="h-6 w-6" />
                             </button>
                         </div>
 
                         <div className="space-y-6 p-6">
-                            {/* Status and Basic Info */}
+                            {/* Status */}
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
                                     <label className="text-sm font-medium text-gray-700">Status</label>
@@ -680,7 +822,6 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                                 <p className="mt-1 text-sm font-semibold text-gray-900">{selectedLayanan.jenis_layanan}</p>
                             </div>
 
-                            {/* Catatan Admin (jika ada) */}
                             {selectedLayanan.catatan_admin && (
                                 <div className="rounded-lg border border-red-200 bg-red-50 p-4">
                                     <label className="text-sm font-medium text-red-800">Catatan/Alasan Penolakan</label>
@@ -688,44 +829,81 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                                 </div>
                             )}
 
-                            {/* Form Data */}
+                            {/* Hasil layanan — hanya file, tanpa link */}
+                            {selectedLayanan.result_files && selectedLayanan.result_files.length > 0 && (
+                                <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                                    <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-green-800">
+                                        <CheckCircle className="h-4 w-4" /> Hasil Layanan
+                                    </h3>
+                                    <div className="space-y-2">
+                                        {selectedLayanan.result_files.map((fp, i) => (
+                                            <a
+                                                key={i}
+                                                href={`/${fp}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-2 rounded-md border border-green-300 bg-white px-3 py-2 text-sm text-green-700 hover:bg-green-100"
+                                            >
+                                                <Download className="h-4 w-4 shrink-0" />
+                                                <span className="truncate">{fp.split('/').pop()}</span>
+                                            </a>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Penilaian */}
+                            {selectedLayanan.rating && (
+                                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                                    <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-amber-800">
+                                        <Star className="h-4 w-4" /> Penilaian Pemohon
+                                        {selectedLayanan.rated_at && (
+                                            <span className="text-xs font-normal text-amber-600">({selectedLayanan.rated_at})</span>
+                                        )}
+                                    </h3>
+                                    <StarDisplay rating={selectedLayanan.rating} />
+                                    {selectedLayanan.feedback && (
+                                        <p className="mt-2 text-sm whitespace-pre-line text-amber-900">{selectedLayanan.feedback}</p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Data form */}
                             <div>
                                 <h3 className="mb-4 text-lg font-semibold text-gray-900">Data Permohonan</h3>
                                 <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
                                     {Object.entries(selectedLayanan.form_data).map(([key, value]) => (
                                         <div key={key} className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                                             <label className="text-sm font-medium text-gray-700 capitalize">{key.replace(/_/g, ' ')}:</label>
-                                            <div className="sm:col-span-2">
-                                                <p className="text-sm text-gray-900">{value?.toString() || '-'}</p>
-                                            </div>
+                                            <p className="text-sm text-gray-900 sm:col-span-2">{value?.toString() || '-'}</p>
                                         </div>
                                     ))}
                                 </div>
                             </div>
 
-                            {/* Uploaded Files */}
+                            {/* File pengajuan */}
                             {selectedLayanan.uploaded_files && Object.keys(selectedLayanan.uploaded_files).length > 0 && (
                                 <div>
-                                    <h3 className="mb-4 text-lg font-semibold text-gray-900">Dokumen yang Diunggah</h3>
+                                    <h3 className="mb-4 text-lg font-semibold text-gray-900">Dokumen Diunggah Pemohon</h3>
                                     <div className="space-y-3">
                                         {Object.entries(selectedLayanan.uploaded_files).map(([fieldName, files]) => {
-                                            const fileArray = Array.isArray(files) ? files : [files];
+                                            const fa = Array.isArray(files) ? files : [files];
                                             return (
                                                 <div key={fieldName} className="rounded-lg border border-gray-200 bg-white p-4">
                                                     <label className="mb-2 block text-sm font-medium text-gray-700 capitalize">
                                                         {fieldName.replace(/_/g, ' ')}
                                                     </label>
                                                     <div className="space-y-2">
-                                                        {fileArray.map((filePath, idx) => (
+                                                        {fa.map((fp, i) => (
                                                             <a
-                                                                key={idx}
-                                                                href={`/storage/${filePath}`}
+                                                                key={i}
+                                                                href={`/${fp}`}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-50 p-3 text-sm text-blue-600 transition-colors hover:bg-blue-50"
+                                                                className="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-50 p-3 text-sm text-blue-600 hover:bg-blue-50"
                                                             >
                                                                 <FileText className="h-5 w-5" />
-                                                                <span className="flex-1 truncate">{filePath.split('/').pop()}</span>
+                                                                <span className="flex-1 truncate">{fp.split('/').pop()}</span>
                                                                 <Eye className="h-4 w-4" />
                                                             </a>
                                                         ))}
@@ -741,7 +919,7 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                         <div className="sticky bottom-0 border-t bg-gray-50 p-4 sm:p-6">
                             <button
                                 onClick={() => setSelectedLayanan(null)}
-                                className="w-full rounded-lg bg-gray-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-gray-700 sm:text-base"
+                                className="w-full rounded-lg bg-gray-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-700"
                             >
                                 Tutup
                             </button>

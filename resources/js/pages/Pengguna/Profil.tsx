@@ -1,8 +1,26 @@
 // resources/js/Pages/Pengguna/Profil.tsx
 import { FieldError, inputBase, inputPassword, inputWithIcon } from '@/components/ui/FieldError';
 import MainLayout from '@/layouts/MainLayout';
-import { Head, useForm } from '@inertiajs/react';
-import { AlertCircle, CheckCircle2, ChevronRight, Clock, Eye, EyeOff, FileText, LoaderCircle, Lock, Mail, MapPin, User, XCircle } from 'lucide-react';
+import { Head, router, useForm } from '@inertiajs/react';
+import {
+    AlertCircle,
+    CheckCircle2,
+    ChevronRight,
+    Clock,
+    Download,
+    Eye,
+    EyeOff,
+    FileText,
+    LoaderCircle,
+    Lock,
+    Mail,
+    MapPin,
+    Paperclip,
+    Send,
+    Star,
+    User,
+    XCircle,
+} from 'lucide-react';
 import { FormEventHandler, useState } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -34,6 +52,10 @@ interface RiwayatLayanan {
     status: 'pending' | 'diproses' | 'selesai' | 'ditolak';
     status_label: string;
     catatan_admin: string | null;
+    result_files: string[];
+    rating: number | null;
+    feedback: string | null;
+    rated_at: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -93,9 +115,7 @@ function LayananProgressBar({ status }: { status: string }) {
         return (
             <div className="mt-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
                 <XCircle className="h-4 w-4 flex-shrink-0 text-red-500" />
-                <p className="text-xs font-medium text-red-600">
-                    Permohonan ini ditolak oleh admin. Silakan hubungi kantor desa untuk informasi lebih lanjut.
-                </p>
+                <p className="text-xs font-medium text-red-600">Permohonan ini ditolak. Silakan hubungi kantor desa untuk informasi lebih lanjut.</p>
             </div>
         );
     }
@@ -129,13 +149,151 @@ function LayananProgressBar({ status }: { status: string }) {
     );
 }
 
-// Label + children + error — sama dengan pola di form lain
 function FormGroup({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
     return (
         <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-700">{label}</label>
             {children}
             <FieldError message={error} />
+        </div>
+    );
+}
+
+// ─── Star Rating Input ────────────────────────────────────────────────────────
+
+function StarRatingInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+    const [hovered, setHovered] = useState(0);
+    return (
+        <div className="flex items-center gap-1">
+            {[1, 2, 3, 4, 5].map((s) => (
+                <button
+                    key={s}
+                    type="button"
+                    onClick={() => onChange(s)}
+                    onMouseEnter={() => setHovered(s)}
+                    onMouseLeave={() => setHovered(0)}
+                    className="transition-transform hover:scale-110 focus:outline-none"
+                >
+                    <Star
+                        className={`h-8 w-8 transition-colors ${
+                            s <= (hovered || value) ? 'fill-amber-400 text-amber-400' : 'text-gray-300 hover:text-amber-300'
+                        }`}
+                    />
+                </button>
+            ))}
+            {value > 0 && (
+                <span className="ml-2 text-sm font-medium text-gray-600">
+                    {['', 'Sangat Tidak Puas', 'Tidak Puas', 'Cukup', 'Puas', 'Sangat Puas'][value]}
+                </span>
+            )}
+        </div>
+    );
+}
+
+// ─── Rating Form (inline per item) ───────────────────────────────────────────
+
+function RatingForm({ item }: { item: RiwayatLayanan }) {
+    const [rating, setRating] = useState(0);
+    const [feedback, setFeedback] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const [localSuccess, setLocalSuccess] = useState('');
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!rating) return;
+        setSubmitting(true);
+
+        router.post(
+            route('pengguna.layanan.rating', item.id),
+            { rating, feedback },
+            {
+                preserveState: false,
+                onSuccess: () => {
+                    setLocalSuccess('Terima kasih atas penilaian Anda!');
+                    setSubmitting(false);
+                },
+                onError: () => setSubmitting(false),
+            },
+        );
+    };
+
+    if (localSuccess) {
+        return (
+            <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                <p className="text-sm font-medium text-emerald-700">{localSuccess}</p>
+            </div>
+        );
+    }
+
+    return (
+        <form onSubmit={handleSubmit} className="mt-4 space-y-3 rounded-xl border border-orange-200 bg-orange-50 p-4">
+            <p className="text-xs font-semibold tracking-wide text-orange-700 uppercase">Berikan Penilaian</p>
+            <StarRatingInput value={rating} onChange={setRating} />
+            <textarea
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                rows={3}
+                placeholder="Ceritakan pengalaman Anda (opsional)..."
+                className="w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
+            />
+            <button
+                type="submit"
+                disabled={!rating || submitting}
+                className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+                <Send className="h-3.5 w-3.5" />
+                {submitting ? 'Mengirim...' : 'Kirim Penilaian'}
+            </button>
+        </form>
+    );
+}
+
+// ─── Result section — hanya file, tanpa link ──────────────────────────────────
+
+function HasilLayanan({ item }: { item: RiwayatLayanan }) {
+    const hasFiles = item.result_files && item.result_files.length > 0;
+    if (!hasFiles) return null;
+
+    return (
+        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+            <p className="mb-3 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-emerald-700 uppercase">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Hasil Layanan Tersedia
+            </p>
+            <div className="space-y-2">
+                {item.result_files.map((fp, i) => (
+                    <a
+                        key={i}
+                        href={`/${fp}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 rounded-lg border border-emerald-300 bg-white px-3 py-2 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
+                    >
+                        <Download className="h-4 w-4 shrink-0" />
+                        <span className="flex-1 truncate">{fp.split('/').pop()}</span>
+                        <Paperclip className="ml-auto h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                    </a>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+// ─── Rating display (already rated) ──────────────────────────────────────────
+
+function RatingDisplay({ item }: { item: RiwayatLayanan }) {
+    if (!item.rating) return null;
+    return (
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <p className="mb-2 text-xs font-semibold tracking-wide text-amber-700 uppercase">Penilaian Anda</p>
+            <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((s) => (
+                    <Star key={s} className={`h-5 w-5 ${s <= item.rating! ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`} />
+                ))}
+                <span className="ml-2 text-sm font-semibold text-amber-700">{item.rating}/5</span>
+            </div>
+            {item.feedback && <p className="mt-2 text-sm whitespace-pre-line text-amber-900">{item.feedback}</p>}
+            {item.rated_at && <p className="mt-1 text-xs text-amber-500">Dinilai pada {item.rated_at}</p>}
         </div>
     );
 }
@@ -152,13 +310,11 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
     const profile = auth.user.profile;
 
     const { data, setData, patch, processing, errors, reset } = useForm({
-        // Akun
         name: auth.user.name,
         email: auth.user.email,
         current_password: '',
         password: '',
         password_confirmation: '',
-        // Profil
         nama_lengkap: profile?.nama_lengkap ?? '',
         jenis_kelamin: profile?.jenis_kelamin ?? '',
         tanggal_lahir: profile?.tanggal_lahir ?? '',
@@ -221,7 +377,6 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                         {/* ════ SIDEBAR ════ */}
                         <aside className="w-full lg:w-64 lg:flex-shrink-0">
                             <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                                {/* Identitas */}
                                 <div className="bg-orange-600 px-5 py-6 text-center">
                                     <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 text-2xl font-bold text-white ring-2 ring-white/30">
                                         {avatarInitial}
@@ -230,7 +385,6 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                                     <p className="mt-1 text-xs break-all text-orange-100">{auth.user.email}</p>
                                 </div>
 
-                                {/* Info ringkas */}
                                 {(profile?.alamat || profile?.pekerjaan || profile?.no_telepon) && (
                                     <div className="space-y-2 border-b border-gray-100 px-4 py-3">
                                         {profile?.pekerjaan && (
@@ -258,13 +412,11 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                                     </div>
                                 )}
 
-                                {/* Stat */}
                                 <div className="border-b border-gray-100 py-3 text-center">
                                     <p className="text-lg font-bold text-orange-600">{riwayatLayanan.length}</p>
                                     <p className="text-xs text-gray-500">Total Permohonan Layanan</p>
                                 </div>
 
-                                {/* Tab nav */}
                                 <nav className="p-2">
                                     {tabs.map((tab) => {
                                         const Icon = tab.icon;
@@ -273,9 +425,7 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                                             <button
                                                 key={tab.id}
                                                 onClick={() => setActiveTab(tab.id)}
-                                                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                                                    active ? 'bg-orange-50 text-orange-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                                }`}
+                                                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${active ? 'bg-orange-50 text-orange-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
                                             >
                                                 <Icon className={`h-4 w-4 flex-shrink-0 ${active ? 'text-orange-500' : 'text-gray-400'}`} />
                                                 <span className="flex-1 text-left">{tab.label}</span>
@@ -306,7 +456,7 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                                     )}
 
                                     <form onSubmit={submit} className="space-y-5">
-                                        {/* Informasi Akun */}
+                                        {/* Akun */}
                                         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                                             <h2 className="mb-5 text-base font-semibold text-gray-900">Informasi Akun</h2>
                                             <div className="space-y-4">
@@ -322,7 +472,6 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                                                         />
                                                     </div>
                                                 </FormGroup>
-
                                                 <FormGroup label="Alamat Email" error={errors.email}>
                                                     <div className="relative">
                                                         <Mail className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -351,7 +500,6 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                                                         className={inputBase(errors.nama_lengkap)}
                                                     />
                                                 </FormGroup>
-
                                                 <FormGroup label="Jenis Kelamin" error={errors.jenis_kelamin}>
                                                     <select
                                                         value={data.jenis_kelamin}
@@ -363,7 +511,6 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                                                         <option value="Perempuan">Perempuan</option>
                                                     </select>
                                                 </FormGroup>
-
                                                 <FormGroup label="Tanggal Lahir" error={errors.tanggal_lahir}>
                                                     <input
                                                         type="date"
@@ -372,7 +519,6 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                                                         className={inputBase(errors.tanggal_lahir)}
                                                     />
                                                 </FormGroup>
-
                                                 <FormGroup label="Pekerjaan" error={errors.pekerjaan}>
                                                     <input
                                                         type="text"
@@ -382,7 +528,6 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                                                         className={inputBase(errors.pekerjaan)}
                                                     />
                                                 </FormGroup>
-
                                                 <FormGroup label="No. Telepon" error={errors.no_telepon}>
                                                     <input
                                                         type="tel"
@@ -392,7 +537,6 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                                                         className={inputBase(errors.no_telepon)}
                                                     />
                                                 </FormGroup>
-
                                                 <div className="sm:col-span-2">
                                                     <FormGroup label="Alamat Lengkap" error={errors.alamat}>
                                                         <textarea
@@ -404,7 +548,6 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                                                         />
                                                     </FormGroup>
                                                 </div>
-
                                                 <FormGroup label="RT" error={errors.rt}>
                                                     <input
                                                         type="text"
@@ -415,7 +558,6 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                                                         className={inputBase(errors.rt)}
                                                     />
                                                 </FormGroup>
-
                                                 <FormGroup label="RW" error={errors.rw}>
                                                     <input
                                                         type="text"
@@ -460,11 +602,10 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                                             </div>
                                         </div>
 
-                                        {/* Submit */}
                                         <button
                                             type="submit"
                                             disabled={processing}
-                                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 py-3 text-sm font-semibold text-white shadow transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 py-3 text-sm font-semibold text-white shadow hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
                                         >
                                             {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
                                             {processing ? 'Menyimpan...' : 'Simpan Perubahan'}
@@ -491,6 +632,8 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                                         <div className="space-y-3">
                                             {riwayatLayanan.map((item) => {
                                                 const isOpen = expandedLayanan === item.id;
+                                                const hasResult = item.result_files?.length > 0;
+                                                const canRate = item.status === 'selesai' && item.rating === null;
                                                 return (
                                                     <div
                                                         key={item.id}
@@ -507,7 +650,17 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                                                                 <p className="truncate text-sm font-semibold text-gray-900">{item.jenis_layanan}</p>
                                                                 <p className="mt-0.5 text-xs text-gray-400">Diajukan {item.created_at}</p>
                                                             </div>
-                                                            <div className="flex flex-shrink-0 items-center gap-3">
+                                                            <div className="flex flex-shrink-0 items-center gap-2">
+                                                                {hasResult && (
+                                                                    <span className="hidden rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 sm:inline">
+                                                                        Hasil tersedia
+                                                                    </span>
+                                                                )}
+                                                                {canRate && (
+                                                                    <span className="hidden rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 sm:inline">
+                                                                        Beri nilai
+                                                                    </span>
+                                                                )}
                                                                 <StatusBadge status={item.status} config={layananStatusConfig} />
                                                                 <ChevronRight
                                                                     className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`}
@@ -545,6 +698,7 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                                                                     </div>
                                                                 </dl>
 
+                                                                {/* Catatan admin */}
                                                                 {item.catatan_admin && (
                                                                     <div
                                                                         className={`mt-4 rounded-xl border p-3 text-sm ${item.status === 'ditolak' ? 'border-red-200 bg-red-50' : 'border-blue-200 bg-blue-50'}`}
@@ -554,13 +708,25 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                                                                         >
                                                                             Catatan dari Admin
                                                                         </p>
-                                                                        <p className={item.status === 'ditolak' ? 'text-red-700' : 'text-blue-700'}>
+                                                                        <p
+                                                                            className={`whitespace-pre-line ${item.status === 'ditolak' ? 'text-red-700' : 'text-blue-700'}`}
+                                                                        >
                                                                             {item.catatan_admin}
                                                                         </p>
                                                                     </div>
                                                                 )}
 
+                                                                {/* Hasil layanan */}
+                                                                <HasilLayanan item={item} />
+
+                                                                {/* Progress bar */}
                                                                 <LayananProgressBar status={item.status} />
+
+                                                                {/* Rating — tampilkan jika sudah dinilai */}
+                                                                <RatingDisplay item={item} />
+
+                                                                {/* Form rating — tampilkan jika selesai & belum dinilai */}
+                                                                {canRate && <RatingForm item={item} />}
                                                             </div>
                                                         )}
                                                     </div>

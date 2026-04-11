@@ -51,7 +51,6 @@ export default function Index() {
     const [viewMode, setViewMode] = useState<'table' | 'card'>('card');
     const isInitialMount = useRef(true);
 
-    // Add error handling and debugging
     let pageProps;
     try {
         pageProps = usePage<InfografisIndexPageProps>().props;
@@ -68,68 +67,35 @@ export default function Index() {
     }
 
     const { auth, infografis, flash, filters } = pageProps;
-
-    // Search state
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
 
-    // Debounced search
     useEffect(() => {
-        // Jika ini adalah render pertama, jangan lakukan apa-apa,
-        // cukup tandai bahwa render pertama sudah selesai.
         if (isInitialMount.current) {
             isInitialMount.current = false;
             return;
         }
-
-        // Untuk render selanjutnya (saat searchTerm/selectedKategori berubah),
-        // jalankan logika debounce.
         const timeoutId = setTimeout(() => {
             handleSearch();
         }, 500);
-
         return () => clearTimeout(timeoutId);
     }, [searchTerm]);
 
     const handleSearch = () => {
         const params = new URLSearchParams();
-
-        if (searchTerm) {
-            params.set('search', searchTerm);
-        }
-
+        if (searchTerm) params.set('search', searchTerm);
         const queryString = params.toString();
         const url = queryString ? `/admin/infografis?${queryString}` : '/admin/infografis';
-
-        router.get(
-            url,
-            {},
-            {
-                preserveState: true,
-                replace: true,
-            },
-        );
+        router.get(url, {}, { preserveState: true, replace: true });
     };
 
     const clearSearch = () => {
         setSearchTerm('');
-        router.get(
-            '/admin/infografis',
-            {},
-            {
-                preserveState: true,
-                replace: true,
-            },
-        );
+        router.get('/admin/infografis', {}, { preserveState: true, replace: true });
     };
 
     const handleDeleteInfografis = (item: InfografisItem) => {
         if (window.confirm(`Apakah Anda yakin ingin menghapus infografis "${item.judul}"?`)) {
-            const deleteUrl = `/admin/infografis/${item.id}`;
-
-            router.delete(deleteUrl, {
-                onSuccess: () => {
-                    // Success handled by flash messages
-                },
+            router.delete(`/admin/infografis/${item.id}`, {
                 onError: (errors) => {
                     console.error('Error deleting infografis:', errors);
                     alert('Terjadi kesalahan saat menghapus infografis. Silakan coba lagi.');
@@ -138,7 +104,6 @@ export default function Index() {
         }
     };
 
-    // Safety checks
     if (!auth || !auth.user) {
         return (
             <div className="flex min-h-screen items-center justify-center p-4">
@@ -164,7 +129,6 @@ export default function Index() {
         );
     }
 
-    // Card component for mobile view
     const InfografisCard = ({ item }: { item: InfografisItem }) => (
         <div className="rounded-lg border bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
             <div className="flex gap-4">
@@ -211,7 +175,6 @@ export default function Index() {
         <AuthenticatedLayout auth={auth} title="Kelola Infografis">
             <Head title="Kelola Infografis" />
             <div className="space-y-4 px-4 sm:space-y-6 sm:px-0">
-                {/* Flash Messages */}
                 {flash?.success && (
                     <div className="rounded-md border border-green-200 bg-green-50 p-3 sm:p-4">
                         <p className="text-sm text-green-700 sm:text-base">{flash.success}</p>
@@ -240,7 +203,6 @@ export default function Index() {
                             </p>
                         )}
                     </div>
-
                     <div className="flex items-center gap-2">
                         <Link
                             href="/admin/infografis/create"
@@ -273,7 +235,6 @@ export default function Index() {
                             )}
                         </div>
                     </div>
-
                     {searchTerm && (
                         <div className="mt-3 border-t border-gray-200 pt-3">
                             <div className="flex items-end">
@@ -331,16 +292,16 @@ export default function Index() {
                                     <table className="min-w-full divide-y divide-gray-200">
                                         <thead className="bg-gray-50">
                                             <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                                                <th className="px-6 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">
                                                     Gambar
                                                 </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                                                <th className="px-6 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">
                                                     Judul
                                                 </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                                                <th className="px-6 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">
                                                     Tanggal Terbit
                                                 </th>
-                                                <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
+                                                <th className="px-6 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">
                                                     Aksi
                                                 </th>
                                             </tr>
@@ -348,27 +309,31 @@ export default function Index() {
                                         <tbody className="divide-y divide-gray-200 bg-white">
                                             {infografisArray.map((item) => (
                                                 <tr key={item.id} className="hover:bg-gray-50">
-                                                    <td className="px-6 py-4">
-                                                        {item.gambar ? (
-                                                            <img
-                                                                src={item.gambar}
-                                                                alt={item.judul}
-                                                                className="h-12 w-20 rounded-md border object-cover"
-                                                            />
-                                                        ) : (
-                                                            <div className="flex h-12 w-20 items-center justify-center rounded-md border bg-gray-100">
-                                                                <ImageIcon className="h-6 w-6 text-gray-400" />
-                                                            </div>
-                                                        )}
+                                                    <td className="px-6 py-4 text-center">
+                                                        <div className="flex justify-center">
+                                                            {item.gambar ? (
+                                                                <img
+                                                                    src={item.gambar}
+                                                                    alt={item.judul}
+                                                                    className="h-12 w-20 rounded-md border object-cover"
+                                                                />
+                                                            ) : (
+                                                                <div className="flex h-12 w-20 items-center justify-center rounded-md border bg-gray-100">
+                                                                    <ImageIcon className="h-6 w-6 text-gray-400" />
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </td>
-                                                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                                                    <td className="px-6 py-4 text-center text-sm font-medium text-gray-900">
                                                         <div className="max-w-xs truncate" title={item.judul}>
                                                             {item.judul}
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">{item.tanggal_terbit}</td>
-                                                    <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
-                                                        <div className="flex justify-end space-x-2">
+                                                    <td className="px-6 py-4 text-center text-sm whitespace-nowrap text-gray-500">
+                                                        {item.tanggal_terbit}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center text-sm font-medium whitespace-nowrap">
+                                                        <div className="flex justify-center space-x-2">
                                                             <Link
                                                                 href={`/admin/infografis/${item.id}/edit`}
                                                                 className="rounded p-1 text-blue-600 transition-colors hover:text-blue-900"
@@ -396,7 +361,6 @@ export default function Index() {
                     )}
                 </div>
 
-                {/* Pagination */}
                 {infografis.links && infografis.links.length > 0 && infografisArray.length > 0 && (
                     <div className="mt-6">
                         <Pagination links={infografis.links} />

@@ -14,7 +14,7 @@ import {
     Title,
     Tooltip,
 } from 'chart.js';
-import { BarChart3, Database, FileJson, FileSpreadsheet, Search, Table2, X } from 'lucide-react';
+import { BarChart3, Database, FileJson, FileSpreadsheet, Info, Search, Table2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Bar, Doughnut, Line, Pie, Radar } from 'react-chartjs-2';
 
@@ -55,6 +55,8 @@ interface DynamicTable {
     data_count: number;
     has_column_total?: boolean;
     has_row_total?: boolean;
+    source?: string | null;
+    notes?: string | null;
     created_at: string;
 }
 
@@ -328,7 +330,7 @@ export default function DataDesa({ auth, tables, tahun, settings, filters }: Dat
         <MainLayout auth={auth}>
             <Head title={`Data ${namaDesa} ${tahun}`} />
 
-            {/* Header Section - Konsisten dengan Infografis */}
+            {/* Header Section */}
             <section className="border-b border-gray-200 bg-gradient-to-br from-orange-50 to-orange-100">
                 <div className="container mx-auto px-3 py-12 text-center sm:px-4 sm:py-16 lg:px-8">
                     <h1 className="mb-3 text-3xl font-bold text-gray-900 sm:mb-4 sm:text-4xl md:text-5xl">Data Desa</h1>
@@ -430,6 +432,7 @@ export default function DataDesa({ auth, tables, tahun, settings, filters }: Dat
                                 const hasCharts = table.charts && table.charts.length > 0;
                                 const organizedHeaders = organizeHeaders(table.columns);
                                 const allFields = organizedHeaders.flatMap((h) => h.fields);
+                                const hasSourceOrNotes = table.source || table.notes;
 
                                 return (
                                     <div
@@ -666,6 +669,28 @@ export default function DataDesa({ auth, tables, tahun, settings, filters }: Dat
                                                         </table>
                                                     </div>
                                                 </>
+                                            )}
+
+                                            {/* Sumber & Catatan — ditampilkan di bawah tabel/grafik */}
+                                            {hasSourceOrNotes && (
+                                                <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+                                                    <div className="flex items-start gap-2">
+                                                        <Info className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+                                                        <div className="space-y-1 text-sm text-gray-600">
+                                                            {table.source && (
+                                                                <p>
+                                                                    <span className="font-medium text-gray-700">Sumber:</span> {table.source}
+                                                                </p>
+                                                            )}
+                                                            {table.notes && (
+                                                                <div className="flex gap-1">
+                                                                    <span className="shrink-0 font-medium text-gray-700">Catatan:</span>
+                                                                    <span className="whitespace-pre-line">{table.notes}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             )}
                                         </div>
                                     </div>

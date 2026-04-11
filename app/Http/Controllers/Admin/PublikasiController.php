@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
+
 class PublikasiController extends Controller
 {
     protected $uploadPath = 'dokumen/publikasi';
@@ -19,14 +20,12 @@ class PublikasiController extends Controller
         try {
             $query = Publikasi::query();
 
-            // Search functionality - consistent with infografis
             if ($request->filled('search')) {
                 $searchTerm = $request->search;
                 $query->where('judul', 'like', "%{$searchTerm}%")
                       ->orWhere('deskripsi', 'like', "%{$searchTerm}%");
             }
 
-            // Apply ordering and pagination
             $publikasi = $query->latest('tanggal_publikasi')->paginate(10)->through(fn ($item) => [
                 'id' => $item->id,
                 'judul' => $item->judul,
@@ -35,47 +34,30 @@ class PublikasiController extends Controller
                 'tipe_file' => strtoupper($item->tipe_file),
                 'ukuran_file' => number_format($item->ukuran_file / 1024, 2) . ' KB',
                 'nama_asli_file' => $item->nama_asli_file,
-                // Add download URL for future use
                 'download_url' => asset('dokumen/publikasi/' . $item->nama_file),
             ]);
 
-            // Append query parameters to pagination links
             $publikasi->appends($request->query());
 
             return Inertia::render('Admin/Publikasi/Index', [
                 'publikasi' => $publikasi,
-                'filters' => [
-                    'search' => $request->search,
-                ],
-                // Explicitly pass flash messages
+                'filters' => ['search' => $request->search],
                 'flash' => [
                     'success' => session('success'),
                     'error' => session('error'),
                 ],
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error in PublikasiController@index: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-                'request_data' => $request->all()
-            ]);
-            
+            \Log::error('Error in PublikasiController@index: ' . $e->getMessage());
+
             return Inertia::render('Admin/Publikasi/Index', [
                 'publikasi' => [
-                    'data' => [],
-                    'links' => [],
-                    'total' => 0,
-                    'current_page' => 1,
-                    'last_page' => 1,
-                    'per_page' => 10,
-                    'from' => 0,
-                    'to' => 0,
+                    'data' => [], 'links' => [], 'total' => 0,
+                    'current_page' => 1, 'last_page' => 1,
+                    'per_page' => 10, 'from' => 0, 'to' => 0,
                 ],
-                'filters' => [
-                    'search' => $request->search,
-                ],
-                'flash' => [
-                    'error' => 'Terjadi kesalahan saat memuat data publikasi.'
-                ],
+                'filters' => ['search' => $request->search],
+                'flash' => ['error' => 'Terjadi kesalahan saat memuat data publikasi.'],
             ]);
         }
     }
@@ -85,7 +67,6 @@ class PublikasiController extends Controller
         return Inertia::render('Admin/Publikasi/Create');
     }
 
-    // Kode Lengkap yang Direkomendasikan (Gabungan Solusi)
     public function store(Request $request)
     {
         $request->validate([
@@ -95,63 +76,55 @@ class PublikasiController extends Controller
             'file' => 'required|file|mimes:pdf,doc,docx,xls,xlsx|max:5120',
         ]);
 
-        DB::beginTransaction(); // Mulai transaksi
+        DB::beginTransaction();
 
         try {
             $file = $request->file('file');
 
-            // 1. Ambil semua info file sebelum dipindahkan
-            $namaFileUnik = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
-            $ukuranFile = $file->getSize();
-            
-            // 2. Buat record database
+            $namaFileUnik   = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+            $namaAsliFile   = $file->getClientOriginalName();
+            $tipeFile       = $file->getClientOriginalExtension();
+            // ✅ Ambil ukuran SEBELUM move()
+            $ukuranFile     = $file->getSize();
+
             $publikasi = Publikasi::create([
-                'judul' => $request->judul,
-                'deskripsi' => $request->deskripsi,
-                'tanggal_publikasi' => $request->tanggal_publikasi,
-                'nama_file' => $namaFileUnik,
-                'nama_asli_file' => $file->getClientOriginalName(),
-                'tipe_file' => $file->getClientOriginalExtension(),
-                'ukuran_file' => $ukuranFile,
+                'judul'              => $request->judul,
+                'deskripsi'          => $request->deskripsi,
+                'tanggal_publikasi'  => $request->tanggal_publikasi,
+                'nama_file'          => $namaFileUnik,
+                'nama_asli_file'     => $namaAsliFile,
+                'tipe_file'          => $tipeFile,
+                'ukuran_file'        => $ukuranFile,
             ]);
 
-            // 3. Jika database berhasil, pindahkan file
             $uploadDir = public_path($this->uploadPath);
             if (!File::exists($uploadDir)) {
                 File::makeDirectory($uploadDir, 0755, true);
             }
             $file->move($uploadDir, $namaFileUnik);
 
-            DB::commit(); // Selesaikan transaksi
+            DB::commit();
 
             return redirect()->route('admin.publikasi.index')
                 ->with('success', "Publikasi '{$publikasi->judul}' berhasil ditambahkan.");
-                
+
         } catch (\Exception $e) {
-            DB::rollBack(); // Batalkan semua jika ada error
+            DB::rollBack();
+            \Log::error('Error creating publikasi: ' . $e->getMessage());
 
-            \Log::error('Error creating publikasi: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-                'input' => $request->except(['file'])
-            ]);
-
-            return back()
-                ->withInput()
-                ->with('error', 'Terjadi kesalahan saat menyimpan publikasi. Silakan periksa log.');
+            return back()->withInput()->with('error', 'Terjadi kesalahan saat menyimpan publikasi.');
         }
     }
 
     public function edit(Publikasi $publikasi)
     {
-        // Kode ini sekarang akan berfungsi karena model casting sudah benar
         return Inertia::render('Admin/Publikasi/Edit', [
             'publikasi' => [
-                'id' => $publikasi->id,
-                'judul' => $publikasi->judul,
-                'deskripsi' => $publikasi->deskripsi,
-                // Gunakan null-safe operator (?) untuk keamanan jika tanggal bisa null
-                'tanggal_publikasi' => $publikasi->tanggal_publikasi?->format('Y-m-d'),
-                'file_info' => $publikasi->nama_asli_file . ' (' . number_format($publikasi->ukuran_file / 1024, 2) . ' KB)',
+                'id'                 => $publikasi->id,
+                'judul'              => $publikasi->judul,
+                'deskripsi'          => $publikasi->deskripsi,
+                'tanggal_publikasi'  => $publikasi->tanggal_publikasi?->format('Y-m-d'),
+                'file_info'          => $publikasi->nama_asli_file . ' (' . number_format($publikasi->ukuran_file / 1024, 2) . ' KB)',
             ],
         ]);
     }
@@ -160,44 +133,52 @@ class PublikasiController extends Controller
     {
         try {
             $request->validate([
-                'judul' => 'required|string|max:255',
-                'deskripsi' => 'nullable|string',
-                'tanggal_publikasi' => 'required|date',
-                'file' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:5120', // file not required for update
+                'judul'              => 'required|string|max:255',
+                'deskripsi'          => 'nullable|string',
+                'tanggal_publikasi'  => 'required|date',
+                'file'               => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:5120',
             ], [
-                'judul.required' => 'Judul wajib diisi.',
+                'judul.required'            => 'Judul wajib diisi.',
                 'tanggal_publikasi.required' => 'Tanggal publikasi wajib diisi.',
-                'tanggal_publikasi.date' => 'Format tanggal tidak valid.',
-                'file.mimes' => 'File harus berformat: PDF, DOC, DOCX, XLS, atau XLSX.',
-                'file.max' => 'Ukuran file maksimal 5MB.',
+                'tanggal_publikasi.date'    => 'Format tanggal tidak valid.',
+                'file.mimes'                => 'File harus berformat: PDF, DOC, DOCX, XLS, atau XLSX.',
+                'file.max'                  => 'Ukuran file maksimal 5MB.',
             ]);
-            
+
             $publikasi->update($request->only('judul', 'deskripsi', 'tanggal_publikasi'));
 
             if ($request->hasFile('file')) {
-                // Delete old file
+                $file = $request->file('file');
+
+                // ✅ FIX UTAMA: ambil semua info file SEBELUM move()
+                //    Setelah move(), objek UploadedFile tidak lagi valid
+                //    dan getSize() / getClientOriginalName() bisa melempar exception.
+                $namaFileUnik   = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+                $namaAsliFile   = $file->getClientOriginalName();
+                $tipeFile       = $file->getClientOriginalExtension();
+                $ukuranFile     = $file->getSize(); // ← sebelum move()
+
+                // Hapus file lama
                 $oldFilePath = public_path($this->uploadPath . '/' . $publikasi->nama_file);
                 if (File::exists($oldFilePath)) {
                     File::delete($oldFilePath);
                 }
-                
-                // Upload new file
-                $file = $request->file('file');
-                $namaFileUnik = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
-                
-                // Ensure directory exists
+
+                // Pastikan direktori ada
                 $uploadDir = public_path($this->uploadPath);
                 if (!File::exists($uploadDir)) {
                     File::makeDirectory($uploadDir, 0755, true);
                 }
-                
-                $file->move(public_path($this->uploadPath), $namaFileUnik);
-                
+
+                // Pindahkan file baru
+                $file->move($uploadDir, $namaFileUnik);
+
+                // Update record dengan data yang sudah dikumpulkan sebelum move()
                 $publikasi->update([
-                    'nama_file' => $namaFileUnik,
-                    'nama_asli_file' => $file->getClientOriginalName(),
-                    'tipe_file' => $file->getClientOriginalExtension(),
-                    'ukuran_file' => $file->getSize(),
+                    'nama_file'      => $namaFileUnik,
+                    'nama_asli_file' => $namaAsliFile,
+                    'tipe_file'      => $tipeFile,
+                    'ukuran_file'    => $ukuranFile,
                 ]);
             }
 
@@ -205,68 +186,38 @@ class PublikasiController extends Controller
                 ->with('success', "Publikasi '{$publikasi->judul}' berhasil diperbarui.");
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return back()
-                ->withErrors($e->errors())
-                ->withInput()
+            return back()->withErrors($e->errors())->withInput()
                 ->with('error', 'Terdapat kesalahan dalam pengisian form.');
 
         } catch (\Exception $e) {
             \Log::error('Error updating publikasi: ' . $e->getMessage(), [
                 'publikasi_id' => $publikasi->id,
-                'trace' => $e->getTraceAsString(),
-                'input' => $request->except(['file'])
             ]);
 
-            return back()
-                ->withInput()
+            return back()->withInput()
                 ->with('error', 'Terjadi kesalahan saat memperbarui publikasi. Silakan coba lagi.');
         }
     }
 
     public function destroy(Publikasi $publikasi)
     {
-        // Log untuk debugging
-        \Log::info('=== DESTROY PUBLIKASI METHOD CALLED ===');
-        \Log::info('Request method: ' . request()->method());
-        \Log::info('Request URL: ' . request()->url());
-        \Log::info('Publikasi to delete: ' . $publikasi->id . ' - ' . $publikasi->judul);
-        \Log::info('Current auth user: ' . auth()->id());
-
         try {
-            $publikasiJudul = $publikasi->judul; // Save title before deletion
-            
-            \Log::info('About to delete publikasi: ' . $publikasi->id);
-            
-            // Check if publikasi exists before delete
-            if (!$publikasi->exists) {
-                \Log::error('Publikasi does not exist in database: ' . $publikasi->id);
-                return redirect()->route('admin.publikasi.index')
-                    ->with('error', 'Publikasi tidak ditemukan.');
-            }
-            
-            // Delete file from storage before deleting database record
+            $publikasiJudul = $publikasi->judul;
+
             if ($publikasi->nama_file) {
                 $filePath = public_path($this->uploadPath . '/' . $publikasi->nama_file);
                 if (File::exists($filePath)) {
                     File::delete($filePath);
-                    \Log::info('Deleted associated file: ' . $publikasi->nama_file);
                 }
             }
-            
-            $deleted = $publikasi->delete();
-            
-            \Log::info('Delete result: ' . ($deleted ? 'SUCCESS' : 'FAILED'));
-            \Log::info('Publikasi deleted successfully: ' . $publikasi->id . ' (' . $publikasiJudul . ')');
+
+            $publikasi->delete();
 
             return redirect()->route('admin.publikasi.index')
                 ->with('success', "Publikasi '{$publikasiJudul}' berhasil dihapus.");
 
         } catch (\Exception $e) {
-            // Log error with details
-            \Log::error('=== ERROR DELETING PUBLIKASI ===');
-            \Log::error('Publikasi ID: ' . $publikasi->id);
-            \Log::error('Error: ' . $e->getMessage());
-            \Log::error('Trace: ' . $e->getTraceAsString());
+            \Log::error('Error deleting publikasi: ' . $e->getMessage());
 
             return redirect()->route('admin.publikasi.index')
                 ->with('error', 'Terjadi kesalahan saat menghapus publikasi: ' . $e->getMessage());

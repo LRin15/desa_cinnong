@@ -4,10 +4,15 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class LayananController extends Controller
 {
+    /** Folder relatif terhadap public_path() untuk file pengajuan */
+    protected string $uploadPath = 'dokumen/pengajuan_layanan';
+
     /**
      * Base fields yang digunakan di semua form.
      * nama_lengkap di-prefill dari akun user, tapi tetap bisa diedit
@@ -798,24 +803,35 @@ class LayananController extends Controller
         foreach ($requiredFields as $field) {
             $messages["{$field}.required"] = 'Kolom ini wajib diisi.';
         }
-        $messages['*.file']     = 'File yang diunggah tidak valid.';
-        $messages['*.mimes']    = 'Format file tidak didukung (jpg, png, pdf, doc).';
-        $messages['*.max']      = 'Ukuran file tidak boleh lebih dari 5 MB.';
-        $messages['*.max']      = 'Teks terlalu panjang (maks. 1000 karakter).';
+        $messages['*.file']  = 'File yang diunggah tidak valid.';
+        $messages['*.mimes'] = 'Format file tidak didukung (jpg, png, pdf, doc).';
+        $messages['*.max']   = 'Ukuran file tidak boleh lebih dari 5 MB.';
 
         $validated = $request->validate($rules, $messages);
 
         try {
-            // Handle file uploads
+            // ── Pastikan direktori tujuan tersedia ──────────────────────────
+            $uploadDir = public_path($this->uploadPath);
+            if (!File::exists($uploadDir)) {
+                File::makeDirectory($uploadDir, 0755, true);
+            }
+
+            // ── Upload file pengajuan ke dokumen/pengajuan_layanan ──────────
+            // Pola sama dengan PublikasiController: File::move() ke public_path
             $uploadedFiles = [];
             foreach ($request->allFiles() as $key => $files) {
                 if (is_array($files)) {
                     $uploadedFiles[$key] = [];
                     foreach ($files as $file) {
-                        $uploadedFiles[$key][] = $file->store('layanan_documents', 'public');
+                        $namaFile = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+                        $file->move($uploadDir, $namaFile);
+                        // Simpan path relatif terhadap public/ agar bisa diakses via /dokumen/...
+                        $uploadedFiles[$key][] = $this->uploadPath . '/' . $namaFile;
                     }
                 } else {
-                    $uploadedFiles[$key] = $files->store('layanan_documents', 'public');
+                    $namaFile = time() . '_' . Str::random(10) . '.' . $files->getClientOriginalExtension();
+                    $files->move($uploadDir, $namaFile);
+                    $uploadedFiles[$key] = $this->uploadPath . '/' . $namaFile;
                 }
             }
 

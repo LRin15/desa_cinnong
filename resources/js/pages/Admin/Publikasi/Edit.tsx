@@ -3,7 +3,7 @@
 import { FieldError, inputAdminLg } from '@/components/ui/FieldError';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { ArrowLeft, Upload } from 'lucide-react';
+import { ArrowLeft, Upload, X } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
 interface PublikasiData {
@@ -13,6 +13,7 @@ interface PublikasiData {
     tanggal_publikasi: string;
     file_info: string;
 }
+
 interface EditPageProps {
     auth: { user: { id: number; name: string; email: string } };
     publikasi: PublikasiData;
@@ -43,7 +44,10 @@ export default function Edit() {
 
     const submit: FormEventHandler = (ev) => {
         ev.preventDefault();
-        post(route('admin.publikasi.update', publikasi.id));
+        // forceFormData memastikan file ikut terkirim meski ada _method: PUT
+        post(route('admin.publikasi.update', publikasi.id), {
+            forceFormData: true,
+        });
     };
 
     return (
@@ -83,6 +87,10 @@ export default function Edit() {
                         <p className="mt-1 text-xs text-gray-500 sm:text-sm">Pastikan informasi yang diperbarui sudah benar</p>
                     </div>
 
+                    {/*
+                     * PENTING: semua input termasuk <input type="file"> harus berada
+                     * di dalam tag <form> ini agar ikut ter-submit.
+                     */}
                     <form onSubmit={submit} noValidate className="p-4 sm:p-6">
                         <div className="space-y-4 sm:space-y-6">
                             {/* Judul + Tanggal */}
@@ -130,41 +138,70 @@ export default function Edit() {
                                 <FieldError message={e.deskripsi} />
                             </div>
 
-                            {/* File */}
+                            {/* File — input WAJIB di dalam <form> */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 sm:text-base">Ganti File Dokumen</label>
+
+                                {/* Info file saat ini */}
                                 {publikasi.file_info && (
                                     <div className="mt-2 rounded-md border border-blue-200 bg-blue-50 p-3">
                                         <p className="text-xs text-gray-500">File saat ini:</p>
                                         <p className="text-sm font-medium text-blue-900">{publikasi.file_info}</p>
                                     </div>
                                 )}
-                                <div
-                                    className={`mt-4 flex justify-center rounded-md border-2 border-dashed px-6 py-8 transition-colors hover:border-gray-400 ${e.file ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
+
+                                {/* Drop zone — label menunjuk ke input di bawahnya (masih dalam form) */}
+                                <label
+                                    htmlFor="file-upload"
+                                    className={`mt-4 flex cursor-pointer justify-center rounded-md border-2 border-dashed px-6 py-8 transition-colors hover:border-gray-400 ${
+                                        e.file ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                                    }`}
                                 >
                                     <div className="space-y-2 text-center">
                                         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100">
                                             <Upload className="h-6 w-6 text-orange-600" />
                                         </div>
                                         <div className="text-sm text-gray-600">
-                                            <label htmlFor="file" className="cursor-pointer font-medium text-orange-600 hover:text-orange-500">
-                                                Upload file baru
-                                            </label>
+                                            <span className="font-medium text-orange-600 hover:text-orange-500">Upload file baru</span>
                                             <span className="pl-1">atau drag and drop</span>
                                         </div>
                                         <p className="text-xs text-gray-500">
                                             PDF, DOC, DOCX, XLS, XLSX hingga 5MB. Kosongkan jika tidak ingin ganti.
                                         </p>
                                     </div>
-                                </div>
+                                </label>
+
+                                {/*
+                                 * ✅ Input file ADA DI DALAM <form> — ini yang sebelumnya menyebabkan bug.
+                                 * Jangan pindahkan ke luar tag <form>.
+                                 */}
                                 <input
-                                    id="file"
+                                    id="file-upload"
                                     type="file"
                                     accept=".pdf,.doc,.docx,.xls,.xlsx"
-                                    onChange={(ev) => setData('file', ev.target.files ? ev.target.files[0] : null)}
                                     className="sr-only"
+                                    onChange={(ev) => setData('file', ev.target.files ? ev.target.files[0] : null)}
                                 />
-                                {data.file && <p className="mt-2 text-sm text-gray-600">File baru: {data.file.name}</p>}
+
+                                {/* Preview file baru yang dipilih */}
+                                {data.file && (
+                                    <div className="mt-3 flex items-center justify-between rounded-md border border-green-200 bg-green-50 px-3 py-2">
+                                        <p className="text-sm text-green-800">
+                                            <span className="font-medium">File baru:</span> {data.file.name}{' '}
+                                            <span className="text-green-600">({(data.file.size / 1024).toFixed(1)} KB)</span>
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={() => setData('file', null)}
+                                            className="ml-2 text-green-600 hover:text-green-800"
+                                            title="Batalkan pilihan file"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Progress bar */}
                                 {progress && (
                                     <div className="mt-2">
                                         <div className="h-2 w-full rounded-full bg-gray-200">
@@ -173,9 +210,10 @@ export default function Edit() {
                                                 style={{ width: `${progress.percentage}%` }}
                                             />
                                         </div>
-                                        <p className="mt-1 text-xs text-gray-500">Upload progress: {progress.percentage}%</p>
+                                        <p className="mt-1 text-xs text-gray-500">Upload: {progress.percentage}%</p>
                                     </div>
                                 )}
+
                                 <FieldError message={e.file} />
                             </div>
                         </div>

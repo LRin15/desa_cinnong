@@ -147,7 +147,6 @@ export default function Index() {
                         <Database className="h-5 w-5 text-blue-600" />
                         <h3 className="text-base font-semibold text-gray-900">{item.name}</h3>
                     </div>
-                    <p className="mt-1 text-xs text-gray-500">{item.table_name}</p>
                 </div>
             </div>
 

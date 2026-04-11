@@ -4,19 +4,21 @@ import { FieldError, inputAdmin } from '@/components/ui/FieldError';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { BarChart3, Building2, Calendar, Image as ImageIcon, Mail, MapPin, Phone, Plus, Trash2, TrendingUp, Users } from 'lucide-react';
-import { FormEventHandler, useEffect, useState } from 'react';
+import { FormEventHandler, useEffect, useRef, useState } from 'react';
 
 interface Setting {
     [key: string]: string;
 }
+
 interface Official {
     id?: number;
     nama: string;
     jabatan: string;
     foto: File | null;
-    foto_url: string | null;
+    existing_foto: string;
     urutan: number;
 }
+
 interface EditProfilProps {
     auth: { user: { id: number; name: string; email: string } };
     settings: Setting;
@@ -27,7 +29,7 @@ interface EditProfilProps {
     [key: string]: unknown;
 }
 
-// ── Field helper — kini menggunakan inputAdmin + FieldError ──────────────────
+// ── Field helper ─────────────────────────────────────────────────────────────
 function Field({
     label,
     id,
@@ -82,10 +84,15 @@ function Field({
 export default function Edit() {
     const { auth, settings, officials, isAdminBps, errors, flash } = usePage<EditProfilProps>().props;
     const [showFlash, setShowFlash] = useState(true);
+    const topRef = useRef<HTMLDivElement>(null);
+
+    // ✅ State untuk error validasi foto aparatur di sisi client
+    const [fotoErrors, setFotoErrors] = useState<Record<number, string>>({});
 
     useEffect(() => {
         if (flash?.success || flash?.error) {
             setShowFlash(true);
+            topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             const t = setTimeout(() => setShowFlash(false), 5000);
             return () => clearTimeout(t);
         }
@@ -124,7 +131,7 @@ export default function Edit() {
             nama: o.nama,
             jabatan: o.jabatan,
             foto: null as File | null,
-            foto_url: o.foto || null,
+            existing_foto: (o as any).foto || '',
             urutan: o.urutan,
         })),
     });
@@ -138,20 +145,64 @@ export default function Edit() {
         setData('officials', updated);
     };
 
+    // ✅ Handler khusus untuk foto aparatur dengan validasi ukuran client-side
+    const handleFotoChange = (index: number, file: File | null) => {
+        const MAX_SIZE = 1024 * 1024; // 1 MB
+        if (file && file.size > MAX_SIZE) {
+            setFotoErrors((prev) => ({
+                ...prev,
+                [index]: `Ukuran foto terlalu besar (${(file.size / 1024).toFixed(0)} KB). Maksimal 1MB.`,
+            }));
+            // Reset file input agar tidak terkirim
+            handleOfficialChange(index, 'foto', null);
+            return;
+        }
+        // Hapus error jika file valid atau dihapus
+        setFotoErrors((prev) => {
+            const next = { ...prev };
+            delete next[index];
+            return next;
+        });
+        handleOfficialChange(index, 'foto', file);
+    };
+
     const addOfficial = () =>
         setData('officials', [
             ...data.officials,
-            { id: undefined, nama: '', jabatan: '', foto: null, foto_url: null, urutan: data.officials.length + 1 },
+            {
+                id: undefined,
+                nama: '',
+                jabatan: '',
+                foto: null,
+                existing_foto: '',
+                urutan: data.officials.length + 1,
+            },
         ]);
 
-    const removeOfficial = (index: number) =>
+    const removeOfficial = (index: number) => {
+        // Hapus error foto untuk index yang dihapus dan re-index sisanya
+        setFotoErrors((prev) => {
+            const next: Record<number, string> = {};
+            Object.entries(prev).forEach(([k, v]) => {
+                const i = Number(k);
+                if (i < index) next[i] = v;
+                else if (i > index) next[i - 1] = v;
+            });
+            return next;
+        });
         setData(
             'officials',
             data.officials.filter((_, i) => i !== index).map((o, i) => ({ ...o, urutan: i + 1 })),
         );
+    };
 
+    // ✅ Cegah submit jika ada error foto client-side
     const submit: FormEventHandler = (ev) => {
         ev.preventDefault();
+        if (Object.keys(fotoErrors).length > 0) {
+            topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return;
+        }
         post(route('admin.profil.update'), { forceFormData: true });
     };
 
@@ -165,7 +216,13 @@ export default function Edit() {
     return (
         <AuthenticatedLayout auth={auth} title="Edit Profil Desa">
             <Head title="Edit Profil Desa" />
-            <div className="space-y-6 px-4 sm:px-0">
+            <style>{`
+                @keyframes flash-shrink {
+                    from { width: 100%; }
+                    to   { width: 0%; }
+                }
+            `}</style>
+            <div ref={topRef} className="space-y-6 px-4 sm:px-0">
                 {/* Header */}
                 <div className="flex items-center gap-3">
                     <div>
@@ -174,21 +231,53 @@ export default function Edit() {
                     </div>
                 </div>
 
-                {/* Flash */}
+                {/* ✅ Flash success — muncul setelah redirect dari update berhasil */}
                 {showFlash && flash?.success && (
-                    <div className="flex items-center justify-between rounded-xl border border-green-200 bg-green-50 px-4 py-3">
-                        <p className="text-sm text-green-700">{flash.success}</p>
-                        <button onClick={() => setShowFlash(false)} className="text-green-500 hover:text-green-700">
-                            ✕
-                        </button>
+                    <div className="overflow-hidden rounded-xl border border-green-200 bg-green-50 shadow-sm">
+                        <div className="flex items-start gap-3 px-4 py-3.5">
+                            <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-green-500">
+                                <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-sm font-medium text-green-800">Berhasil disimpan</p>
+                                <p className="mt-0.5 text-sm text-green-600">{flash.success}</p>
+                            </div>
+                            <button onClick={() => setShowFlash(false)} className="ml-2 flex-shrink-0 text-green-400 hover:text-green-600">
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="h-1 w-full bg-green-100">
+                            <div className="h-1 bg-green-400" style={{ animation: 'flash-shrink 5s linear forwards' }} />
+                        </div>
                     </div>
                 )}
+
+                {/* Flash error */}
                 {showFlash && flash?.error && (
-                    <div className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-                        <p className="text-sm text-red-700">{flash.error}</p>
-                        <button onClick={() => setShowFlash(false)} className="text-red-500 hover:text-red-700">
-                            ✕
-                        </button>
+                    <div className="overflow-hidden rounded-xl border border-red-200 bg-red-50 shadow-sm">
+                        <div className="flex items-start gap-3 px-4 py-3.5">
+                            <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-500">
+                                <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-sm font-medium text-red-800">Gagal menyimpan</p>
+                                <p className="mt-0.5 text-sm text-red-600">{flash.error}</p>
+                            </div>
+                            <button onClick={() => setShowFlash(false)} className="ml-2 flex-shrink-0 text-red-400 hover:text-red-600">
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="h-1 w-full bg-red-100">
+                            <div className="h-1 bg-red-400" style={{ animation: 'flash-shrink 5s linear forwards' }} />
+                        </div>
                     </div>
                 )}
 
@@ -319,7 +408,7 @@ export default function Edit() {
                                         ))}
                                         <div>
                                             <label htmlFor="misi" className="mb-1.5 block text-sm font-medium text-gray-700">
-                                                Misi <span className="font-normal text-gray-400">(satu misi per baris)</span>
+                                                Misi <span className="font-normal text-gray-400"></span>
                                             </label>
                                             <textarea
                                                 id="misi"
@@ -486,11 +575,11 @@ export default function Edit() {
                                 ) : (
                                     data.officials.map((official, index) => {
                                         const imageSrc =
-                                            official.foto instanceof File
-                                                ? URL.createObjectURL(official.foto)
-                                                : typeof official.foto_url === 'string'
-                                                  ? official.foto_url
-                                                  : '';
+                                            official.foto instanceof File ? URL.createObjectURL(official.foto) : official.existing_foto || '';
+
+                                        // ✅ Ambil error foto: bisa dari client-side atau dari server (Inertia)
+                                        const fotoError = fotoErrors[index] || (e as any)[`officials.${index}.foto`] || undefined;
+
                                         return (
                                             <div
                                                 key={index}
@@ -540,12 +629,36 @@ export default function Edit() {
                                                                     className="h-12 w-12 flex-shrink-0 rounded-full border-2 border-orange-200 object-cover"
                                                                 />
                                                             )}
-                                                            <input
-                                                                type="file"
-                                                                accept="image/*"
-                                                                onChange={(ev) => handleOfficialChange(index, 'foto', ev.target.files?.[0] || null)}
-                                                                className="flex-1 text-xs text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-orange-50 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-orange-700 hover:file:bg-orange-100"
-                                                            />
+                                                            {/* ✅ Wrapper div untuk input + teks hint + error */}
+                                                            <div className="flex-1">
+                                                                <input
+                                                                    type="file"
+                                                                    accept="image/jpeg,image/png,image/jpg"
+                                                                    onChange={(ev) => handleFotoChange(index, ev.target.files?.[0] || null)}
+                                                                    className={`w-full text-xs text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-orange-700 hover:file:bg-orange-100 ${
+                                                                        fotoError ? 'file:bg-red-50' : 'file:bg-orange-50'
+                                                                    }`}
+                                                                />
+                                                                {/* ✅ Teks batas ukuran foto */}
+                                                                <p className="mt-1 text-xs text-gray-400">PNG, JPG, JPEG hingga 1MB</p>
+                                                                {/* ✅ Pesan error jika foto terlalu besar */}
+                                                                {fotoError && (
+                                                                    <p className="mt-1 flex items-center gap-1 text-xs font-medium text-red-600">
+                                                                        <svg
+                                                                            className="h-3.5 w-3.5 flex-shrink-0"
+                                                                            fill="currentColor"
+                                                                            viewBox="0 0 20 20"
+                                                                        >
+                                                                            <path
+                                                                                fillRule="evenodd"
+                                                                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                                                                clipRule="evenodd"
+                                                                            />
+                                                                        </svg>
+                                                                        {fotoError}
+                                                                    </p>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -566,7 +679,7 @@ export default function Edit() {
                             </Link>
                             <button
                                 type="submit"
-                                disabled={processing}
+                                disabled={processing || Object.keys(fotoErrors).length > 0}
                                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-6 py-2.5 text-sm font-semibold text-white shadow hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 {processing && (
