@@ -9,21 +9,21 @@ class DynamicTable extends Model
 {
     protected $fillable = [
         'name',
-        'table_name',
-        'description',
         'columns',
         'has_column_total',
         'has_row_total',
+        'has_row_number',
         'charts',
-        'source', 
-        'notes',  
+        'source',
+        'notes',
     ];
 
     protected $casts = [
-        'columns' => 'array',
+        'columns'        => 'array',
         'has_column_total' => 'boolean',
-        'has_row_total' => 'boolean',
-        'charts' => 'array',
+        'has_row_total'  => 'boolean',
+        'has_row_number' => 'boolean',
+        'charts'         => 'array',
     ];
 
     public function tableData(): HasMany

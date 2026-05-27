@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\LayananSetting;
 use App\Models\LayananSubmission;
 use App\Notifications\StatusLayananNotification;
 use Illuminate\Http\Request;
@@ -12,20 +13,19 @@ use Inertia\Inertia;
 
 class LayananController extends Controller
 {
-    /** Folder relatif terhadap public_path() untuk file hasil pengajuan */
     protected string $resultPath = 'dokumen/hasil_pengajuan';
-
-    /** Folder relatif terhadap public_path() untuk file pengajuan */
     protected string $uploadPath = 'dokumen/pengajuan_layanan';
 
     public function index(Request $request)
     {
-        $query = LayananSubmission::with('user')->latest();
+        // Eager-load relasi layanan agar accessor jenis_layanan bisa dipakai
+        $query = LayananSubmission::with(['user', 'layanan'])->latest();
 
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('jenis_layanan', 'like', "%{$search}%")
+                // Cari di nama layanan via relasi
+                $q->whereHas('layanan', fn($lq) => $lq->where('name', 'like', "%{$search}%"))
                   ->orWhereRaw("JSON_EXTRACT(form_data, '$.nik') LIKE ?", ["%{$search}%"])
                   ->orWhereHas('user', function ($uq) use ($search) {
                       $uq->where('name', 'like', "%{$search}%")
@@ -34,8 +34,9 @@ class LayananController extends Controller
             });
         }
 
+        // Filter berdasarkan layanan_id (bukan string jenis_layanan)
         if ($request->filled('jenis_layanan')) {
-            $query->where('jenis_layanan', $request->jenis_layanan);
+            $query->where('layanan_id', $request->jenis_layanan);
         }
 
         if ($request->filled('status')) {
@@ -47,8 +48,10 @@ class LayananController extends Controller
         $layanan->through(function ($item) {
             return [
                 'id'             => $item->id,
+                'layanan_id'     => $item->layanan_id,
                 'nama_pemohon'   => $item->user?->name ?? '-',
                 'email_pemohon'  => $item->user?->email ?? '-',
+                // Accessor — tetap bisa dipakai di frontend sebagai jenis_layanan
                 'jenis_layanan'  => $item->jenis_layanan,
                 'form_data'      => $item->form_data,
                 'uploaded_files' => $item->uploaded_files,
@@ -64,17 +67,17 @@ class LayananController extends Controller
             ];
         });
 
-        $jenisLayananList = LayananSubmission::select('jenis_layanan')
-            ->distinct()
-            ->orderBy('jenis_layanan')
-            ->pluck('jenis_layanan');
+        // Kirim daftar layanan untuk dropdown filter (id + name)
+        $jenisLayananList = LayananSetting::orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn($l) => ['id' => $l->id, 'name' => $l->name]);
 
         return Inertia::render('Admin/Layanan/Index', [
             'layanan'          => $layanan,
             'jenisLayananList' => $jenisLayananList,
             'filters'          => [
                 'search'        => $request->search,
-                'jenis_layanan' => $request->jenis_layanan,
+                'jenis_layanan' => $request->jenis_layanan,  // sekarang berisi layanan_id
                 'status'        => $request->status,
             ],
             'flash' => [
@@ -90,7 +93,6 @@ class LayananController extends Controller
             $validated = $request->validate([
                 'status'         => 'required|in:pending,diproses,selesai,ditolak',
                 'catatan_admin'  => 'nullable|string|max:1000',
-                // Hasil layanan — hanya file, maksimal 1 MB per file
                 'result_files'   => 'nullable|array',
                 'result_files.*' => 'file|mimes:jpg,jpeg,png,gif,pdf,doc,docx|max:1024',
             ], [
@@ -115,7 +117,6 @@ class LayananController extends Controller
                 'catatan_admin' => $validated['catatan_admin'] ?? $layanan->catatan_admin,
             ];
 
-            // ── Upload file hasil layanan ke dokumen/hasil_pengajuan ────────
             if ($validated['status'] === 'selesai' && $request->hasFile('result_files')) {
                 $resultDir = public_path($this->resultPath);
                 if (!File::exists($resultDir)) {
@@ -129,14 +130,12 @@ class LayananController extends Controller
                     $uploadedResultFiles[] = $this->resultPath . '/' . $namaFile;
                 }
 
-                // Gabungkan dengan file hasil lama jika sudah ada
                 $existing = $layanan->result_files ?? [];
                 $updateData['result_files'] = array_merge($existing, $uploadedResultFiles);
             }
 
             $layanan->update($updateData);
 
-            // Kirim notifikasi
             if ($validated['status'] !== 'pending' && $layanan->user) {
                 try {
                     $layanan->user->notify(new StatusLayananNotification($layanan));
@@ -158,37 +157,27 @@ class LayananController extends Controller
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return back()->withErrors($e->errors())->with('error', 'Gagal menyimpan: ' . collect($e->errors())->flatten()->first());
-
         } catch (\Exception $e) {
             \Log::error('Error updating layanan status: ' . $e->getMessage(), [
                 'layanan_id' => $layanan->id,
                 'trace'      => $e->getTraceAsString(),
             ]);
-
             return back()->with('error', 'Terjadi kesalahan saat mengubah status permohonan. Silakan coba lagi.');
         }
     }
 
-    /**
-     * Hapus satu file hasil layanan dari dokumen/hasil_pengajuan
-     */
     public function deleteResultFile(Request $request, LayananSubmission $layanan)
     {
         try {
-            $validated = $request->validate([
-                'file_path' => 'required|string',
-            ]);
+            $validated = $request->validate(['file_path' => 'required|string']);
 
             $files = $layanan->result_files ?? [];
             $files = array_values(array_filter($files, fn($f) => $f !== $validated['file_path']));
 
             $absolutePath = public_path($validated['file_path']);
-            if (File::exists($absolutePath)) {
-                File::delete($absolutePath);
-            }
+            if (File::exists($absolutePath)) File::delete($absolutePath);
 
             $layanan->update(['result_files' => $files]);
-
             return back()->with('success', 'File berhasil dihapus.');
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal menghapus file.');
@@ -198,10 +187,9 @@ class LayananController extends Controller
     public function destroy(LayananSubmission $layanan)
     {
         try {
-            $jenisLayanan = $layanan->jenis_layanan;
+            $jenisLayanan = $layanan->jenis_layanan; // accessor
             $namaPemohon  = $layanan->user?->name ?? 'Pemohon';
 
-            // ── Hapus file pengajuan dari dokumen/pengajuan_layanan ─────────
             if (!empty($layanan->uploaded_files)) {
                 foreach ($layanan->uploaded_files as $filePath) {
                     if (is_array($filePath)) {
@@ -216,7 +204,6 @@ class LayananController extends Controller
                 }
             }
 
-            // ── Hapus file hasil dari dokumen/hasil_pengajuan ───────────────
             if (!empty($layanan->result_files)) {
                 foreach ($layanan->result_files as $filePath) {
                     $abs = public_path($filePath);
@@ -225,13 +212,10 @@ class LayananController extends Controller
             }
 
             $layanan->delete();
-
             return redirect()->route('admin.layanan.index')
                 ->with('success', "Permohonan '{$jenisLayanan}' dari '{$namaPemohon}' berhasil dihapus.");
-
         } catch (\Exception $e) {
             \Log::error('Error deleting layanan: ' . $e->getMessage());
-
             return redirect()->route('admin.layanan.index')
                 ->with('error', 'Terjadi kesalahan saat menghapus permohonan: ' . $e->getMessage());
         }

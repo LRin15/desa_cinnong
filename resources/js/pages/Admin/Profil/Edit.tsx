@@ -16,7 +16,6 @@ interface Official {
     jabatan: string;
     foto: File | null;
     existing_foto: string;
-    urutan: number;
 }
 
 interface EditProfilProps {
@@ -86,7 +85,6 @@ export default function Edit() {
     const [showFlash, setShowFlash] = useState(true);
     const topRef = useRef<HTMLDivElement>(null);
 
-    // ✅ State untuk error validasi foto aparatur di sisi client
     const [fotoErrors, setFotoErrors] = useState<Record<number, string>>({});
 
     useEffect(() => {
@@ -132,7 +130,6 @@ export default function Edit() {
             jabatan: o.jabatan,
             foto: null as File | null,
             existing_foto: (o as any).foto || '',
-            urutan: o.urutan,
         })),
     });
 
@@ -145,7 +142,6 @@ export default function Edit() {
         setData('officials', updated);
     };
 
-    // ✅ Handler khusus untuk foto aparatur dengan validasi ukuran client-side
     const handleFotoChange = (index: number, file: File | null) => {
         const MAX_SIZE = 1024 * 1024; // 1 MB
         if (file && file.size > MAX_SIZE) {
@@ -153,11 +149,9 @@ export default function Edit() {
                 ...prev,
                 [index]: `Ukuran foto terlalu besar (${(file.size / 1024).toFixed(0)} KB). Maksimal 1MB.`,
             }));
-            // Reset file input agar tidak terkirim
             handleOfficialChange(index, 'foto', null);
             return;
         }
-        // Hapus error jika file valid atau dihapus
         setFotoErrors((prev) => {
             const next = { ...prev };
             delete next[index];
@@ -175,12 +169,10 @@ export default function Edit() {
                 jabatan: '',
                 foto: null,
                 existing_foto: '',
-                urutan: data.officials.length + 1,
             },
         ]);
 
     const removeOfficial = (index: number) => {
-        // Hapus error foto untuk index yang dihapus dan re-index sisanya
         setFotoErrors((prev) => {
             const next: Record<number, string> = {};
             Object.entries(prev).forEach(([k, v]) => {
@@ -192,11 +184,10 @@ export default function Edit() {
         });
         setData(
             'officials',
-            data.officials.filter((_, i) => i !== index).map((o, i) => ({ ...o, urutan: i + 1 })),
+            data.officials.filter((_, i) => i !== index),
         );
     };
 
-    // ✅ Cegah submit jika ada error foto client-side
     const submit: FormEventHandler = (ev) => {
         ev.preventDefault();
         if (Object.keys(fotoErrors).length > 0) {
@@ -231,7 +222,7 @@ export default function Edit() {
                     </div>
                 </div>
 
-                {/* ✅ Flash success — muncul setelah redirect dari update berhasil */}
+                {/* Flash success */}
                 {showFlash && flash?.success && (
                     <div className="overflow-hidden rounded-xl border border-green-200 bg-green-50 shadow-sm">
                         <div className="flex items-start gap-3 px-4 py-3.5">
@@ -408,7 +399,7 @@ export default function Edit() {
                                         ))}
                                         <div>
                                             <label htmlFor="misi" className="mb-1.5 block text-sm font-medium text-gray-700">
-                                                Misi <span className="font-normal text-gray-400"></span>
+                                                Misi
                                             </label>
                                             <textarea
                                                 id="misi"
@@ -577,7 +568,6 @@ export default function Edit() {
                                         const imageSrc =
                                             official.foto instanceof File ? URL.createObjectURL(official.foto) : official.existing_foto || '';
 
-                                        // ✅ Ambil error foto: bisa dari client-side atau dari server (Inertia)
                                         const fotoError = fotoErrors[index] || (e as any)[`officials.${index}.foto`] || undefined;
 
                                         return (
@@ -629,7 +619,6 @@ export default function Edit() {
                                                                     className="h-12 w-12 flex-shrink-0 rounded-full border-2 border-orange-200 object-cover"
                                                                 />
                                                             )}
-                                                            {/* ✅ Wrapper div untuk input + teks hint + error */}
                                                             <div className="flex-1">
                                                                 <input
                                                                     type="file"
@@ -639,9 +628,7 @@ export default function Edit() {
                                                                         fotoError ? 'file:bg-red-50' : 'file:bg-orange-50'
                                                                     }`}
                                                                 />
-                                                                {/* ✅ Teks batas ukuran foto */}
                                                                 <p className="mt-1 text-xs text-gray-400">PNG, JPG, JPEG hingga 1MB</p>
-                                                                {/* ✅ Pesan error jika foto terlalu besar */}
                                                                 {fotoError && (
                                                                     <p className="mt-1 flex items-center gap-1 text-xs font-medium text-red-600">
                                                                         <svg

@@ -173,7 +173,6 @@ return [
         'nama_lengkap'          => 'nama lengkap',
         'jenis_kelamin'         => 'jenis kelamin',
         'tanggal_lahir'         => 'tanggal lahir',
-        'usia'                  => 'usia',
         'alamat'                => 'alamat',
         'rt'                    => 'RT',
         'rw'                    => 'RW',

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 02 Apr 2026 pada 08.00
+-- Waktu pembuatan: 17 Apr 2026 pada 04.33
 -- Versi server: 10.4.32-MariaDB
 -- Versi PHP: 8.2.12
 
@@ -45,10 +45,9 @@ CREATE TABLE `berita` (
 --
 
 INSERT INTO `berita` (`id`, `judul`, `slug`, `kategori`, `kutipan`, `isi`, `gambar`, `tanggal_terbit`, `created_at`, `updated_at`) VALUES
-(1, 'Penyerahan Piagam Pencanangan Desa Cinta Statistik ( Desa Cantik )', 'penyerahan-piagam-pencanangan-desa-cinta-statistik-desa-cantik', 'Informasi', 'Penyerahan Piagam Pencanangan Desa Cinta Statistik ( Desa Cantik )', 'Penyerahan piagam pencanangan Kepada Desa Cinnong sebagai Desa Cinta Statistik ( Desa Cantik ). yang diserahkan langsung oleh bapak Kepala Badan Pusat Statistik ( BPS ) , Bapak H.Abdi Amin, SE.,M.M.', '1774930970_5f5LZdDGgP.jpg', '2025-10-07 16:00:00', '2026-03-30 19:52:42', '2026-03-30 20:22:50'),
-(2, 'Juara 1 Lomba Yel-Yel Antar Desa Se Kecamatan Sibulue Dalam Rangka Perayaan Ulang Tahun RI Yang Ke-80', 'juara-1-lomba-yel-yel-antar-desa-se-kecamatan-sibulue-dalam-rangka-perayaan-ulang-tahun-ri-yang-ke-80', 'Kegiatan Warga', 'Juara 1 Lomba Yel-Yel Antar Desa Se Kecamatan Sibulue Dalam Rangka Perayaan Ulang Tahun RI Yang Ke-80', 'Juara 1 Lomba Yel-Yel Antar Desa Se Kecamatan Sibulue Dalam Rangka Perayaan Ulang Tahun RI Yang Ke-80', '1774931083_M52FyH8PKW.jpeg', '2025-09-11 16:00:00', '2026-03-30 19:52:42', '2026-03-30 20:24:43'),
-(3, 'WORLD CLEANUP DAY 2025', 'world-cleanup-day-2025', 'Kegiatan Warga', 'Mari bersama wujudkan Bone Bersih, Indonesia Bersih !', 'Pada hari Sabtu 20 September 2025, Perangkat Desa bersama Warga Desa Cinnong dan para siswa/siswi SMAN 12 Bone ikut berpartisipasi dalam acara WORLD CLEANUP DAY 2025. Kegiatan yang dilakukan diantaranyaKerja bakti & Aksi bersih lingkungan , Pemilahan sampah (organik,anorganik,residu), Dan Edukasi & kampanye bijak kelola sampah.', '1774931030_PlERoX0GcK.jpg', '2025-09-19 16:00:00', '2026-03-30 19:52:42', '2026-03-30 20:23:50'),
-(4, '🏆 Tim 79 Cell Desa Cinnong Juara Turnamen AR. TB Toddopuli Mini Soccer Cup I', 'tim-79-cell-desa-cinnong-juara-turnamen-ar-tb-toddopuli-mini-soccer-cup-i', 'Kegiatan Warga', 'Tim 79 Cell Desa Cinnong menjuarai AR. TB Toddopuli Cup I usai mengalahkan Underdog 2-1 pada final di Bone (16/8/2025), turnamen 64 tim ini turut memeriahkan HUT RI ke-80.', 'Turnamen Mini Soccer AR. TB Toddopuli Cup I yang digelar di Lapangan Golf Korem 141 Toddopuli, Kelurahan Bulu Tempe, Kecamatan Tanete Riattang Barat, Kabupaten Bone, berlangsung meriah. Partai grand final yang dilaksanakan pada hari Sabtu, 16 Agustus 2025, mempertemukan Tim 79 Cell Desa Cinnong Kecamatan Sibulue melawan tim Underdog. Pertandingan berjalan sengit dan berakhir dengan kemenangan 79 Cell dengan skor 2-1. Turnamen ini diikuti oleh 64 tim dari berbagai daerah dan berlangsung selama 23 hari, mulai 25 Juli hingga 16 Agustus 2025. Acara ini mendapat dukungan dari Komandan Korem 141/Toddopuli, Brigjen TNI Andre Clif Rumbayan. Pemerintah Kabupaten Bone juga menyampaikan apresiasi atas inisiatif masyarakat dalam menyelenggarakan turnamen ini. Bupati Bone, Dr. H. Andi Asman Sulaiman, bersama Wakil Bupati Bone, Dr. H. Andi Akmal Pasluddin, turut memberikan dukungan penuh terhadap kegiatan positif ini. Kemenangan Tim 79 Cell menjadi kebanggaan tersendiri bagi masyarakat Desa Cinnong, sekaligus menambah semarak peringatan HUT RI ke-80 tahun 2025.', '1774931135_OUADmwXd3K.jpg', '2025-08-15 16:00:00', '2026-03-30 20:25:22', '2026-03-30 20:25:35');
+(1, 'Update Data Kependudukan Kuartal III 2025', 'update-data-kependudukan-kuartal-iii-2025', 'Pengumuman', 'Data kependudukan Desa Cinnong telah diperbarui dengan total 1.868 jiwa tersebar di 4 dusun.', 'Konten lengkap tentang update data kependudukan...', 'images/berita/default.jpg', '2026-04-13 19:32:36', '2026-04-16 19:32:36', '2026-04-16 19:32:36'),
+(2, 'Program Bantuan UMKM Resmi Dibuka', 'program-bantuan-umkm-resmi-dibuka', 'Program Desa', 'Pemerintah desa meluncurkan program bantuan modal usaha untuk UMKM terdaftar di Desa Cinnong.', 'Konten lengkap tentang program bantuan UMKM...', 'images/berita/default.jpg', '2026-04-08 19:32:36', '2026-04-16 19:32:36', '2026-04-16 19:32:36'),
+(3, 'Gotong Royong Membersihkan Saluran Irigasi', 'gotong-royong-membersihkan-saluran-irigasi', 'Kegiatan Warga', 'Warga Dusun I dan II melaksanakan kegiatan gotong royong untuk membersihkan saluran irigasi utama.', 'Konten lengkap tentang kegiatan gotong royong...', 'images/berita/default.jpg', '2026-04-01 19:32:36', '2026-04-16 19:32:36', '2026-04-16 19:32:36');
 
 -- --------------------------------------------------------
 
@@ -83,14 +82,13 @@ CREATE TABLE `cache_locks` (
 CREATE TABLE `dynamic_tables` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `name` varchar(255) NOT NULL,
-  `table_name` varchar(255) NOT NULL,
-  `description` text DEFAULT NULL,
   `columns` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`columns`)),
   `has_column_total` tinyint(1) NOT NULL DEFAULT 0,
   `has_row_total` tinyint(1) NOT NULL DEFAULT 0,
   `source` varchar(500) DEFAULT NULL,
   `notes` text DEFAULT NULL,
   `charts` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`charts`)),
+  `has_row_number` tinyint(1) NOT NULL DEFAULT 0,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -146,7 +144,8 @@ CREATE TABLE `infografis` (
 --
 
 INSERT INTO `infografis` (`id`, `judul`, `deskripsi`, `gambar`, `tanggal_terbit`, `created_at`, `updated_at`) VALUES
-(2, 'Infografis Penduduk Desa Cinnong Tahun 2025', 'Infografis data kependudukan Desa Cinnong tahun 2025. Jumlah penduduk sebanyak 1.868 jiwa, terdiri dari 898 laki-laki dan 970 perempuan. Tersebar di 4 dusun: Kaddumpia, Jampalenna, Makkawaru, dan Tammarenne.', '1774931231_1LxHBulvwK.png', '2025-08-28', '2026-03-30 19:52:41', '2026-03-30 20:27:11');
+(1, 'Data Kependudukan Desa Cinnong', 'Terdapat sebanyak 4 dusun di Desa Cinnong, yaitu Dusun Kaddumpia, Dusun Makkawaru, Dusun Jampalenna, dan Dusun Tammarenre.', '/images/infografis/infografis-penduduk.png', '2025-08-10', '2026-04-16 19:32:36', '2026-04-16 19:32:36'),
+(2, 'Anggaran Pendapatan dan Belanja Desa (APBDes) 2025', 'Ringkasan alokasi dana desa untuk pembangunan infrastruktur, pemberdayaan masyarakat, dan kegiatan operasional desa.', '/images/infografis/infografis-apbdes.png', '2025-07-22', '2026-04-16 19:32:36', '2026-04-16 19:32:36');
 
 -- --------------------------------------------------------
 
@@ -186,19 +185,51 @@ CREATE TABLE `job_batches` (
 -- --------------------------------------------------------
 
 --
+-- Struktur dari tabel `layanan_settings`
+--
+
+CREATE TABLE `layanan_settings` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `category` enum('kependudukan','umum','pengaduan') NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data untuk tabel `layanan_settings`
+--
+
+INSERT INTO `layanan_settings` (`id`, `name`, `category`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, 'Surat Pengantar KTP', 'kependudukan', 1, '2026-04-16 19:32:36', '2026-04-16 19:32:36'),
+(2, 'Surat Pengantar KK', 'kependudukan', 1, '2026-04-16 19:32:36', '2026-04-16 19:32:36'),
+(3, 'Surat Keterangan Domisili', 'kependudukan', 1, '2026-04-16 19:32:36', '2026-04-16 19:32:36'),
+(4, 'Surat Keterangan Usaha', 'kependudukan', 1, '2026-04-16 19:32:36', '2026-04-16 19:32:36'),
+(5, 'Surat Keterangan Tidak Mampu (SKTM)', 'kependudukan', 1, '2026-04-16 19:32:36', '2026-04-16 19:32:36'),
+(6, 'Surat Keterangan Kelahiran', 'kependudukan', 1, '2026-04-16 19:32:36', '2026-04-16 19:32:36'),
+(7, 'Surat Keterangan Kematian', 'kependudukan', 1, '2026-04-16 19:32:36', '2026-04-16 19:32:36'),
+(8, 'Surat Pengantar Nikah', 'umum', 1, '2026-04-16 19:32:36', '2026-04-16 19:32:36'),
+(9, 'Surat Keterangan Pindah', 'umum', 1, '2026-04-16 19:32:36', '2026-04-16 19:32:36'),
+(10, 'Surat Izin Kegiatan', 'umum', 1, '2026-04-16 19:32:36', '2026-04-16 19:32:36'),
+(11, 'Surat Rekomendasi Desa', 'umum', 1, '2026-04-16 19:32:36', '2026-04-16 19:32:36'),
+(12, 'Pengaduan & Aspirasi Masyarakat', 'pengaduan', 1, '2026-04-16 19:32:36', '2026-04-16 19:32:36');
+
+-- --------------------------------------------------------
+
+--
 -- Struktur dari tabel `layanan_submissions`
 --
 
 CREATE TABLE `layanan_submissions` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `user_id` bigint(20) UNSIGNED NOT NULL,
-  `jenis_layanan` varchar(255) NOT NULL,
+  `layanan_id` bigint(20) UNSIGNED NOT NULL,
   `form_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`form_data`)),
   `uploaded_files` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`uploaded_files`)),
   `status` enum('pending','diproses','selesai','ditolak') NOT NULL DEFAULT 'pending',
   `catatan_admin` text DEFAULT NULL,
   `result_files` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`result_files`)),
-  `result_link` varchar(1000) DEFAULT NULL,
   `rating` tinyint(3) UNSIGNED DEFAULT NULL,
   `feedback` text DEFAULT NULL,
   `rated_at` timestamp NULL DEFAULT NULL,
@@ -233,14 +264,14 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (8, '2025_10_17_123754_create_village_officials_table', 1),
 (9, '2025_12_08_113630_create_dynamic_tables', 1),
 (10, '2025_12_30_013154_add_total_fields_to_dynamic_tables_table', 1),
-(11, '2026_01_08_093826_create_layanan_submissions_table', 1),
-(12, '2026_01_10_055401_add_charts_to_dynamic_tables_table', 1),
-(13, '2026_01_12_075318_add_layanan_settings_to_settings_table', 1),
-(14, '2026_02_12_011905_add_role_to_users_table', 1),
-(15, '2026_03_07_050817_create_user_profiles_table', 1),
-(16, '2026_03_18_014202_create_notifications_table', 1),
-(17, '2026_03_27_233333_add_source_notes_to_dynamic_tables_table', 1),
-(18, '2026_03_28_000823_add_result_and_rating_to_layanan_submissions_table', 1);
+(11, '2026_01_10_055401_add_charts_to_dynamic_tables_table', 1),
+(12, '2026_02_12_011905_add_role_to_users_table', 1),
+(13, '2026_03_07_050817_create_user_profiles_table', 1),
+(14, '2026_03_18_014202_create_notifications_table', 1),
+(15, '2026_03_27_233333_add_source_notes_to_dynamic_tables_table', 1),
+(16, '2026_04_11_114557_create_layanan_settings_table', 1),
+(17, '2026_04_11_114558_create_layanan_submissions_table', 1),
+(18, '2026_04_11_114608_seed_layanan_settings_table', 1);
 
 -- --------------------------------------------------------
 
@@ -295,8 +326,11 @@ CREATE TABLE `publikasi` (
 --
 
 INSERT INTO `publikasi` (`id`, `judul`, `deskripsi`, `tanggal_publikasi`, `nama_file`, `nama_asli_file`, `tipe_file`, `ukuran_file`, `created_at`, `updated_at`) VALUES
-(4, 'Desa Cinnong Dalam Angka 2025', 'Publikasi Desa Cinnong Dalam Angka 2025 menyajikan data geografis, pemerintahan, kependudukan, pendidikan, perumahan, dan sosial sebagai rujukan perencanaan pembangunan desa.', '2025-09-15', '1774943932_ivosB7MwSr.pdf', 'Desa Cinnong Dalam Angka 2025 (2).pdf', 'pdf', 561864, '2026-03-30 19:52:42', '2026-03-30 23:58:52'),
-(6, 'Potensi Desa 2024', 'Publikasi Potensi Desa 2024 menyajikan informasi menyeluruh mengenai potensi sumber daya alam, manusia, ekonomi, serta infrastruktur desa. Data ini diharapkan menjadi acuan dalam perencanaan pembangunan, pemberdayaan masyarakat, dan pemanfaatan potensi lokal secara berkelanjutan', '2025-09-15', '1774931710_WHU4YqJwqh.pdf', 'Potensi Desa.pdf', 'pdf', 393298, '2026-03-30 20:35:10', '2026-03-31 00:09:13');
+(1, 'Laporan Keuangan Desa Tahun 2024', 'Laporan lengkap keuangan dan anggaran Desa Cinnong untuk tahun anggaran 2024, termasuk realisasi APBDes dan pertanggungjawaban keuangan.', '2025-01-15', 'laporan_keuangan_2024.pdf', 'Laporan Keuangan Desa Cinnong 2024.pdf', 'pdf', 2560000, '2026-04-16 19:32:36', '2026-04-16 19:32:36'),
+(2, 'Data Kependudukan dan Statistik Desa 2024', 'Data lengkap kependudukan Desa Cinnong tahun 2024, termasuk demografi, tingkat pendidikan, dan mata pencaharian penduduk.', '2025-01-10', 'data_penduduk_2024.xlsx', 'Data Kependudukan Desa Cinnong 2024.xlsx', 'xlsx', 1843200, '2026-04-16 19:32:36', '2026-04-16 19:32:36'),
+(3, 'Peraturan Desa Nomor 1 Tahun 2024', 'Peraturan Desa tentang Tata Tertib Keamanan dan Ketertiban Lingkungan di Wilayah Desa Cinnong.', '2025-01-05', 'perdes_01_2024.docx', 'Peraturan Desa No 1 Tahun 2024.docx', 'docx', 870400, '2026-04-16 19:32:36', '2026-04-16 19:32:36'),
+(4, 'Rencana Pembangunan Jangka Menengah Desa 2024-2030', 'Dokumen perencanaan pembangunan jangka menengah Desa Cinnong periode 2024-2030 yang memuat visi, misi, dan program prioritas.', '2024-12-28', 'rpjm_desa_2024_2030.pdf', 'RPJM Desa Cinnong 2024-2030.pdf', 'pdf', 4194304, '2026-04-16 19:32:36', '2026-04-16 19:32:36'),
+(5, 'Profil Potensi Ekonomi Desa 2024', 'Dokumen yang berisi informasi lengkap tentang potensi ekonomi, UMKM, dan peluang investasi di Desa Cinnong.', '2024-12-20', 'profil_ekonomi_desa_2024.pdf', 'Profil Potensi Ekonomi Desa Cinnong 2024.pdf', 'pdf', 3145728, '2026-04-16 19:32:36', '2026-04-16 19:32:36');
 
 -- --------------------------------------------------------
 
@@ -313,14 +347,6 @@ CREATE TABLE `sessions` (
   `last_activity` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Dumping data untuk tabel `sessions`
---
-
-INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('3TwhyPexhwoFSTLCWnrMwE5FHKLo1znFSKnfI31M', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiSEhGamtXSWk4cUR6aUo0bFVrRG45YnVjZlVmQlZZOGFHbjdnclhYSSI7czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6NDQ6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hZG1pbi9wcm9maWwtZGVzYS9lZGl0Ijt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MTp7aTowO3M6NToiZXJyb3IiO31zOjM6Im5ldyI7YTowOnt9fXM6NToiZXJyb3IiO3M6MzA6IlNpbGFrYW4gbWFzdWsgdGVybGViaWggZGFodWx1LiI7fQ==', 1775109205),
-('J7IhwNJFG9wVVxA0j0R6lXkD3kFQgFzcTJiRWmA2', 2, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiVUpMdUNYcDl3cnc0RWR1aGQ1ck93TnNNOUk1ZG5hNWJORGgxT2FZRCI7czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9ub3RpZmljYXRpb25zIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6Mjt9', 1775109469);
-
 -- --------------------------------------------------------
 
 --
@@ -334,43 +360,6 @@ CREATE TABLE `settings` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data untuk tabel `settings`
---
-
-INSERT INTO `settings` (`id`, `key`, `value`, `created_at`, `updated_at`) VALUES
-(1, 'layanan_ktp', '{\"name\":\"Surat Pengantar KTP\",\"is_active\":true,\"category\":\"kependudukan\"}', '2026-03-30 19:52:38', '2026-03-30 19:52:38'),
-(2, 'layanan_kk', '{\"name\":\"Surat Pengantar KK\",\"is_active\":true,\"category\":\"kependudukan\"}', '2026-03-30 19:52:38', '2026-03-30 19:52:38'),
-(3, 'layanan_domisili', '{\"name\":\"Surat Keterangan Domisili\",\"is_active\":true,\"category\":\"kependudukan\"}', '2026-03-30 19:52:38', '2026-03-30 19:52:38'),
-(4, 'layanan_usaha', '{\"name\":\"Surat Keterangan Usaha\",\"is_active\":true,\"category\":\"kependudukan\"}', '2026-03-30 19:52:38', '2026-03-30 19:52:38'),
-(5, 'layanan_sktm', '{\"name\":\"Surat Keterangan Tidak Mampu (SKTM)\",\"is_active\":true,\"category\":\"kependudukan\"}', '2026-03-30 19:52:38', '2026-03-30 19:52:38'),
-(6, 'layanan_kelahiran', '{\"name\":\"Surat Keterangan Kelahiran\",\"is_active\":true,\"category\":\"kependudukan\"}', '2026-03-30 19:52:38', '2026-03-30 19:52:38'),
-(7, 'layanan_kematian', '{\"name\":\"Surat Keterangan Kematian\",\"is_active\":true,\"category\":\"kependudukan\"}', '2026-03-30 19:52:38', '2026-03-30 19:52:38'),
-(8, 'layanan_nikah', '{\"name\":\"Surat Pengantar Nikah\",\"is_active\":true,\"category\":\"umum\"}', '2026-03-30 19:52:38', '2026-03-30 19:52:38'),
-(9, 'layanan_pindah', '{\"name\":\"Surat Keterangan Pindah\",\"is_active\":true,\"category\":\"umum\"}', '2026-03-30 19:52:38', '2026-03-30 19:52:38'),
-(10, 'layanan_izin_kegiatan', '{\"name\":\"Surat Izin Kegiatan\",\"is_active\":true,\"category\":\"umum\"}', '2026-03-30 19:52:38', '2026-03-30 19:52:38'),
-(11, 'layanan_rekomendasi', '{\"name\":\"Surat Rekomendasi Desa\",\"is_active\":true,\"category\":\"umum\"}', '2026-03-30 19:52:38', '2026-03-30 19:52:38'),
-(12, 'layanan_pengaduan_aspirasi', '{\"name\":\"Pengaduan & Aspirasi Masyarakat\",\"is_active\":true,\"category\":\"pengaduan\"}', '2026-03-30 19:52:38', '2026-03-30 19:52:38'),
-(13, 'stat1_label', 'Total Penduduk', '2026-03-30 20:20:17', '2026-03-30 20:20:17'),
-(14, 'stat2_label', 'Jumlah Dusun', '2026-03-30 20:20:17', '2026-03-30 20:20:17'),
-(15, 'stat3_label', 'Sekolah', '2026-03-30 20:20:17', '2026-03-30 20:20:17'),
-(16, 'data_terakhir', '2025', '2026-03-30 20:20:17', '2026-03-30 20:43:36'),
-(17, 'nama_desa', 'Desa Cinnong', '2026-03-30 20:20:17', '2026-03-30 20:20:17'),
-(18, 'jumlah_rt', '8', '2026-03-30 20:43:36', '2026-03-30 20:43:36'),
-(19, 'luas', '16.29', '2026-03-30 20:43:36', '2026-03-30 20:43:36'),
-(20, 'email', 'Cinnongsib@gmail.com', '2026-03-30 20:43:36', '2026-03-30 20:43:36'),
-(21, 'sejarah', 'Sejarah kepemimpinan Desa Cinnong dapat dimulai dari tahun 70-an sampai tahun 1994 dibawah Pemerintahan Asapah. Pada tahun yang sama pucuk kepemimpinan diambil alih oleh H. Muh. Anshar sebagai Kepala Desa Cinnong sampai tahun 2010.\r\n\r\nPada tahun 2010 diadakan Pemilihan Kepala Desa tongkat estafet kepemimpinan berpindah kepada Irfan, S.Kom selaku Kepala Desa Cinnong sampai pada tahun 2016 dan kembali memimpin desa Cinnong setelah terpilih kedua kalinya pada Pemilihan serentak Kepala Desa tahap II untuk memimpin Desa Cinnong sampai pada tahun 2022, yang kemudian kembali memimpin setelah terpilih yang ketiga kalinya pada Pemilihan kepala desa serentak gel. II untuk memimpin desa Cinnong Periode 2023-2030.', '2026-03-30 20:43:36', '2026-03-30 20:44:41'),
-(22, 'visi', 'MENINGKATKAN MUTU KESEJAHTERAAN MASYARAKAT DESA CINNONG UNTUK MENCAPAI TARAF KEHIDUPAN YANG LEBIH BAIK DAN LAYAK SEHINGGA MENJADI DESA YANG MAJU DAN MANDIRI', '2026-03-30 20:43:36', '2026-03-30 20:43:36'),
-(23, 'misi', '1. Meningkatkan Profesionalisme Pelayanan Publik\r\n2. Meningkatkan Pengelolaan Jalan desa, Jalan Dusun, Sarana Hunian Pemukiman yang Layak Huni, Peningkatan Sarana Air Bersih, Saluran Air Pertanian, Sarana Keagamaan, Pendidikan dan Kesehatan serta Infrastruktur lainnya\r\n3. Meningkatkan Sarana Kesehatan, Kebersihan desa serta mengusahakan Jaminan Kesehatan Masyarakat melalui program pemerintah\r\n4. Meningkatkan kesejahteraan masyarakat desa dengan mewujudkan Badan Usaha Milik Desa (BUMDes) dan program lain untuk membuka lapangan kerja bagi masyarakat desa, serta meningkatkan produksi rumah tangga kecil\r\n5. Memberdayakan lembaga yang ada dan mengoptimalkan kegiatan pemuda dan olah raga guna menekan tingkat kenakalan remaja', '2026-03-30 20:43:36', '2026-04-01 21:57:42'),
-(24, 'stat1_value', '1.868', '2026-03-30 20:43:36', '2026-03-30 20:43:36'),
-(25, 'stat2_value', '4', '2026-03-30 20:43:36', '2026-03-30 20:43:36'),
-(26, 'stat3_value', '6', '2026-03-30 20:43:36', '2026-03-30 20:43:36'),
-(27, 'kecamatan', 'Sibulue', '2026-03-30 20:43:36', '2026-03-30 20:43:36'),
-(28, 'kabupaten', 'Bone', '2026-03-30 20:43:36', '2026-03-30 20:43:36'),
-(29, 'provinsi', 'Sulawesi Selatan', '2026-03-30 20:43:36', '2026-03-30 20:43:36'),
-(30, 'gambar_peta', '/storage/profil/Aha5gj2zXPH5hyamG2nZ5T8U2Z8trEjEMfLIBRMk.png', '2026-03-30 21:01:47', '2026-03-31 00:11:24'),
-(31, 'gambar_tim', '/storage/profil/kmX6NO2NwJSLZT1GsJoFPO1YYF4sWxLLs50g0NYC.png', '2026-03-30 21:03:36', '2026-03-30 21:03:36');
 
 -- --------------------------------------------------------
 
@@ -395,8 +384,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `email`, `role`, `email_verified_at`, `password`, `remember_token`, `created_at`, `updated_at`) VALUES
-(1, 'Admin BPS', 'adminbps@email.com', 'admin_bps', '2026-03-30 19:52:57', '$2y$12$/1EIT5OZ9F1giL2J538xN.ebwXGTMdM8nYv7FFKABxrPCWIALSyse', 'Zcn8o97Yo0', '2026-03-30 19:52:59', '2026-03-30 19:52:59'),
-(2, 'Desa Cinnong', 'Cinnongsib@gmail.com', 'admin_desa', NULL, '$2y$12$g87ij/MC4kK2Y70rafng1esv9i0pWNJjwk1l5ezabdLxDQmkCBRly', NULL, '2026-03-30 20:09:54', '2026-03-30 20:09:54');
+(1, 'Admin BPS', 'adminbps@email.com', 'admin_bps', '2026-04-16 19:32:38', '$2y$12$BpqPiSNP5i9jk0x5rV18TupJQiX38MdTLMlMiq3KNllp3414WVnX6', 'pKKPAMK6Pa', '2026-04-16 19:32:38', '2026-04-16 19:32:38');
 
 -- --------------------------------------------------------
 
@@ -410,10 +398,7 @@ CREATE TABLE `user_profiles` (
   `nama_lengkap` varchar(255) DEFAULT NULL,
   `jenis_kelamin` enum('Laki-laki','Perempuan') DEFAULT NULL,
   `tanggal_lahir` date DEFAULT NULL,
-  `usia` tinyint(3) UNSIGNED DEFAULT NULL,
   `alamat` text DEFAULT NULL,
-  `rt` varchar(3) DEFAULT NULL,
-  `rw` varchar(3) DEFAULT NULL,
   `no_telepon` varchar(20) DEFAULT NULL,
   `pekerjaan` varchar(255) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -431,17 +416,9 @@ CREATE TABLE `village_officials` (
   `nama` varchar(255) NOT NULL,
   `jabatan` varchar(255) NOT NULL,
   `foto` varchar(255) DEFAULT NULL,
-  `urutan` int(11) NOT NULL DEFAULT 0,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data untuk tabel `village_officials`
---
-
-INSERT INTO `village_officials` (`id`, `nama`, `jabatan`, `foto`, `urutan`, `created_at`, `updated_at`) VALUES
-(1, 'IRFAN, S.Kom', 'Kepala Desa', '/storage/officials/a51YCNE3GoN3xWWvdRVl5YnO0Iem0c0AZa40cvxn.png', 1, '2026-03-30 21:03:36', '2026-04-01 21:57:42');
 
 --
 -- Indexes for dumped tables
@@ -470,8 +447,7 @@ ALTER TABLE `cache_locks`
 -- Indeks untuk tabel `dynamic_tables`
 --
 ALTER TABLE `dynamic_tables`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `dynamic_tables_table_name_unique` (`table_name`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indeks untuk tabel `dynamic_table_data`
@@ -507,12 +483,18 @@ ALTER TABLE `job_batches`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indeks untuk tabel `layanan_settings`
+--
+ALTER TABLE `layanan_settings`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indeks untuk tabel `layanan_submissions`
 --
 ALTER TABLE `layanan_submissions`
   ADD PRIMARY KEY (`id`),
   ADD KEY `layanan_submissions_user_id_index` (`user_id`),
-  ADD KEY `layanan_submissions_jenis_layanan_index` (`jenis_layanan`),
+  ADD KEY `layanan_submissions_layanan_id_index` (`layanan_id`),
   ADD KEY `layanan_submissions_status_index` (`status`),
   ADD KEY `layanan_submissions_created_at_index` (`created_at`);
 
@@ -584,7 +566,7 @@ ALTER TABLE `village_officials`
 -- AUTO_INCREMENT untuk tabel `berita`
 --
 ALTER TABLE `berita`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT untuk tabel `dynamic_tables`
@@ -617,6 +599,12 @@ ALTER TABLE `jobs`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT untuk tabel `layanan_settings`
+--
+ALTER TABLE `layanan_settings`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+
+--
 -- AUTO_INCREMENT untuk tabel `layanan_submissions`
 --
 ALTER TABLE `layanan_submissions`
@@ -632,19 +620,19 @@ ALTER TABLE `migrations`
 -- AUTO_INCREMENT untuk tabel `publikasi`
 --
 ALTER TABLE `publikasi`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT untuk tabel `settings`
 --
 ALTER TABLE `settings`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT untuk tabel `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT untuk tabel `user_profiles`
@@ -656,7 +644,7 @@ ALTER TABLE `user_profiles`
 -- AUTO_INCREMENT untuk tabel `village_officials`
 --
 ALTER TABLE `village_officials`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- Ketidakleluasaan untuk tabel pelimpahan (Dumped Tables)
@@ -672,6 +660,7 @@ ALTER TABLE `dynamic_table_data`
 -- Ketidakleluasaan untuk tabel `layanan_submissions`
 --
 ALTER TABLE `layanan_submissions`
+  ADD CONSTRAINT `layanan_submissions_layanan_id_foreign` FOREIGN KEY (`layanan_id`) REFERENCES `layanan_settings` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `layanan_submissions_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --

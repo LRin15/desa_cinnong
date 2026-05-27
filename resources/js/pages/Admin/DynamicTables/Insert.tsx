@@ -17,10 +17,10 @@ interface Column {
 interface TableData {
     id: number;
     name: string;
-    description: string | null;
     columns: Column[];
     has_column_total?: boolean;
     has_row_total?: boolean;
+    has_row_number?: boolean;
 }
 
 interface DataRow {
@@ -112,6 +112,8 @@ export default function Insert() {
         );
     }
 
+    const showRowNumber = table.has_row_number ?? false;
+
     const initializeFormData = (columns: Column[], prefix: string = ''): Record<string, any> => {
         const formData: Record<string, any> = {};
         columns.forEach((col) => {
@@ -141,47 +143,35 @@ export default function Insert() {
 
     const unflattenData = (flatData: Record<string, any>): Record<string, any> => {
         const result: Record<string, any> = {};
-
         for (const key in flatData) {
             const keys = key.split('.');
             let current = result;
-
             for (let i = 0; i < keys.length - 1; i++) {
-                if (!current[keys[i]]) {
-                    current[keys[i]] = {};
-                }
+                if (!current[keys[i]]) current[keys[i]] = {};
                 current = current[keys[i]];
             }
-
             current[keys[keys.length - 1]] = flatData[key];
         }
-
         return result;
     };
 
-    // Calculate row total (sum of all number columns in a row)
     const calculateRowTotal = (flatData: Record<string, any>, fields: Array<{ fieldName: string; column: Column }>) => {
         let total = 0;
         fields.forEach((field) => {
             if (field.column.type === 'number') {
                 const value = parseFloat(flatData[field.fieldName] || 0);
-                if (!isNaN(value)) {
-                    total += value;
-                }
+                if (!isNaN(value)) total += value;
             }
         });
         return total;
     };
 
-    // Calculate column total (sum of all rows for a specific column)
     const calculateColumnTotal = (fieldName: string, dataArray: DataRow[]) => {
         let total = 0;
         dataArray.forEach((row) => {
             const flatData = flattenData(row.data);
             const value = parseFloat(flatData[fieldName] || 0);
-            if (!isNaN(value)) {
-                total += value;
-            }
+            if (!isNaN(value)) total += value;
         });
         return total;
     };
@@ -194,45 +184,38 @@ export default function Insert() {
 
     table.columns.forEach((col) => {
         if (col.type === 'group' && col.subColumns) {
-            const groupFields = col.subColumns.map((subCol) => ({
-                fieldName: `${col.name}.${subCol.name}`,
-                displayName: subCol.name,
-                column: subCol,
-            }));
             organizedHeaders.push({
                 type: 'group',
                 name: col.name,
-                fields: groupFields,
+                fields: col.subColumns.map((subCol) => ({
+                    fieldName: `${col.name}.${subCol.name}`,
+                    displayName: subCol.name,
+                    column: subCol,
+                })),
             });
         } else {
             organizedHeaders.push({
                 type: 'regular',
                 name: col.name,
-                fields: [
-                    {
-                        fieldName: col.name,
-                        displayName: col.name,
-                        column: col,
-                    },
-                ],
+                fields: [{ fieldName: col.name, displayName: col.name, column: col }],
             });
         }
     });
 
-    // Get all fields in flat structure
     const allFields = organizedHeaders.flatMap((h) => h.fields);
-
     const dataArray = Array.isArray(tableData?.data) ? tableData.data : [];
 
+    // Total colspan for empty-state cell
+    const totalColspan =
+        organizedHeaders.reduce((total, h) => total + h.fields.length, 0) + (showRowNumber ? 1 : 0) + (table.has_column_total ? 1 : 0) + 1; // aksi
+
     const handleAddNew = () => {
-        const initialData = initializeFormData(table.columns);
-        setEditingData(initialData);
+        setEditingData(initializeFormData(table.columns));
         setEditingRowId('new');
     };
 
     const handleEdit = (row: DataRow) => {
-        const flatData = flattenData(row.data);
-        setEditingData(flatData);
+        setEditingData(flattenData(row.data));
         setEditingRowId(row.id);
     };
 
@@ -243,7 +226,6 @@ export default function Insert() {
 
     const handleSave = () => {
         const nestedData = unflattenData(editingData);
-
         if (editingRowId === 'new') {
             router.post(
                 route('admin.dynamic-tables.insert-data', table.id),
@@ -253,9 +235,7 @@ export default function Insert() {
                         setEditingRowId(null);
                         setEditingData({});
                     },
-                    onError: (errors) => {
-                        console.error('Error saving data:', errors);
-                    },
+                    onError: (errors) => console.error('Error saving data:', errors),
                 },
             );
         } else if (editingRowId) {
@@ -267,9 +247,7 @@ export default function Insert() {
                         setEditingRowId(null);
                         setEditingData({});
                     },
-                    onError: (errors) => {
-                        console.error('Error updating data:', errors);
-                    },
+                    onError: (errors) => console.error('Error updating data:', errors),
                 },
             );
         }
@@ -278,7 +256,6 @@ export default function Insert() {
     const handleDelete = (row: DataRow) => {
         if (window.confirm('Apakah Anda yakin ingin menghapus data ini?')) {
             router.delete(route('admin.dynamic-tables.delete-data', { dynamicTable: table.id, data: row.id }), {
-                onSuccess: () => {},
                 onError: (errors) => {
                     console.error('Error deleting data:', errors);
                     alert('Terjadi kesalahan saat menghapus data. Silakan coba lagi.');
@@ -287,14 +264,10 @@ export default function Insert() {
         }
     };
 
-    const updateFieldValue = (fieldName: string, value: any) => {
-        setEditingData({ ...editingData, [fieldName]: value });
-    };
+    const updateFieldValue = (fieldName: string, value: any) => setEditingData({ ...editingData, [fieldName]: value });
 
     const renderCell = (fieldName: string, column: Column, value: any, isEditing: boolean) => {
-        if (!isEditing) {
-            return <span>{value || '-'}</span>;
-        }
+        if (!isEditing) return <span>{value || '-'}</span>;
 
         const currentValue = editingData[fieldName] || '';
 
@@ -309,7 +282,7 @@ export default function Insert() {
                         required={column.required}
                     />
                 );
-            case 'select':
+            case 'select': {
                 const options = column.options ? column.options.split(',').map((opt) => opt.trim()) : [];
                 return (
                     <select
@@ -326,6 +299,7 @@ export default function Insert() {
                         ))}
                     </select>
                 );
+            }
             case 'date':
                 return (
                     <input
@@ -374,7 +348,7 @@ export default function Insert() {
                         </Link>
                         <div>
                             <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">Isi Data: {table.name}</h1>
-                            <p className="mt-1 text-xs text-gray-500 sm:text-sm">{table.description || 'Tambah dan kelola data tabel'}</p>
+                            <p className="mt-1 text-xs text-gray-500 sm:text-sm">Tambah dan kelola data tabel</p>
                         </div>
                     </div>
 
@@ -409,12 +383,15 @@ export default function Insert() {
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th
-                                        rowSpan={2}
-                                        className="border-r border-gray-200 px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase sm:px-6"
-                                    >
-                                        No
-                                    </th>
+                                    {/* Kolom No. — hanya jika has_row_number aktif */}
+                                    {showRowNumber && (
+                                        <th
+                                            rowSpan={2}
+                                            className="border-r border-gray-200 px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase sm:px-6"
+                                        >
+                                            No
+                                        </th>
+                                    )}
                                     {organizedHeaders.map((header, idx) => (
                                         <th
                                             key={idx}
@@ -458,14 +435,7 @@ export default function Insert() {
                             <tbody className="divide-y divide-gray-200 bg-white">
                                 {dataArray.length === 0 && editingRowId !== 'new' ? (
                                     <tr>
-                                        <td
-                                            colSpan={
-                                                organizedHeaders.reduce((total, h) => total + h.fields.length, 0) +
-                                                2 +
-                                                (table.has_column_total ? 1 : 0)
-                                            }
-                                            className="px-4 py-8 text-center sm:px-6"
-                                        >
+                                        <td colSpan={totalColspan} className="px-4 py-8 text-center sm:px-6">
                                             <p className="text-sm text-gray-500">Belum ada data. Klik tombol "Tambah Data" untuk mulai.</p>
                                         </td>
                                     </tr>
@@ -477,9 +447,12 @@ export default function Insert() {
 
                                         return (
                                             <tr key={row.id} className={isEditing ? 'bg-yellow-50' : 'hover:bg-gray-50'}>
-                                                <td className="border-r border-gray-200 px-4 py-4 text-sm whitespace-nowrap text-gray-900 sm:px-6">
-                                                    {tableData.from ? tableData.from + idx : idx + 1}
-                                                </td>
+                                                {/* No. */}
+                                                {showRowNumber && (
+                                                    <td className="border-r border-gray-200 px-4 py-4 text-sm whitespace-nowrap text-gray-900 sm:px-6">
+                                                        {tableData.from ? tableData.from + idx : idx + 1}
+                                                    </td>
+                                                )}
                                                 {organizedHeaders.map((header, colIdx) =>
                                                     header.fields.map((field, fieldIdx) => (
                                                         <td
@@ -500,7 +473,7 @@ export default function Insert() {
                                                         <div className="flex items-center justify-center gap-2">
                                                             <button
                                                                 onClick={handleSave}
-                                                                className="text-green-600 transition-colors hover:text-green-900"
+                                                                className="text-green-600 hover:text-green-900"
                                                                 type="button"
                                                                 title="Simpan"
                                                             >
@@ -508,7 +481,7 @@ export default function Insert() {
                                                             </button>
                                                             <button
                                                                 onClick={handleCancel}
-                                                                className="text-gray-600 transition-colors hover:text-gray-900"
+                                                                className="text-gray-600 hover:text-gray-900"
                                                                 type="button"
                                                                 title="Batal"
                                                             >
@@ -520,7 +493,7 @@ export default function Insert() {
                                                             <button
                                                                 onClick={() => handleEdit(row)}
                                                                 disabled={editingRowId !== null}
-                                                                className="text-blue-600 transition-colors hover:text-blue-900 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                className="text-blue-600 hover:text-blue-900 disabled:cursor-not-allowed disabled:opacity-50"
                                                                 type="button"
                                                                 title="Edit Data"
                                                             >
@@ -529,7 +502,7 @@ export default function Insert() {
                                                             <button
                                                                 onClick={() => handleDelete(row)}
                                                                 disabled={editingRowId !== null}
-                                                                className="text-red-600 transition-colors hover:text-red-900 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                className="text-red-600 hover:text-red-900 disabled:cursor-not-allowed disabled:opacity-50"
                                                                 type="button"
                                                                 title="Hapus Data"
                                                             >
@@ -542,11 +515,15 @@ export default function Insert() {
                                         );
                                     })
                                 )}
+
+                                {/* Baris input baru */}
                                 {editingRowId === 'new' && (
                                     <tr className="bg-blue-50">
-                                        <td className="border-r border-gray-200 px-4 py-4 text-sm whitespace-nowrap text-gray-900 sm:px-6">
-                                            <span className="font-semibold text-blue-600">Baru</span>
-                                        </td>
+                                        {showRowNumber && (
+                                            <td className="border-r border-gray-200 px-4 py-4 text-sm whitespace-nowrap text-gray-900 sm:px-6">
+                                                <span className="font-semibold text-blue-600">Baru</span>
+                                            </td>
+                                        )}
                                         {organizedHeaders.map((header, colIdx) =>
                                             header.fields.map((field, fieldIdx) => (
                                                 <td key={`${colIdx}-${fieldIdx}`} className="border-r border-gray-200 px-4 py-4 text-sm sm:px-6">
@@ -563,7 +540,7 @@ export default function Insert() {
                                             <div className="flex items-center justify-center gap-2">
                                                 <button
                                                     onClick={handleSave}
-                                                    className="text-green-600 transition-colors hover:text-green-900"
+                                                    className="text-green-600 hover:text-green-900"
                                                     type="button"
                                                     title="Simpan"
                                                 >
@@ -571,7 +548,7 @@ export default function Insert() {
                                                 </button>
                                                 <button
                                                     onClick={handleCancel}
-                                                    className="text-gray-600 transition-colors hover:text-gray-900"
+                                                    className="text-gray-600 hover:text-gray-900"
                                                     type="button"
                                                     title="Batal"
                                                 >
@@ -581,13 +558,17 @@ export default function Insert() {
                                         </td>
                                     </tr>
                                 )}
-                                {/* Row Total */}
+
+                                {/* Baris total */}
                                 {table.has_row_total && dataArray.length > 0 && (
                                     <tr className="bg-blue-50 font-semibold">
+                                        {showRowNumber && (
+                                            <td className="border-r border-gray-200 px-4 py-4 text-center text-sm uppercase sm:px-6">—</td>
+                                        )}
                                         <td className="border-r border-gray-200 px-4 py-4 text-center text-sm uppercase sm:px-6" colSpan={1}>
                                             Total
                                         </td>
-                                        {organizedHeaders.map((header, colIdx) =>
+                                        {organizedHeaders.slice(1).map((header, colIdx) =>
                                             header.fields.map((field, fieldIdx) => (
                                                 <td
                                                     key={`total-${colIdx}-${fieldIdx}`}
@@ -599,6 +580,15 @@ export default function Insert() {
                                                 </td>
                                             )),
                                         )}
+                                        {/* Kolom-kolom yang berasal dari header pertama */}
+                                        {organizedHeaders[0]?.fields.slice(1).map((field, fieldIdx) => (
+                                            <td
+                                                key={`total-first-${fieldIdx}`}
+                                                className="border-r border-gray-200 px-4 py-4 text-center text-sm sm:px-6"
+                                            >
+                                                {field.column.type === 'number' ? calculateColumnTotal(field.fieldName, dataArray).toFixed(2) : '-'}
+                                            </td>
+                                        ))}
                                         {table.has_column_total && (
                                             <td className="border-r border-gray-200 bg-yellow-100 px-4 py-4 text-center text-sm sm:px-6">
                                                 {allFields

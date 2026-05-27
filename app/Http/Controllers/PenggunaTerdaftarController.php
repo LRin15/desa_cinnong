@@ -19,19 +19,18 @@ class PenggunaTerdaftarController extends Controller
     {
         $user = Auth::user()->load('profile');
 
-        $riwayatLayanan = LayananSubmission::where('user_id', $user->id)
+        $riwayatLayanan = LayananSubmission::with('layanan')   // eager-load relasi agar accessor jenis_layanan bisa dipakai
+            ->where('user_id', $user->id)
             ->latest()
             ->get()
             ->map(fn ($item) => [
                 'id'            => $item->id,
+                // Nilai dari accessor getJenisLayananAttribute() — nama layanan via relasi
                 'jenis_layanan' => $item->jenis_layanan,
                 'status'        => $item->status,
                 'status_label'  => $item->status_label,
                 'catatan_admin' => $item->catatan_admin,
-                // Hasil layanan dari admin
                 'result_files'  => $item->result_files ?? [],
-                'result_link'   => $item->result_link,
-                // Penilaian dari pengguna
                 'rating'        => $item->rating,
                 'feedback'      => $item->feedback,
                 'rated_at'      => $item->rated_at?->format('d M Y, H:i'),
@@ -59,8 +58,6 @@ class PenggunaTerdaftarController extends Controller
             'jenis_kelamin'    => ['nullable', 'in:Laki-laki,Perempuan'],
             'tanggal_lahir'    => ['nullable', 'date', 'before:today'],
             'alamat'           => ['nullable', 'string', 'max:500'],
-            'rt'               => ['nullable', 'string', 'max:3'],
-            'rw'               => ['nullable', 'string', 'max:3'],
             'no_telepon'       => ['nullable', 'string', 'max:20'],
             'pekerjaan'        => ['nullable', 'string', 'max:100'],
         ]);
@@ -86,8 +83,6 @@ class PenggunaTerdaftarController extends Controller
                 'jenis_kelamin' => $validated['jenis_kelamin'] ?? null,
                 'tanggal_lahir' => $validated['tanggal_lahir'] ?? null,
                 'alamat'        => $validated['alamat']        ?? null,
-                'rt'            => $validated['rt']            ?? null,
-                'rw'            => $validated['rw']            ?? null,
                 'no_telepon'    => $validated['no_telepon']    ?? null,
                 'pekerjaan'     => $validated['pekerjaan']     ?? null,
             ]

@@ -15,8 +15,6 @@ return new class extends Migration
         Schema::create('dynamic_tables', function (Blueprint $table) {
             $table->id();
             $table->string('name'); // Nama tabel untuk display
-            $table->string('table_name')->unique(); // Nama tabel di database
-            $table->text('description')->nullable();
             $table->json('columns'); // Struktur kolom dalam JSON
             $table->timestamps();
         });

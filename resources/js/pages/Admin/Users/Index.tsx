@@ -3,7 +3,7 @@
 import Pagination from '@/components/Pagination';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { CheckCircle2, Clock, Mail, Pencil, Plus, Search, Trash2, Users, X } from 'lucide-react';
+import { Briefcase, Calendar, CheckCircle2, Clock, Eye, Mail, MapPin, Pencil, Phone, Plus, Search, Trash2, User, Users, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface UserItem {
@@ -12,6 +12,14 @@ interface UserItem {
     email: string;
     role: string;
     email_verified_at: string | null;
+    profile?: {
+        nama_lengkap: string | null;
+        jenis_kelamin: 'Laki-laki' | 'Perempuan' | null;
+        tanggal_lahir: string | null;
+        alamat: string | null;
+        no_telepon: string | null;
+        pekerjaan: string | null;
+    } | null;
 }
 
 interface PaginationLink {
@@ -63,6 +71,97 @@ function VerifiedBadge({ verifiedAt }: { verifiedAt: string | null }) {
     );
 }
 
+// ─── Detail Modal ─────────────────────────────────────────────────────────────
+
+function UserDetailModal({ user, onClose }: { user: UserItem; onClose: () => void }) {
+    const profile = user.profile;
+    const displayName = profile?.nama_lengkap || user.name;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+            <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-lg bg-white shadow-xl">
+                {/* Header */}
+                <div className="sticky top-0 flex items-center justify-between border-b bg-white px-6 py-4">
+                    <h2 className="text-xl font-bold text-gray-900">Detail Pengguna</h2>
+                    <button onClick={onClose} className="rounded-full p-1 hover:bg-gray-100">
+                        <X className="h-6 w-6 text-gray-500" />
+                    </button>
+                </div>
+
+                <div className="space-y-6 p-6">
+                    {/* Data Diri */}
+                    {profile ? (
+                        <div className="rounded-lg border border-orange-100 bg-orange-50 p-4">
+                            <h3 className="mb-3 text-sm font-semibold text-orange-800">Data Diri</h3>
+                            <div className="space-y-3">
+                                {[
+                                    {
+                                        icon: User,
+                                        label: 'Nama Lengkap',
+                                        value: profile.nama_lengkap,
+                                    },
+                                    {
+                                        icon: User,
+                                        label: 'Jenis Kelamin',
+                                        value: profile.jenis_kelamin,
+                                    },
+                                    {
+                                        icon: Calendar,
+                                        label: 'Tanggal Lahir',
+                                        value: profile.tanggal_lahir
+                                            ? new Date(profile.tanggal_lahir).toLocaleDateString('id-ID', {
+                                                  day: 'numeric',
+                                                  month: 'long',
+                                                  year: 'numeric',
+                                              })
+                                            : null,
+                                    },
+                                    {
+                                        icon: Briefcase,
+                                        label: 'Pekerjaan',
+                                        value: profile.pekerjaan,
+                                    },
+                                    {
+                                        icon: Phone,
+                                        label: 'No. Telepon',
+                                        value: profile.no_telepon,
+                                    },
+                                    {
+                                        icon: MapPin,
+                                        label: 'Alamat',
+                                        value: profile.alamat,
+                                    },
+                                ].map(({ icon: Icon, label, value }) => (
+                                    <div key={label} className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                                        <label className="flex items-center gap-1.5 text-sm font-medium text-orange-700">
+                                            <Icon className="h-3.5 w-3.5 flex-shrink-0" /> {label}
+                                        </label>
+                                        <p className="text-sm text-gray-900 sm:col-span-2">{value || <span className="text-gray-400">–</span>}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="rounded-lg border border-dashed border-gray-300 bg-white px-4 py-6 text-center">
+                            <User className="mx-auto mb-2 h-8 w-8 text-gray-300" />
+                            <p className="text-sm text-gray-500">Pengguna belum melengkapi data diri.</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer */}
+                <div className="sticky bottom-0 border-t bg-gray-50 px-6 py-4">
+                    <button onClick={onClose} className="w-full rounded-lg bg-gray-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-700">
+                        Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
+
 export default function Index() {
     const isInitialMount = useRef(true);
 
@@ -79,6 +178,7 @@ export default function Index() {
 
     const { auth, users, flash, filters, targetRole, isReadOnly } = pageProps;
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
+    const [selectedUser, setSelectedUser] = useState<UserItem | null>(null);
 
     useEffect(() => {
         if (isInitialMount.current) {
@@ -130,26 +230,38 @@ export default function Index() {
                     </p>
                     <div className="flex items-center justify-between">
                         <VerifiedBadge verifiedAt={user.email_verified_at} />
-                        {!isReadOnly && (
-                            <div className="flex gap-2">
-                                <Link
-                                    href={route('admin.users.edit', user.id)}
+                        <div className="flex gap-2">
+                            {/* Detail button — always shown for isReadOnly, alongside edit/delete for non-readonly */}
+                            {isReadOnly && (
+                                <button
+                                    onClick={() => setSelectedUser(user)}
                                     className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100"
-                                    title={`Edit ${user.name}`}
+                                    title={`Detail ${user.name}`}
                                 >
-                                    <Pencil className="h-4 w-4" />
-                                </Link>
-                                {user.id !== auth.user.id && (
-                                    <button
-                                        onClick={() => handleDelete(user)}
-                                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
-                                        type="button"
+                                    <Eye className="h-4 w-4" />
+                                </button>
+                            )}
+                            {!isReadOnly && (
+                                <>
+                                    <Link
+                                        href={route('admin.users.edit', user.id)}
+                                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100"
+                                        title={`Edit ${user.name}`}
                                     >
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
-                                )}
-                            </div>
-                        )}
+                                        <Pencil className="h-4 w-4" />
+                                    </Link>
+                                    {user.id !== auth.user.id && (
+                                        <button
+                                            onClick={() => handleDelete(user)}
+                                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
+                                            type="button"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -251,15 +363,9 @@ export default function Index() {
                                             Pengguna
                                         </th>
                                         <th className="px-6 py-3 text-center text-xs font-semibold tracking-wide text-gray-500 uppercase">Email</th>
-                                        {isReadOnly ? (
-                                            <th className="px-6 py-3 text-center text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                                                Status
-                                            </th>
-                                        ) : (
-                                            <th className="px-6 py-3 text-center text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                                                Aksi
-                                            </th>
-                                        )}
+                                        <th className="px-6 py-3 text-center text-xs font-semibold tracking-wide text-gray-500 uppercase">
+                                            {isReadOnly ? 'Detail' : 'Aksi'}
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
@@ -283,10 +389,17 @@ export default function Index() {
                                             <td className="px-6 py-4 text-center text-sm text-gray-500">{user.email}</td>
                                             <td className="px-6 py-4 text-center">
                                                 {isReadOnly ? (
+                                                    /* ── read-only: tombol Detail ── */
                                                     <div className="flex justify-center">
-                                                        <VerifiedBadge verifiedAt={user.email_verified_at} />
+                                                        <button
+                                                            onClick={() => setSelectedUser(user)}
+                                                            className="inline-flex items-center rounded-md bg-blue-100 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-200"
+                                                        >
+                                                            <Eye className="mr-1 h-3 w-3" /> Detail
+                                                        </button>
                                                     </div>
                                                 ) : (
+                                                    /* ── non-read-only: edit + delete ── */
                                                     <div className="flex justify-center gap-2">
                                                         <Link
                                                             href={route('admin.users.edit', user.id)}
@@ -317,6 +430,9 @@ export default function Index() {
 
                 {users.links && users.links.length > 0 && usersArray.length > 0 && <Pagination links={users.links} />}
             </div>
+
+            {/* ═══ MODAL: Detail Pengguna ═══ */}
+            {selectedUser && <UserDetailModal user={selectedUser} onClose={() => setSelectedUser(null)} />}
         </AuthenticatedLayout>
     );
 }

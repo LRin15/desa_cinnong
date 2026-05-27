@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Setting;
+use App\Models\LayananSetting;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -11,18 +11,14 @@ class LayananSettingsController extends Controller
 {
     public function index()
     {
-        $layananSettings = Setting::where('key', 'LIKE', 'layanan_%')
+        $layananSettings = LayananSetting::orderBy('name')
             ->get()
-            ->map(function ($setting) {
-                $data = json_decode($setting->value, true);
-                return [
-                    'id'       => $setting->id,
-                    'key'      => $setting->key,
-                    'name'     => $data['name'] ?? '',
-                    'is_active'=> $data['is_active'] ?? false,
-                    'category' => $data['category'] ?? 'kependudukan',
-                ];
-            })
+            ->map(fn ($item) => [
+                'id'        => $item->id,
+                'name'      => $item->name,
+                'is_active' => $item->is_active,
+                'category'  => $item->category,
+            ])
             ->groupBy('category');
 
         return Inertia::render('Admin/LayananSettings/Index', [
@@ -38,19 +34,16 @@ class LayananSettingsController extends Controller
     {
         try {
             $validated = $request->validate([
-                'key'       => 'required|string',
+                'id'        => 'required|integer|exists:layanan_settings,id',
                 'is_active' => 'required|boolean',
             ]);
 
-            $setting = Setting::where('key', $validated['key'])->firstOrFail();
-            $data = json_decode($setting->value, true);
-            $data['is_active'] = $validated['is_active'];
-
-            $setting->update(['value' => json_encode($data)]);
+            $layanan = LayananSetting::findOrFail($validated['id']);
+            $layanan->update(['is_active' => $validated['is_active']]);
 
             $status = $validated['is_active'] ? 'diaktifkan' : 'dinonaktifkan';
 
-            return back()->with('success', "Layanan '{$data['name']}' berhasil {$status}.");
+            return back()->with('success', "Layanan '{$layanan->name}' berhasil {$status}.");
 
         } catch (\Exception $e) {
             \Log::error('Error toggling layanan status: ' . $e->getMessage());
@@ -62,21 +55,13 @@ class LayananSettingsController extends Controller
     {
         try {
             $validated = $request->validate([
-                'keys'      => 'required|array',
-                'keys.*'    => 'required|string',
+                'ids'       => 'required|array',
+                'ids.*'     => 'required|integer|exists:layanan_settings,id',
                 'is_active' => 'required|boolean',
             ]);
 
-            $count = 0;
-            foreach ($validated['keys'] as $key) {
-                $setting = Setting::where('key', $key)->first();
-                if ($setting) {
-                    $data = json_decode($setting->value, true);
-                    $data['is_active'] = $validated['is_active'];
-                    $setting->update(['value' => json_encode($data)]);
-                    $count++;
-                }
-            }
+            $count = LayananSetting::whereIn('id', $validated['ids'])
+                ->update(['is_active' => $validated['is_active']]);
 
             $status = $validated['is_active'] ? 'diaktifkan' : 'dinonaktifkan';
 

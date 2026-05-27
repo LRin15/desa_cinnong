@@ -13,10 +13,10 @@ class ProfilDesaController extends Controller
     public function show()
     {
         $settings  = Setting::pluck('value', 'key')->toArray();
-        $officials = Official::orderBy('urutan')->get();
+        $officials = Official::all();
 
         return Inertia::render('ProfilDesa', [
-            'auth'      => ['user' => auth()->user()], // ← kirim auth agar navbar tahu status login
+            'auth'      => ['user' => auth()->user()],
             'settings'  => $settings,
             'officials' => $officials,
         ]);

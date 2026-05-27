@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::table('dynamic_tables', function (Blueprint $table) {
             $table->boolean('has_column_total')->default(false)->after('columns');
             $table->boolean('has_row_total')->default(false)->after('has_column_total');
+            $table->boolean('has_row_number')->default(false)->after('has_row_total');
         });
     }
 

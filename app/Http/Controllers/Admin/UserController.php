@@ -50,12 +50,20 @@ class UserController extends Controller
             });
         }
 
-        $users = $query->latest()->paginate(10)->through(fn ($user) => [
-            'id'    => $user->id,
-            'name'  => $user->name,
-            'email' => $user->email,
-            'role'            => $user->role,
+        $users = $query->with('profile')->latest()->paginate(10)->through(fn ($user) => [
+            'id'                => $user->id,
+            'name'              => $user->name,
+            'email'             => $user->email,
+            'role'              => $user->role,
             'email_verified_at' => $user->email_verified_at?->toISOString(),
+            'profile'           => $user->profile ? [
+                'nama_lengkap'  => $user->profile->nama_lengkap,
+                'jenis_kelamin' => $user->profile->jenis_kelamin,
+                'tanggal_lahir' => $user->profile->tanggal_lahir?->toDateString(),
+                'alamat'        => $user->profile->alamat,
+                'no_telepon'    => $user->profile->no_telepon,
+                'pekerjaan'     => $user->profile->pekerjaan,
+            ] : null,
         ]);
 
         $users->appends($request->query());

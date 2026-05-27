@@ -12,7 +12,7 @@ class LayananSubmission extends Model
 
     protected $fillable = [
         'user_id',
-        'jenis_layanan',
+        'layanan_id',
         'form_data',
         'uploaded_files',
         'status',
@@ -30,9 +30,27 @@ class LayananSubmission extends Model
         'rated_at'       => 'datetime',
     ];
 
+    // ── Relasi ────────────────────────────────────────────────────────────────
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function layanan(): BelongsTo
+    {
+        return $this->belongsTo(LayananSetting::class, 'layanan_id');
+    }
+
+    // ── Accessor ──────────────────────────────────────────────────────────────
+
+    /**
+     * Nama layanan diambil dari relasi — dipakai di banyak tempat
+     * sebagai pengganti $submission->jenis_layanan yang lama.
+     */
+    public function getJenisLayananAttribute(): string
+    {
+        return $this->layanan?->name ?? '-';
     }
 
     public function getNamaPemohonAttribute(): string
@@ -67,9 +85,11 @@ class LayananSubmission extends Model
         };
     }
 
+    // ── Helper ────────────────────────────────────────────────────────────────
+
     public function hasResult(): bool
     {
-        return !empty($this->result_files) || !empty($this->result_link);
+        return !empty($this->result_files);
     }
 
     public function hasRating(): bool

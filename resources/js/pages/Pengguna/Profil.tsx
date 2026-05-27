@@ -29,10 +29,7 @@ interface UserProfile {
     nama_lengkap: string | null;
     jenis_kelamin: 'Laki-laki' | 'Perempuan' | null;
     tanggal_lahir: string | null;
-    usia: number | null;
     alamat: string | null;
-    rt: string | null;
-    rw: string | null;
     no_telepon: string | null;
     pekerjaan: string | null;
 }
@@ -48,6 +45,7 @@ interface UserData {
 
 interface RiwayatLayanan {
     id: number;
+    // Nilai dari accessor model — nama layanan dari relasi layanan_settings
     jenis_layanan: string;
     status: 'pending' | 'diproses' | 'selesai' | 'ditolak';
     status_label: string;
@@ -249,7 +247,7 @@ function RatingForm({ item }: { item: RiwayatLayanan }) {
     );
 }
 
-// ─── Result section — hanya file, tanpa link ──────────────────────────────────
+// ─── Result section — hanya file ─────────────────────────────────────────────
 
 function HasilLayanan({ item }: { item: RiwayatLayanan }) {
     const hasFiles = item.result_files && item.result_files.length > 0;
@@ -319,8 +317,6 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
         jenis_kelamin: profile?.jenis_kelamin ?? '',
         tanggal_lahir: profile?.tanggal_lahir ?? '',
         alamat: profile?.alamat ?? '',
-        rt: profile?.rt ?? '',
-        rw: profile?.rw ?? '',
         no_telepon: profile?.no_telepon ?? '',
         pekerjaan: profile?.pekerjaan ?? '',
     });
@@ -402,11 +398,7 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                                         {profile?.alamat && (
                                             <div className="flex items-start gap-2 text-xs text-gray-500">
                                                 <MapPin className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
-                                                <span className="line-clamp-2">
-                                                    {profile.alamat}
-                                                    {profile.rt ? `, RT ${profile.rt}` : ''}
-                                                    {profile.rw ? `/RW ${profile.rw}` : ''}
-                                                </span>
+                                                <span className="line-clamp-2">{profile.alamat}</span>
                                             </div>
                                         )}
                                     </div>
@@ -548,26 +540,6 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                                                         />
                                                     </FormGroup>
                                                 </div>
-                                                <FormGroup label="RT" error={errors.rt}>
-                                                    <input
-                                                        type="text"
-                                                        value={data.rt}
-                                                        onChange={(e) => setData('rt', e.target.value)}
-                                                        placeholder="000"
-                                                        maxLength={3}
-                                                        className={inputBase(errors.rt)}
-                                                    />
-                                                </FormGroup>
-                                                <FormGroup label="RW" error={errors.rw}>
-                                                    <input
-                                                        type="text"
-                                                        value={data.rw}
-                                                        onChange={(e) => setData('rw', e.target.value)}
-                                                        placeholder="000"
-                                                        maxLength={3}
-                                                        className={inputBase(errors.rw)}
-                                                    />
-                                                </FormGroup>
                                             </div>
                                         </div>
 

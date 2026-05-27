@@ -9,8 +9,6 @@ import { useEffect, useRef, useState } from 'react';
 interface TableItem {
     id: number;
     name: string;
-    table_name: string;
-    description: string | null;
     columns_count: number;
     data_count: number;
     created_at: string;
@@ -142,15 +140,11 @@ export default function Index() {
     const TableCard = ({ item }: { item: TableItem }) => (
         <div className="rounded-lg border bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
             <div className="mb-3 flex items-start justify-between">
-                <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                        <Database className="h-5 w-5 text-blue-600" />
-                        <h3 className="text-base font-semibold text-gray-900">{item.name}</h3>
-                    </div>
+                <div className="flex items-center gap-2">
+                    <Database className="h-5 w-5 text-blue-600" />
+                    <h3 className="text-base font-semibold text-gray-900">{item.name}</h3>
                 </div>
             </div>
-
-            {item.description && <p className="mb-3 line-clamp-2 text-sm text-gray-600">{item.description}</p>}
 
             <div className="mb-3 flex gap-4 border-t border-gray-100 pt-3">
                 <div className="text-center">
@@ -253,7 +247,7 @@ export default function Index() {
                         </div>
                         <input
                             type="text"
-                            placeholder="Cari tabel berdasarkan nama atau deskripsi..."
+                            placeholder="Cari tabel berdasarkan nama..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="block w-full rounded-lg border border-gray-300 py-2.5 pr-10 pl-9 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none sm:py-3 sm:pl-10"

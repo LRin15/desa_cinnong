@@ -56,16 +56,11 @@ class ProfilDesaController extends Controller
 
     /**
      * Hapus file lama jika ada.
-     * Nilai yang disimpan di DB bisa berupa:
-     *   - URL penuh   : "http://…/images/profil/xxx.jpg"
-     *   - Path storage: "/storage/profil/xxx.jpg"  (format lama)
-     *   - Nama file   : "xxx.jpg"
      */
     private function deleteOldFile(?string $stored): void
     {
         if (!$stored) return;
 
-        // Coba ekstrak nama file dari URL asset (format baru)
         $base = basename(parse_url($stored, PHP_URL_PATH));
         $newPath = public_path($this->uploadPath . '/' . $base);
         if (File::exists($newPath)) {
@@ -73,7 +68,6 @@ class ProfilDesaController extends Controller
             return;
         }
 
-        // Format lama: /storage/... → storage/app/public/...
         if (str_starts_with($stored, '/storage/')) {
             $legacyPath = storage_path('app/public/' . ltrim(str_replace('/storage/', '', $stored), '/'));
             if (File::exists($legacyPath)) {
@@ -87,7 +81,7 @@ class ProfilDesaController extends Controller
     public function show()
     {
         $settings  = Setting::pluck('value', 'key');
-        $officials = VillageOfficial::orderBy('urutan')->get();
+        $officials = VillageOfficial::all();
 
         return Inertia::render('ProfilDesa', [
             'settings'  => $settings,
@@ -98,12 +92,11 @@ class ProfilDesaController extends Controller
     public function edit()
     {
         $settings  = Setting::pluck('value', 'key');
-        $officials = VillageOfficial::orderBy('urutan')->get()->map(fn ($o) => [
+        $officials = VillageOfficial::all()->map(fn ($o) => [
             'id'      => $o->id,
             'nama'    => $o->nama,
             'jabatan' => $o->jabatan,
             'foto'    => $o->foto,
-            'urutan'  => $o->urutan,
         ]);
 
         return Inertia::render('Admin/Profil/Edit', [
@@ -132,7 +125,6 @@ class ProfilDesaController extends Controller
                 'sejarah'      => 'nullable|string',
                 'visi'         => 'nullable|string',
                 'misi'         => 'nullable|string',
-                // Gambar profil disimpan di public/images/profil
                 'gambar_peta'  => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
                 'gambar_tim'   => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
                 'officials'    => 'nullable|array',
@@ -141,7 +133,6 @@ class ProfilDesaController extends Controller
                 'officials.*.jabatan'       => 'nullable|string|max:255',
                 'officials.*.foto'          => 'nullable|image|mimes:jpeg,png,jpg|max:1024',
                 'officials.*.existing_foto' => 'nullable|string',
-                'officials.*.urutan'        => 'nullable|integer',
                 'stat1_label'   => 'nullable|string|max:100',
                 'stat1_value'   => 'nullable|string|max:100',
                 'stat2_label'   => 'nullable|string|max:100',
@@ -191,11 +182,9 @@ class ProfilDesaController extends Controller
 
             // ── Gambar peta ───────────────────────────────────────────────────
             if ($request->hasFile('gambar_peta')) {
-                // Hapus file lama
                 $old = Setting::where('key', 'gambar_peta')->value('value');
                 $this->deleteOldFile($old);
 
-                // Simpan file baru ke public/images/profil
                 $filename = $this->storeImage($request->file('gambar_peta'));
                 Setting::updateOrCreate(
                     ['key' => 'gambar_peta'],
@@ -234,17 +223,14 @@ class ProfilDesaController extends Controller
 
                 foreach ($officialsData as $index => $officialData) {
                     $officialId = $officialData['id'] ?? null;
-                    // Pertahankan foto lama jika tidak ada upload baru
                     $fotoUrl = $officialData['existing_foto'] ?? null;
 
                     if ($request->hasFile("officials.{$index}.foto")) {
-                        // Hapus foto lama jika ada
                         if ($officialId) {
                             $oldOfficial = VillageOfficial::find($officialId);
                             $this->deleteOldFile($oldOfficial?->foto);
                         }
 
-                        // Simpan foto baru ke public/images/profil
                         $filename = $this->storeImage($request->file("officials.{$index}.foto"));
                         $fotoUrl  = $this->assetUrl($filename);
                     }
@@ -253,7 +239,6 @@ class ProfilDesaController extends Controller
                         'nama'    => $officialData['nama'],
                         'jabatan' => $officialData['jabatan'],
                         'foto'    => $fotoUrl,
-                        'urutan'  => $officialData['urutan'] ?? ($index + 1),
                     ];
 
                     if ($officialId) {

@@ -44,7 +44,7 @@ interface TableData {
 
 interface ChartsPageProps {
     auth: { user: { id: number; name: string; email: string } };
-    table: { id: number; name: string; description: string | null; columns: Column[]; charts: ChartConfig[] };
+    table: { id: number; name: string; columns: Column[]; charts: ChartConfig[] };
     tableData: TableData[];
     flash?: { success?: string; error?: string };
     [key: string]: any;
@@ -326,7 +326,6 @@ export default function Charts() {
                         </div>
                     </div>
 
-                    {/* Tombol Simpan Semua dihapus — tiap grafik disimpan otomatis */}
                     {!isAddingChart && (
                         <button
                             onClick={() => setIsAddingChart(true)}

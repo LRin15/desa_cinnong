@@ -28,12 +28,12 @@ Route::middleware(['admin.only'])->prefix('admin')->name('admin.')->group(functi
     Route::post('/profil-desa',     [ProfilDesaController::class, 'update'])->name('profil.update');
 
     // Kelola Layanan Submissions (termasuk Pengaduan & Aspirasi)
-    Route::get('/layanan',                         [AdminLayananController::class, 'index'])->name('layanan.index');
+    Route::get('/layanan', [AdminLayananController::class, 'index'])->name('layanan.index');
     Route::match(['PUT', 'POST'], '/layanan/{layanan}/update-status', [AdminLayananController::class, 'updateStatus'])->name('layanan.update-status');
-    Route::delete('/layanan/{layanan}',            [AdminLayananController::class, 'destroy'])->name('layanan.destroy');
-    Route::delete('/admin/layanan/{layanan}/result-file', [App\Http\Controllers\Admin\LayananController::class, 'deleteResultFile'])->name('admin.layanan.delete-result-file');
+    Route::delete('/layanan/{layanan}/result-file', [AdminLayananController::class, 'deleteResultFile'])->name('layanan.delete-result-file');
+    Route::delete('/layanan/{layanan}', [AdminLayananController::class, 'destroy'])->name('layanan.destroy');
 
-    // Pengaturan Layanan (aktif / nonaktif)
+    // Pengaturan Layanan (aktif / nonaktif) — sekarang menggunakan tabel layanan_settings
     Route::get('/layanan-settings',              [LayananSettingsController::class, 'index'])->name('layanan-settings.index');
     Route::post('/layanan-settings/toggle',      [LayananSettingsController::class, 'toggleStatus'])->name('layanan-settings.toggle');
     Route::post('/layanan-settings/toggle-bulk', [LayananSettingsController::class, 'toggleBulk'])->name('layanan-settings.toggle-bulk');

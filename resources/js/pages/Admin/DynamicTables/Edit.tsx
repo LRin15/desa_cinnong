@@ -17,17 +17,17 @@ interface Column {
 interface TableData {
     id: number;
     name: string;
-    description: string | null;
     columns: Column[];
     has_column_total?: boolean;
     has_row_total?: boolean;
+    has_row_number?: boolean;
     source?: string;
     notes?: string;
 }
 interface EditPageProps {
     auth: { user: { id: number; name: string; email: string } };
     table: TableData;
-    errors?: { name?: string; description?: string; columns?: string };
+    errors?: { name?: string; columns?: string };
     flash?: { success?: string; error?: string };
     [key: string]: unknown;
 }
@@ -51,19 +51,19 @@ export default function Edit() {
         errors: formErrors,
     } = useForm<{
         name: string;
-        description: string;
         columns: Column[];
         has_column_total: boolean;
         has_row_total: boolean;
+        has_row_number: boolean;
         source: string;
         notes: string;
         _method: string;
     }>({
         name: table.name || '',
-        description: table.description || '',
         columns: table.columns || [{ name: '', type: 'text', required: false, options: '' }],
         has_column_total: table.has_column_total || false,
         has_row_total: table.has_row_total || false,
+        has_row_number: table.has_row_number || false,
         source: table.source || '',
         notes: table.notes || '',
         _method: 'put',
@@ -229,6 +229,24 @@ export default function Edit() {
         );
     };
 
+    const displayOptions = [
+        {
+            id: 'has_row_number',
+            label: 'Tampilkan Kolom No.',
+            desc: 'Menampilkan kolom nomor urut di sisi kiri tabel',
+        },
+        {
+            id: 'has_column_total',
+            label: 'Tambah Kolom Total (Kanan)',
+            desc: 'Menambahkan kolom total otomatis di ujung kanan yang menjumlahkan semua kolom angka dalam setiap baris',
+        },
+        {
+            id: 'has_row_total',
+            label: 'Tambah Baris Total (Bawah)',
+            desc: 'Menambahkan baris total otomatis di paling bawah yang menjumlahkan semua kolom angka',
+        },
+    ];
+
     return (
         <AuthenticatedLayout auth={auth} title="Edit Tabel">
             <Head title={`Edit Tabel: ${table.name}`} />
@@ -285,19 +303,6 @@ export default function Edit() {
                                 />
                                 <FieldError message={e.name} />
                             </div>
-                            <div>
-                                <label htmlFor="description" className="block text-sm font-medium text-gray-700 sm:text-base">
-                                    Deskripsi
-                                </label>
-                                <textarea
-                                    id="description"
-                                    value={data.description}
-                                    rows={3}
-                                    onChange={(ev) => setData('description', ev.target.value)}
-                                    className={inputAdminLg(e.description)}
-                                />
-                                <FieldError message={e.description} />
-                            </div>
 
                             {/* Sumber & Catatan */}
                             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
@@ -339,22 +344,11 @@ export default function Edit() {
                                 </div>
                             </div>
 
-                            {/* Opsi Total */}
+                            {/* Opsi Tampilan & Total */}
                             <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                                <h3 className="mb-3 text-sm font-medium text-gray-900">Opsi Total Otomatis</h3>
+                                <h3 className="mb-3 text-sm font-medium text-gray-900">Opsi Tampilan &amp; Total</h3>
                                 <div className="space-y-3">
-                                    {[
-                                        {
-                                            id: 'has_column_total',
-                                            label: 'Tambah Kolom Total (Kanan)',
-                                            desc: 'Menambahkan kolom total otomatis di ujung kanan yang menjumlahkan semua kolom angka dalam setiap baris',
-                                        },
-                                        {
-                                            id: 'has_row_total',
-                                            label: 'Tambah Baris Total (Bawah)',
-                                            desc: 'Menambahkan baris total otomatis di paling bawah yang menjumlahkan semua kolom angka',
-                                        },
-                                    ].map(({ id, label, desc }) => (
+                                    {displayOptions.map(({ id, label, desc }) => (
                                         <div key={id} className="flex items-start">
                                             <input
                                                 type="checkbox"

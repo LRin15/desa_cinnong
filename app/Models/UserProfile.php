@@ -12,10 +12,7 @@ class UserProfile extends Model
         'nama_lengkap',
         'jenis_kelamin',
         'tanggal_lahir',
-        'usia',
         'alamat',
-        'rt',
-        'rw',
         'no_telepon',
         'pekerjaan',
     ];
@@ -27,16 +24,5 @@ class UserProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    /**
-     * Hitung usia otomatis dari tanggal_lahir saat disimpan.
-     */
-    public function setTanggalLahirAttribute($value): void
-    {
-        $this->attributes['tanggal_lahir'] = $value;
-        if ($value) {
-            $this->attributes['usia'] = \Carbon\Carbon::parse($value)->age;
-        }
     }
 }

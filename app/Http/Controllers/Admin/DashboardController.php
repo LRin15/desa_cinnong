@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Berita;
 use App\Models\Infografis;
+use App\Models\LayananSetting;
 use App\Models\LayananSubmission;
 use App\Models\Publikasi;
 use App\Models\Setting;
@@ -30,11 +31,11 @@ class DashboardController extends Controller
 
         $settings = Setting::pluck('value', 'key')->toArray();
 
-        // ── Daftar jenis layanan ──────────────────────────────────────────────
-        $jenisLayananList = LayananSubmission::select('jenis_layanan')
-            ->distinct()
-            ->orderBy('jenis_layanan')
-            ->pluck('jenis_layanan')
+        // ── Daftar jenis layanan dari tabel LayananSetting ────────────────────
+        // Format: [['id' => 1, 'name' => 'Surat Keterangan'], ...]
+        $jenisLayananList = LayananSetting::orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn($l) => ['id' => $l->id, 'name' => $l->name])
             ->toArray();
 
         // ── Tahun yang tersedia (berdasarkan data aktual) ─────────────────────
@@ -57,11 +58,15 @@ class DashboardController extends Controller
         //   Per minggu → "{subject}_minggu_{year}_{month}"
         //   Per hari   → "{subject}_hari_{year}_{month}"
         //
-        // Hanya generate untuk tahun & bulan yang relevan agar payload tidak terlalu besar.
-        // Frontend hanya akan meminta kombinasi yang dibutuhkan.
+        // subject: 'semua' atau layanan_id (integer sebagai string)
 
         $chartData = [];
-        $subjects  = array_merge(['semua'], $jenisLayananList);
+
+        // Subject: 'semua' + setiap layanan_id
+        $subjects = array_merge(
+            ['semua'],
+            array_column($jenisLayananList, 'id')
+        );
 
         foreach ($subjects as $subject) {
             foreach ($availableYears as $year) {
@@ -71,7 +76,7 @@ class DashboardController extends Controller
 
                 // Per minggu & per hari — untuk setiap bulan dalam tahun tersebut
                 $monthsInYear = ($year === $currentYear)
-                    ? range(1, (int) now()->format('n'))   // s/d bulan sekarang
+                    ? range(1, (int) now()->format('n'))
                     : range(1, 12);
 
                 foreach ($monthsInYear as $month) {
@@ -88,25 +93,28 @@ class DashboardController extends Controller
             'stats'            => $stats,
             'settings'         => $settings,
             'chartData'        => $chartData,
-            'jenisLayananList' => $jenisLayananList,
+            'jenisLayananList' => $jenisLayananList,   // [{id, name}]
             'availableYears'   => $availableYears,
         ]);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    /** Ambil base query, filter jenis layanan jika bukan 'semua'. */
-    private function baseQuery(string $subject)
+    /**
+     * Ambil base query.
+     * $subject: 'semua' → tanpa filter; integer → filter layanan_id.
+     */
+    private function baseQuery(string|int $subject)
     {
         $q = LayananSubmission::query();
         if ($subject !== 'semua') {
-            $q->where('jenis_layanan', $subject);
+            $q->where('layanan_id', (int) $subject);
         }
         return $q;
     }
 
     /** 12 titik data per bulan dalam satu tahun. */
-    private function buildMonthly(string $subject, int $year): array
+    private function buildMonthly(string|int $subject, int $year): array
     {
         $rows = $this->baseQuery($subject)
             ->selectRaw("MONTH(created_at) as month, COUNT(*) as total")
@@ -129,12 +137,11 @@ class DashboardController extends Controller
     }
 
     /** Titik data per minggu dalam satu bulan. */
-    private function buildWeekly(string $subject, int $year, int $month): array
+    private function buildWeekly(string|int $subject, int $year, int $month): array
     {
         $startOfMonth = Carbon::createFromDate($year, $month, 1)->startOfDay();
         $endOfMonth   = $startOfMonth->copy()->endOfMonth()->endOfDay();
 
-        // Pecah menjadi minggu-minggu (mulai Senin)
         $weeks  = [];
         $cursor = $startOfMonth->copy()->startOfWeek(Carbon::MONDAY);
 
@@ -162,7 +169,7 @@ class DashboardController extends Controller
     }
 
     /** Titik data per hari dalam satu bulan. */
-    private function buildDaily(string $subject, int $year, int $month): array
+    private function buildDaily(string|int $subject, int $year, int $month): array
     {
         $startOfMonth = Carbon::createFromDate($year, $month, 1)->startOfDay();
         $endOfMonth   = $startOfMonth->copy()->endOfMonth()->endOfDay();

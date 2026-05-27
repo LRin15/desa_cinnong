@@ -122,7 +122,7 @@ export default function AuthenticatedLayout({ auth, children, title }: Authentic
                 >
                     <div className="flex h-16 items-center justify-between px-6">
                         <Link href={route('admin.dashboard')} className="text-2xl font-bold text-orange-400">
-                            Admin SID
+                            Admin DESCAN
                         </Link>
                         <button onClick={() => setSidebarOpen(false)} className="sm:hidden">
                             <X className="h-6 w-6" />
@@ -143,8 +143,6 @@ export default function AuthenticatedLayout({ auth, children, title }: Authentic
                                 {item.name}
                             </Link>
                         ))}
-
-                        <div className="mx-4 my-2 border-t border-gray-600" />
 
                         {/* Pengaturan */}
                         {settingsItems.map((item) => (

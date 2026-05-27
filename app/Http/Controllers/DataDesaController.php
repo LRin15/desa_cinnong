@@ -19,59 +19,55 @@ class DataDesaController extends Controller
 
         $tables = DynamicTable::with('tableData')
             ->when($search, function ($query, $search) {
-                return $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', '%' . $search . '%')
-                      ->orWhere('description', 'like', '%' . $search . '%');
-                });
+                return $query->where('name', 'like', '%' . $search . '%');
             })
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($table) {
                 return [
-                    'id' => $table->id,
-                    'name' => $table->name,
-                    'table_name' => $table->table_name,
-                    'description' => $table->description,
-                    'columns' => $table->columns,
-                    'charts' => $table->charts ?? [],
-                    'data' => $table->tableData->map(function ($row) {
+                    'id'               => $table->id,
+                    'name'             => $table->name,
+                    'columns'          => $table->columns,
+                    'charts'           => $table->charts ?? [],
+                    'data'             => $table->tableData->map(function ($row) {
                         return [
-                            'id' => $row->id,
-                            'data' => $row->data,
+                            'id'         => $row->id,
+                            'data'       => $row->data,
                             'created_at' => $row->created_at->format('d F Y H:i'),
                         ];
                     }),
-                    'columns_count' => count($table->columns),
-                    'data_count' => $table->tableData->count(),
+                    'columns_count'    => count($table->columns),
+                    'data_count'       => $table->tableData->count(),
                     'has_column_total' => $table->has_column_total ?? false,
-                    'has_row_total' => $table->has_row_total ?? false,
-                    'source' => $table->source ?? null,
-                    'notes' => $table->notes ?? null,
-                    'created_at' => $table->created_at->format('d F Y'),
+                    'has_row_total'    => $table->has_row_total    ?? false,
+                    'has_row_number'   => $table->has_row_number   ?? false,
+                    'source'           => $table->source           ?? null,
+                    'notes'            => $table->notes            ?? null,
+                    'created_at'       => $table->created_at->format('d F Y'),
                 ];
             });
 
         $settings = Setting::pluck('value', 'key')->toArray();
 
         return Inertia::render('DataDesa', [
-            'tables' => $tables,
-            'tahun' => date('Y'),
+            'tables'  => $tables,
+            'tahun'   => date('Y'),
             'settings' => $settings,
             'filters' => [
                 'search' => $search,
             ],
         ]);
     }
-    
+
     /**
      * Download data tabel dalam format Excel atau JSON
      */
     public function download(Request $request, $tableId)
     {
         $format = $request->query('format', 'excel');
-        
+
         $table = DynamicTable::with('tableData')->findOrFail($tableId);
-        
+
         if ($format === 'json') {
             return $this->downloadJson($table);
         } else {
@@ -86,18 +82,17 @@ class DataDesaController extends Controller
     {
         $data = [
             'table_info' => [
-                'id' => $table->id,
-                'name' => $table->name,
-                'description' => $table->description,
-                'source' => $table->source ?? null,
-                'notes' => $table->notes ?? null,
+                'id'         => $table->id,
+                'name'       => $table->name,
+                'source'     => $table->source ?? null,
+                'notes'      => $table->notes  ?? null,
                 'created_at' => $table->created_at->format('Y-m-d H:i:s'),
             ],
             'columns' => $table->columns,
-            'data' => $table->tableData->map(function ($row) {
+            'data'    => $table->tableData->map(function ($row) {
                 return [
-                    'id' => $row->id,
-                    'data' => $row->data,
+                    'id'         => $row->id,
+                    'data'       => $row->data,
                     'created_at' => $row->created_at->format('Y-m-d H:i:s'),
                 ];
             }),
@@ -106,7 +101,7 @@ class DataDesaController extends Controller
         $filename = $this->sanitizeFilename($table->name) . '_' . date('Y-m-d_His') . '.json';
 
         return response()->json($data, 200, [
-            'Content-Type' => 'application/json',
+            'Content-Type'        => 'application/json',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
     }
@@ -120,30 +115,28 @@ class DataDesaController extends Controller
 
         return new StreamedResponse(function () use ($table) {
             $handle = fopen('php://output', 'w');
-            
+
             // Add UTF-8 BOM for Excel compatibility
             fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
 
-            // Flatten columns untuk header
-            $headers = ['No'];
+            $headers      = [];
             $fieldMapping = [];
-            
+
+            // Kolom No. hanya jika has_row_number aktif
+            if ($table->has_row_number ?? false) {
+                $headers[] = 'No';
+            }
+
             foreach ($table->columns as $column) {
                 if ($column['type'] === 'group' && isset($column['subColumns'])) {
                     foreach ($column['subColumns'] as $subCol) {
-                        $fieldName = $column['name'] . '.' . $subCol['name'];
-                        $headers[] = $column['name'] . ' - ' . $subCol['name'];
-                        $fieldMapping[] = [
-                            'field' => $fieldName,
-                            'type' => $subCol['type']
-                        ];
+                        $fieldName    = $column['name'] . '.' . $subCol['name'];
+                        $headers[]    = $column['name'] . ' - ' . $subCol['name'];
+                        $fieldMapping[] = ['field' => $fieldName, 'type' => $subCol['type']];
                     }
                 } else {
-                    $headers[] = $column['name'];
-                    $fieldMapping[] = [
-                        'field' => $column['name'],
-                        'type' => $column['type']
-                    ];
+                    $headers[]    = $column['name'];
+                    $fieldMapping[] = ['field' => $column['name'], 'type' => $column['type']];
                 }
             }
 
@@ -157,13 +150,17 @@ class DataDesaController extends Controller
 
             foreach ($table->tableData as $index => $row) {
                 $flatData = $this->flattenData($row->data);
-                $rowData = [$index + 1];
+                $rowData  = [];
+
+                if ($table->has_row_number ?? false) {
+                    $rowData[] = $index + 1;
+                }
 
                 $rowTotal = 0;
 
                 foreach ($fieldMapping as $mapping) {
                     $value = $flatData[$mapping['field']] ?? '';
-                    
+
                     if ($mapping['type'] === 'date' && $value) {
                         try {
                             $value = date('d/m/Y', strtotime($value));
@@ -171,11 +168,11 @@ class DataDesaController extends Controller
                             // Keep original value if parsing fails
                         }
                     } elseif ($mapping['type'] === 'number' && $value !== '') {
-                        $numValue = floatval($value);
+                        $numValue  = floatval($value);
                         $rowTotal += $numValue;
-                        $value = $numValue;
+                        $value     = $numValue;
                     }
-                    
+
                     $rowData[] = $value;
                 }
 
@@ -189,8 +186,14 @@ class DataDesaController extends Controller
             }
 
             if ($table->has_row_total ?? false) {
-                $totalRow = ['TOTAL'];
-                
+                $totalRow = [];
+
+                if ($table->has_row_number ?? false) {
+                    $totalRow[] = 'TOTAL';
+                } else {
+                    $totalRow[] = 'TOTAL';
+                }
+
                 foreach ($fieldMapping as $mapping) {
                     if ($mapping['type'] === 'number') {
                         $columnTotal = $table->tableData->sum(function ($row) use ($mapping) {
@@ -221,7 +224,6 @@ class DataDesaController extends Controller
                 fputcsv($handle, $totalRow);
             }
 
-            // Tambahkan baris kosong lalu info sumber & catatan di akhir CSV
             fputcsv($handle, []);
             if ($table->source) {
                 fputcsv($handle, ['Sumber: ' . $table->source]);
@@ -232,7 +234,7 @@ class DataDesaController extends Controller
 
             fclose($handle);
         }, 200, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Type'        => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
     }
@@ -243,17 +245,17 @@ class DataDesaController extends Controller
     private function flattenData(array $data, string $prefix = ''): array
     {
         $result = [];
-        
+
         foreach ($data as $key => $value) {
             $newKey = $prefix ? "{$prefix}.{$key}" : $key;
-            
+
             if (is_array($value) && !empty($value)) {
                 $result = array_merge($result, $this->flattenData($value, $newKey));
             } else {
                 $result[$newKey] = $value;
             }
         }
-        
+
         return $result;
     }
 
@@ -265,7 +267,7 @@ class DataDesaController extends Controller
         $filename = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $filename);
         $filename = preg_replace('/_+/', '_', $filename);
         $filename = trim($filename, '_');
-        
+
         return $filename ?: 'table_data';
     }
 }

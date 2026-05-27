@@ -769,24 +769,16 @@ class LayananController extends Controller
         $rules    = ['jenis_layanan' => 'required|string'];
         $messages = [];
 
-        // field_required berisi JSON array nama field yang wajib diisi,
-        // dikirim dari FormLayanan.tsx sebagai hidden input.
         $requiredFields = [];
         if ($request->filled('field_required')) {
             $decoded = json_decode($request->input('field_required'), true);
-            if (is_array($decoded)) {
-                $requiredFields = $decoded;
-            }
+            if (is_array($decoded)) $requiredFields = $decoded;
         }
 
-        // Bangun rules — field yang ada di $requiredFields → required, lainnya → nullable
         foreach ($request->all() as $key => $value) {
-            if (in_array($key, ['jenis_layanan', '_token', 'field_required'], true)) {
-                continue;
-            }
+            if (in_array($key, ['jenis_layanan', '_token', 'field_required'], true)) continue;
 
             $isRequired = in_array($key, $requiredFields, true);
-
             if ($request->hasFile($key)) {
                 if (is_array($request->file($key))) {
                     $rules[$key]        = ($isRequired ? 'required' : 'nullable') . '|array';
@@ -799,7 +791,6 @@ class LayananController extends Controller
             }
         }
 
-        // Pesan validasi dalam Bahasa Indonesia
         foreach ($requiredFields as $field) {
             $messages["{$field}.required"] = 'Kolom ini wajib diisi.';
         }
@@ -810,14 +801,14 @@ class LayananController extends Controller
         $validated = $request->validate($rules, $messages);
 
         try {
-            // ── Pastikan direktori tujuan tersedia ──────────────────────────
-            $uploadDir = public_path($this->uploadPath);
-            if (!File::exists($uploadDir)) {
-                File::makeDirectory($uploadDir, 0755, true);
-            }
+            // Cari layanan_id berdasarkan nama layanan yang dikirim dari form
+            $layananSetting = \App\Models\LayananSetting::where('name', $validated['jenis_layanan'])
+                ->where('is_active', true)
+                ->firstOrFail();
 
-            // ── Upload file pengajuan ke dokumen/pengajuan_layanan ──────────
-            // Pola sama dengan PublikasiController: File::move() ke public_path
+            $uploadDir = public_path($this->uploadPath);
+            if (!File::exists($uploadDir)) File::makeDirectory($uploadDir, 0755, true);
+
             $uploadedFiles = [];
             foreach ($request->allFiles() as $key => $files) {
                 if (is_array($files)) {
@@ -825,7 +816,6 @@ class LayananController extends Controller
                     foreach ($files as $file) {
                         $namaFile = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
                         $file->move($uploadDir, $namaFile);
-                        // Simpan path relatif terhadap public/ agar bisa diakses via /dokumen/...
                         $uploadedFiles[$key][] = $this->uploadPath . '/' . $namaFile;
                     }
                 } else {
@@ -835,7 +825,6 @@ class LayananController extends Controller
                 }
             }
 
-            // Kumpulkan data form (non-file, non-meta)
             $formData = [];
             foreach ($validated as $key => $value) {
                 if ($key !== 'jenis_layanan' && !$request->hasFile($key)) {
@@ -845,7 +834,7 @@ class LayananController extends Controller
 
             \App\Models\LayananSubmission::create([
                 'user_id'        => Auth::id(),
-                'jenis_layanan'  => $validated['jenis_layanan'],
+                'layanan_id'     => $layananSetting->id,   // ← FK, bukan string
                 'form_data'      => $formData,
                 'uploaded_files' => $uploadedFiles,
                 'status'         => 'pending',
@@ -853,9 +842,12 @@ class LayananController extends Controller
 
             return redirect()->back()->with('success', 'Permohonan layanan berhasil dikirim. Silakan tunggu proses verifikasi.');
 
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect()->back()
+                ->with('error', 'Jenis layanan tidak ditemukan atau tidak aktif.')
+                ->withInput();
         } catch (\Exception $e) {
             \Log::error('Error submitting layanan: ' . $e->getMessage());
-
             return redirect()->back()
                 ->with('error', 'Terjadi kesalahan saat mengirim permohonan. Silakan coba lagi.')
                 ->withInput();

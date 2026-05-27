@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\DynamicTable;
 use App\Models\DynamicTableData;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Validator;
 
@@ -21,20 +20,15 @@ class DynamicTableController extends Controller
 
         if ($request->filled('search')) {
             $searchTerm = $request->search;
-            $query->where(function($q) use ($searchTerm) {
-                $q->where('name', 'like', "%{$searchTerm}%")
-                  ->orWhere('description', 'like', "%{$searchTerm}%");
-            });
+            $query->where('name', 'like', "%{$searchTerm}%");
         }
 
         $tables = $query->latest()->paginate(10)->through(fn ($table) => [
-            'id' => $table->id,
-            'name' => $table->name,
-            'table_name' => $table->table_name,
-            'description' => $table->description,
+            'id'           => $table->id,
+            'name'         => $table->name,
             'columns_count' => count($table->columns),
-            'data_count' => $table->tableData()->count(),
-            'created_at' => $table->created_at->format('d F Y'),
+            'data_count'   => $table->tableData()->count(),
+            'created_at'   => $table->created_at->format('d F Y'),
         ]);
 
         $tables->appends($request->query());
@@ -46,7 +40,7 @@ class DynamicTableController extends Controller
             ],
             'flash' => [
                 'success' => session('success'),
-                'error' => session('error'),
+                'error'   => session('error'),
             ],
         ]);
     }
@@ -66,49 +60,37 @@ class DynamicTableController extends Controller
     {
         try {
             $validatedData = $request->validate([
-                'name' => 'required|string|max:255',
-                'description' => 'nullable|string|max:1000',
-                'columns' => 'required|array|min:1',
-                'columns.*.name' => 'required|string|max:100',
-                'columns.*.type' => 'required|in:text,number,date,select,textarea,group',
-                'columns.*.required' => 'boolean',
-                'columns.*.options' => 'nullable|string',
-                'columns.*.subColumns' => 'nullable|array',
-                'columns.*.subColumns.*.name' => 'required|string|max:100',
-                'columns.*.subColumns.*.type' => 'required|in:text,number,date,select,textarea',
+                'name'                          => 'required|string|max:255',
+                'columns'                       => 'required|array|min:1',
+                'columns.*.name'                => 'required|string|max:100',
+                'columns.*.type'                => 'required|in:text,number,date,select,textarea,group',
+                'columns.*.required'            => 'boolean',
+                'columns.*.options'             => 'nullable|string',
+                'columns.*.subColumns'          => 'nullable|array',
+                'columns.*.subColumns.*.name'   => 'required|string|max:100',
+                'columns.*.subColumns.*.type'   => 'required|in:text,number,date,select,textarea',
                 'columns.*.subColumns.*.required' => 'boolean',
                 'columns.*.subColumns.*.options' => 'nullable|string',
-                'has_column_total' => 'boolean',
-                'has_row_total' => 'boolean',
-                'source' => 'nullable|string|max:500',
-                'notes' => 'nullable|string|max:2000',
+                'has_column_total'              => 'boolean',
+                'has_row_total'                 => 'boolean',
+                'has_row_number'                => 'boolean',
+                'source'                        => 'nullable|string|max:500',
+                'notes'                         => 'nullable|string|max:2000',
             ], [
-                'name.required' => 'Nama tabel wajib diisi.',
-                'columns.required' => 'Minimal harus ada 1 kolom.',
-                'columns.*.name.required' => 'Nama kolom wajib diisi.',
-                'columns.*.type.required' => 'Tipe kolom wajib dipilih.',
+                'name.required'              => 'Nama tabel wajib diisi.',
+                'columns.required'           => 'Minimal harus ada 1 kolom.',
+                'columns.*.name.required'    => 'Nama kolom wajib diisi.',
+                'columns.*.type.required'    => 'Tipe kolom wajib dipilih.',
             ]);
 
-            // Generate table_name dari name
-            $tableName = 'tbl_' . Str::slug($validatedData['name'], '_');
-            
-            // Pastikan table_name unik
-            $originalTableName = $tableName;
-            $counter = 1;
-            while (DynamicTable::where('table_name', $tableName)->exists()) {
-                $tableName = $originalTableName . '_' . $counter;
-                $counter++;
-            }
-
             $table = DynamicTable::create([
-                'name' => $validatedData['name'],
-                'table_name' => $tableName,
-                'description' => $validatedData['description'],
-                'columns' => $validatedData['columns'],
+                'name'             => $validatedData['name'],
+                'columns'          => $validatedData['columns'],
                 'has_column_total' => $validatedData['has_column_total'] ?? false,
-                'has_row_total' => $validatedData['has_row_total'] ?? false,
-                'source' => $validatedData['source'] ?? null,
-                'notes' => $validatedData['notes'] ?? null,
+                'has_row_total'    => $validatedData['has_row_total']    ?? false,
+                'has_row_number'   => $validatedData['has_row_number']   ?? false,
+                'source'           => $validatedData['source']           ?? null,
+                'notes'            => $validatedData['notes']            ?? null,
             ]);
 
             return redirect()->route('admin.dynamic-tables.index')
@@ -135,14 +117,14 @@ class DynamicTableController extends Controller
     {
         return Inertia::render('Admin/DynamicTables/Edit', [
             'table' => [
-                'id' => $dynamicTable->id,
-                'name' => $dynamicTable->name,
-                'description' => $dynamicTable->description,
-                'columns' => $dynamicTable->columns,
+                'id'               => $dynamicTable->id,
+                'name'             => $dynamicTable->name,
+                'columns'          => $dynamicTable->columns,
                 'has_column_total' => $dynamicTable->has_column_total ?? false,
-                'has_row_total' => $dynamicTable->has_row_total ?? false,
-                'source' => $dynamicTable->source ?? '',
-                'notes' => $dynamicTable->notes ?? '',
+                'has_row_total'    => $dynamicTable->has_row_total    ?? false,
+                'has_row_number'   => $dynamicTable->has_row_number   ?? false,
+                'source'           => $dynamicTable->source           ?? '',
+                'notes'            => $dynamicTable->notes            ?? '',
             ]
         ]);
     }
@@ -154,32 +136,32 @@ class DynamicTableController extends Controller
     {
         try {
             $validatedData = $request->validate([
-                'name' => 'required|string|max:255',
-                'description' => 'nullable|string|max:1000',
-                'columns' => 'required|array|min:1',
-                'columns.*.name' => 'required|string|max:100',
-                'columns.*.type' => 'required|in:text,number,date,select,textarea,group',
-                'columns.*.required' => 'boolean',
-                'columns.*.options' => 'nullable|string',
-                'columns.*.subColumns' => 'nullable|array',
-                'columns.*.subColumns.*.name' => 'required|string|max:100',
-                'columns.*.subColumns.*.type' => 'required|in:text,number,date,select,textarea',
+                'name'                          => 'required|string|max:255',
+                'columns'                       => 'required|array|min:1',
+                'columns.*.name'                => 'required|string|max:100',
+                'columns.*.type'                => 'required|in:text,number,date,select,textarea,group',
+                'columns.*.required'            => 'boolean',
+                'columns.*.options'             => 'nullable|string',
+                'columns.*.subColumns'          => 'nullable|array',
+                'columns.*.subColumns.*.name'   => 'required|string|max:100',
+                'columns.*.subColumns.*.type'   => 'required|in:text,number,date,select,textarea',
                 'columns.*.subColumns.*.required' => 'boolean',
                 'columns.*.subColumns.*.options' => 'nullable|string',
-                'has_column_total' => 'boolean',
-                'has_row_total' => 'boolean',
-                'source' => 'nullable|string|max:500',
-                'notes' => 'nullable|string|max:2000',
+                'has_column_total'              => 'boolean',
+                'has_row_total'                 => 'boolean',
+                'has_row_number'                => 'boolean',
+                'source'                        => 'nullable|string|max:500',
+                'notes'                         => 'nullable|string|max:2000',
             ]);
 
             $dynamicTable->update([
-                'name' => $validatedData['name'],
-                'description' => $validatedData['description'],
-                'columns' => $validatedData['columns'],
+                'name'             => $validatedData['name'],
+                'columns'          => $validatedData['columns'],
                 'has_column_total' => $validatedData['has_column_total'] ?? false,
-                'has_row_total' => $validatedData['has_row_total'] ?? false,
-                'source' => $validatedData['source'] ?? null,
-                'notes' => $validatedData['notes'] ?? null,
+                'has_row_total'    => $validatedData['has_row_total']    ?? false,
+                'has_row_number'   => $validatedData['has_row_number']   ?? false,
+                'source'           => $validatedData['source']           ?? null,
+                'notes'            => $validatedData['notes']            ?? null,
             ]);
 
             return redirect()->route('admin.dynamic-tables.index')
@@ -218,24 +200,24 @@ class DynamicTableController extends Controller
     public function showInsertForm(DynamicTable $dynamicTable)
     {
         $tableData = $dynamicTable->tableData()->oldest()->paginate(10)->through(fn ($row) => [
-            'id' => $row->id,
-            'data' => $row->data,
+            'id'         => $row->id,
+            'data'       => $row->data,
             'created_at' => $row->created_at->format('d F Y H:i'),
         ]);
 
         return Inertia::render('Admin/DynamicTables/Insert', [
             'table' => [
-                'id' => $dynamicTable->id,
-                'name' => $dynamicTable->name,
-                'description' => $dynamicTable->description,
-                'columns' => $dynamicTable->columns,
+                'id'               => $dynamicTable->id,
+                'name'             => $dynamicTable->name,
+                'columns'          => $dynamicTable->columns,
                 'has_column_total' => $dynamicTable->has_column_total ?? false,
-                'has_row_total' => $dynamicTable->has_row_total ?? false,
+                'has_row_total'    => $dynamicTable->has_row_total    ?? false,
+                'has_row_number'   => $dynamicTable->has_row_number   ?? false,
             ],
             'tableData' => $tableData,
             'flash' => [
                 'success' => session('success'),
-                'error' => session('error'),
+                'error'   => session('error'),
             ],
         ]);
     }
@@ -246,14 +228,14 @@ class DynamicTableController extends Controller
     public function insertData(Request $request, DynamicTable $dynamicTable)
     {
         try {
-            $inputData = $request->input('data'); 
+            $inputData = $request->input('data');
 
             $rules = [];
-            
+
             $buildRules = function($columns, $prefix = '') use (&$buildRules, &$rules) {
                 foreach ($columns as $column) {
                     $colName = $prefix . $column['name'];
-                    
+
                     if ($column['type'] === 'group' && isset($column['subColumns'])) {
                         $buildRules($column['subColumns'], $colName . '.');
                     } else {
@@ -261,14 +243,14 @@ class DynamicTableController extends Controller
                     }
                 }
             };
-            
+
             $buildRules($dynamicTable->columns);
 
             $validated = \Validator::make($inputData, $rules)->validate();
 
             DynamicTableData::create([
                 'dynamic_table_id' => $dynamicTable->id,
-                'data' => $validated, 
+                'data'             => $validated,
             ]);
 
             return back()->with('success', 'Data berhasil ditambahkan.');
@@ -286,11 +268,11 @@ class DynamicTableController extends Controller
             $inputData = $request->input('data');
 
             $rules = [];
-            
+
             $buildRules = function($columns, $prefix = '') use (&$buildRules, &$rules) {
                 foreach ($columns as $column) {
                     $colName = $prefix . $column['name'];
-                    
+
                     if ($column['type'] === 'group' && isset($column['subColumns'])) {
                         $buildRules($column['subColumns'], $colName . '.');
                     } else {
@@ -298,7 +280,7 @@ class DynamicTableController extends Controller
                     }
                 }
             };
-            
+
             $buildRules($dynamicTable->columns);
 
             $validated = \Validator::make($inputData, $rules)->validate();
@@ -332,23 +314,22 @@ class DynamicTableController extends Controller
     {
         $allData = $dynamicTable->tableData()->oldest()->get()->map(function ($row) {
             return [
-                'id' => $row->id,
+                'id'   => $row->id,
                 'data' => $row->data,
             ];
         });
 
         return Inertia::render('Admin/DynamicTables/Charts', [
             'table' => [
-                'id' => $dynamicTable->id,
-                'name' => $dynamicTable->name,
-                'description' => $dynamicTable->description,
+                'id'      => $dynamicTable->id,
+                'name'    => $dynamicTable->name,
                 'columns' => $dynamicTable->columns,
-                'charts' => $dynamicTable->charts ?? [],
+                'charts'  => $dynamicTable->charts ?? [],
             ],
             'tableData' => $allData,
             'flash' => [
                 'success' => session('success'),
-                'error' => session('error'),
+                'error'   => session('error'),
             ],
         ]);
     }
@@ -360,10 +341,10 @@ class DynamicTableController extends Controller
     {
         try {
             $chartsInput = $request->input('charts');
-            
+
             if (is_string($chartsInput)) {
                 $chartsData = json_decode($chartsInput, true);
-                
+
                 if (json_last_error() !== JSON_ERROR_NONE) {
                     throw new \Exception('Invalid JSON format: ' . json_last_error_msg());
                 }
@@ -372,12 +353,12 @@ class DynamicTableController extends Controller
             }
 
             $validatedData = Validator::make(['charts' => $chartsData], [
-                'charts' => 'required|array',
-                'charts.*.id' => 'required|string',
-                'charts.*.name' => 'required|string|max:255',
-                'charts.*.type' => 'required|in:bar,line,pie,doughnut,area,radar',
-                'charts.*.xAxis' => 'required|string',
-                'charts.*.yAxis' => 'required|array|min:1',
+                'charts'           => 'required|array',
+                'charts.*.id'      => 'required|string',
+                'charts.*.name'    => 'required|string|max:255',
+                'charts.*.type'    => 'required|in:bar,line,pie,doughnut,area,radar',
+                'charts.*.xAxis'   => 'required|string',
+                'charts.*.yAxis'   => 'required|array|min:1',
                 'charts.*.yAxis.*' => 'required|string',
             ])->validate();
 
@@ -390,7 +371,7 @@ class DynamicTableController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             \Log::error('Validation error saving charts: ' . json_encode($e->errors()));
             return back()->with('error', 'Data grafik tidak valid: ' . implode(', ', array_map(fn($err) => implode(', ', $err), $e->errors())));
-            
+
         } catch (\Exception $e) {
             \Log::error('Error saving charts: ' . $e->getMessage());
             \Log::error('Stack trace: ' . $e->getTraceAsString());

@@ -14,7 +14,6 @@ return new class extends Migration
             $table->string('nama');
             $table->string('jabatan');
             $table->string('foto')->nullable();
-            $table->integer('urutan')->default(0); // Untuk mengurutkan tampilan
             $table->timestamps();
         });
     }

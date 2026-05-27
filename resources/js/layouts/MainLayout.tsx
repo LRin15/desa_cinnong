@@ -477,7 +477,8 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
 
                         {/* Desktop Auth + Bell */}
                         <div className="hidden items-center space-x-2 sm:flex">
-                            {isLoggedIn && <NotificationBell />}
+                            {/* Lonceng hanya untuk pengguna_terdaftar */}
+                            {isPenggunaTerdaftar && <NotificationBell />}
 
                             {auth?.user ? (
                                 <div className="flex items-center space-x-3">
@@ -516,9 +517,9 @@ export default function MainLayout({ auth, children }: MainLayoutProps) {
                             )}
                         </div>
 
-                        {/* Mobile: bell (jika login) + hamburger */}
+                        {/* Mobile: bell (hanya pengguna_terdaftar) + hamburger */}
                         <div className="flex items-center gap-1 sm:hidden lg:hidden">
-                            {isLoggedIn && <NotificationBell />}
+                            {isPenggunaTerdaftar && <NotificationBell />}
                             <button
                                 type="button"
                                 onClick={toggleMobileMenu}

@@ -18,7 +18,6 @@ import { BarChart3, Database, FileJson, FileSpreadsheet, Info, Search, Table2, X
 import { useEffect, useState } from 'react';
 import { Bar, Doughnut, Line, Pie, Radar } from 'react-chartjs-2';
 
-// Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend, Filler, RadialLinearScale);
 
 interface Column {
@@ -46,8 +45,6 @@ interface ChartConfig {
 interface DynamicTable {
     id: number;
     name: string;
-    table_name: string;
-    description: string | null;
     columns: Column[];
     charts: ChartConfig[];
     data: TableData[];
@@ -55,6 +52,7 @@ interface DynamicTable {
     data_count: number;
     has_column_total?: boolean;
     has_row_total?: boolean;
+    has_row_number?: boolean;
     source?: string | null;
     notes?: string | null;
     created_at: string;
@@ -70,9 +68,7 @@ interface DataDesaProps {
     tables: DynamicTable[];
     tahun: string | number;
     settings: Settings;
-    filters: {
-        search: string;
-    };
+    filters: { search: string };
 }
 
 export default function DataDesa({ auth, tables, tahun, settings, filters }: DataDesaProps) {
@@ -88,33 +84,16 @@ export default function DataDesa({ auth, tables, tahun, settings, filters }: Dat
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
-        router.get(
-            '/data-desa',
-            { search: searchQuery },
-            {
-                preserveState: true,
-                replace: true,
-            },
-        );
+        router.get('/data-desa', { search: searchQuery }, { preserveState: true, replace: true });
     };
 
     const clearSearch = () => {
         setSearchQuery('');
-        router.get(
-            '/data-desa',
-            {},
-            {
-                preserveState: true,
-                replace: true,
-            },
-        );
+        router.get('/data-desa', {}, { preserveState: true, replace: true });
     };
 
     const toggleViewMode = (tableId: number) => {
-        setViewMode((prev) => ({
-            ...prev,
-            [tableId]: prev[tableId] === 'chart' ? 'table' : 'chart',
-        }));
+        setViewMode((prev) => ({ ...prev, [tableId]: prev[tableId] === 'chart' ? 'table' : 'chart' }));
     };
 
     const flattenData = (obj: Record<string, any>, prefix: string = ''): Record<string, any> => {
@@ -131,25 +110,13 @@ export default function DataDesa({ auth, tables, tahun, settings, filters }: Dat
         return result;
     };
 
-    const getNestedValue = (obj: any, path: string) => {
-        return path.split('.').reduce((current, key) => current?.[key], obj);
-    };
+    const getNestedValue = (obj: any, path: string) => path.split('.').reduce((current, key) => current?.[key], obj);
 
     const prepareChartData = (chartConfig: ChartConfig, tableData: TableData[]) => {
         const labels = tableData.map((row) => getNestedValue(row.data, chartConfig.xAxis) || 'N/A');
-
         const datasets = chartConfig.yAxis.map((yCol, index) => {
-            const colors = [
-                'rgb(59, 130, 246)',
-                'rgb(34, 197, 94)',
-                'rgb(249, 115, 22)',
-                'rgb(168, 85, 247)',
-                'rgb(236, 72, 153)',
-                'rgb(14, 165, 233)',
-            ];
-
+            const colors = ['rgb(59,130,246)', 'rgb(34,197,94)', 'rgb(249,115,22)', 'rgb(168,85,247)', 'rgb(236,72,153)', 'rgb(14,165,233)'];
             const color = colors[index % colors.length];
-
             return {
                 label: yCol,
                 data: tableData.map((row) => {
@@ -165,7 +132,6 @@ export default function DataDesa({ auth, tables, tahun, settings, filters }: Dat
                 fill: chartConfig.type === 'area',
             };
         });
-
         return { labels, datasets };
     };
 
@@ -174,17 +140,8 @@ export default function DataDesa({ auth, tables, tahun, settings, filters }: Dat
         const options = {
             responsive: true,
             maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    position: 'top' as const,
-                },
-                title: {
-                    display: true,
-                    text: chartConfig.name,
-                },
-            },
+            plugins: { legend: { position: 'top' as const }, title: { display: true, text: chartConfig.name } },
         };
-
         switch (chartConfig.type) {
             case 'bar':
                 return <Bar data={data} options={options} />;
@@ -203,121 +160,68 @@ export default function DataDesa({ auth, tables, tahun, settings, filters }: Dat
         }
     };
 
-    const organizeHeaders = (
-        columns: Column[],
-    ): Array<{
-        type: 'regular' | 'group';
-        name: string;
-        fields: Array<{ fieldName: string; displayName: string; column: Column }>;
-    }> => {
-        const organized: Array<{
-            type: 'regular' | 'group';
-            name: string;
-            fields: Array<{ fieldName: string; displayName: string; column: Column }>;
-        }> = [];
-
-        columns.forEach((col) => {
+    const organizeHeaders = (columns: Column[]) =>
+        columns.map((col) => {
             if (col.type === 'group' && col.subColumns) {
-                const groupFields = col.subColumns.map((subCol) => ({
-                    fieldName: `${col.name}.${subCol.name}`,
-                    displayName: subCol.name,
-                    column: subCol,
-                }));
-                organized.push({
-                    type: 'group',
+                return {
+                    type: 'group' as const,
                     name: col.name,
-                    fields: groupFields,
-                });
-            } else {
-                organized.push({
-                    type: 'regular',
-                    name: col.name,
-                    fields: [
-                        {
-                            fieldName: col.name,
-                            displayName: col.name,
-                            column: col,
-                        },
-                    ],
-                });
+                    fields: col.subColumns.map((subCol) => ({
+                        fieldName: `${col.name}.${subCol.name}`,
+                        displayName: subCol.name,
+                        column: subCol,
+                    })),
+                };
             }
+            return {
+                type: 'regular' as const,
+                name: col.name,
+                fields: [{ fieldName: col.name, displayName: col.name, column: col }],
+            };
         });
-
-        return organized;
-    };
 
     const formatValue = (value: any, column: Column): string => {
         if (value === null || value === undefined || value === '') return '-';
-
         if (column.type === 'date') {
             try {
-                const date = new Date(value);
-                return date.toLocaleDateString('id-ID', {
-                    day: '2-digit',
-                    month: 'long',
-                    year: 'numeric',
-                });
+                return new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
             } catch {
                 return value;
             }
         }
-
-        if (column.type === 'number') {
-            return Number(value).toLocaleString('id-ID');
-        }
-
+        if (column.type === 'number') return Number(value).toLocaleString('id-ID');
         return String(value);
     };
 
-    const calculateRowTotal = (flatData: Record<string, any>, fields: Array<{ fieldName: string; column: Column }>) => {
-        let total = 0;
-        fields.forEach((field) => {
-            if (field.column.type === 'number') {
-                const value = parseFloat(flatData[field.fieldName] || 0);
-                if (!isNaN(value)) {
-                    total += value;
-                }
-            }
-        });
-        return total;
-    };
+    const calculateRowTotal = (flatData: Record<string, any>, fields: Array<{ fieldName: string; column: Column }>) =>
+        fields.reduce((total, field) => {
+            if (field.column.type !== 'number') return total;
+            const value = parseFloat(flatData[field.fieldName] || 0);
+            return total + (isNaN(value) ? 0 : value);
+        }, 0);
 
-    const calculateColumnTotal = (fieldName: string, dataArray: TableData[]) => {
-        let total = 0;
-        dataArray.forEach((row) => {
+    const calculateColumnTotal = (fieldName: string, dataArray: TableData[]) =>
+        dataArray.reduce((total, row) => {
             const flatData = flattenData(row.data);
             const value = parseFloat(flatData[fieldName] || 0);
-            if (!isNaN(value)) {
-                total += value;
-            }
-        });
-        return total;
-    };
+            return total + (isNaN(value) ? 0 : value);
+        }, 0);
 
     const handleDownload = async (table: DynamicTable, format: 'excel' | 'json') => {
         setDownloadingTable(table.id);
-
         try {
             const response = await fetch(`/data-desa/${table.id}/download?format=${format}`);
-
-            if (!response.ok) {
-                throw new Error('Download gagal');
-            }
-
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
+            if (!response.ok) throw new Error('Download gagal');
+            const blob = window.URL.createObjectURL(await response.blob());
             const link = document.createElement('a');
-            link.href = url;
-
+            link.href = blob;
             const contentDisposition = response.headers.get('Content-Disposition');
             const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
-            const filename = filenameMatch ? filenameMatch[1] : `table_${table.id}.${format === 'excel' ? 'csv' : 'json'}`;
-
-            link.download = filename;
+            link.download = filenameMatch ? filenameMatch[1] : `table_${table.id}.${format === 'excel' ? 'csv' : 'json'}`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
+            window.URL.revokeObjectURL(blob);
         } catch (error) {
             console.error('Download error:', error);
             alert('Terjadi kesalahan saat mengunduh data');
@@ -330,7 +234,7 @@ export default function DataDesa({ auth, tables, tahun, settings, filters }: Dat
         <MainLayout auth={auth}>
             <Head title={`Data ${namaDesa} ${tahun}`} />
 
-            {/* Header Section */}
+            {/* Header */}
             <section className="border-b border-gray-200 bg-gradient-to-br from-orange-50 to-orange-100">
                 <div className="container mx-auto px-3 py-12 text-center sm:px-4 sm:py-16 lg:px-8">
                     <h1 className="mb-3 text-3xl font-bold text-gray-900 sm:mb-4 sm:text-4xl md:text-5xl">Data Desa</h1>
@@ -338,7 +242,6 @@ export default function DataDesa({ auth, tables, tahun, settings, filters }: Dat
                         Laporan dan data statistik {namaDesa} yang tersedia untuk publik dalam bentuk tabel dan visualisasi grafik.
                     </p>
 
-                    {/* Search Form */}
                     <div className="mx-auto mt-6 max-w-md sm:mt-8">
                         <form onSubmit={handleSearch} className="relative">
                             <div className="relative">
@@ -369,7 +272,6 @@ export default function DataDesa({ auth, tables, tahun, settings, filters }: Dat
                         </form>
                     </div>
 
-                    {/* Search Result Info */}
                     {filters.search && (
                         <div className="mt-3 text-sm text-gray-600 sm:mt-4">
                             {tables.length > 0 ? (
@@ -390,7 +292,6 @@ export default function DataDesa({ auth, tables, tahun, settings, filters }: Dat
                         </div>
                     )}
 
-                    {/* Stats Info */}
                     {!filters.search && tables.length > 0 && (
                         <div className="mt-6 flex items-center justify-center gap-2">
                             <Database className="h-5 w-5 text-orange-600" />
@@ -433,6 +334,7 @@ export default function DataDesa({ auth, tables, tahun, settings, filters }: Dat
                                 const organizedHeaders = organizeHeaders(table.columns);
                                 const allFields = organizedHeaders.flatMap((h) => h.fields);
                                 const hasSourceOrNotes = table.source || table.notes;
+                                const showRowNumber = table.has_row_number ?? false;
 
                                 return (
                                     <div
@@ -447,29 +349,7 @@ export default function DataDesa({ auth, tables, tahun, settings, filters }: Dat
                                                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
                                                             <Table2 className="h-5 w-5 text-blue-600" />
                                                         </div>
-                                                        <div>
-                                                            <h2 className="text-xl font-bold text-gray-900">{table.name}</h2>
-                                                            {table.description && <p className="mt-0.5 text-sm text-gray-600">{table.description}</p>}
-                                                        </div>
-                                                    </div>
-                                                    <div className="mt-3 flex items-center gap-4 text-sm">
-                                                        <div className="flex items-center gap-1.5 text-gray-600">
-                                                            <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                                                            <span className="font-medium">{table.columns_count}</span>
-                                                            <span>kolom</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5 text-gray-600">
-                                                            <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                                                            <span className="font-medium">{table.data_count}</span>
-                                                            <span>data</span>
-                                                        </div>
-                                                        {hasCharts && (
-                                                            <div className="flex items-center gap-1.5 text-gray-600">
-                                                                <div className="h-2 w-2 rounded-full bg-purple-500"></div>
-                                                                <span className="font-medium">{table.charts.length}</span>
-                                                                <span>grafik</span>
-                                                            </div>
-                                                        )}
+                                                        <h2 className="text-xl font-bold text-gray-900">{table.name}</h2>
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-wrap gap-2">
@@ -546,23 +426,25 @@ export default function DataDesa({ auth, tables, tahun, settings, filters }: Dat
                                                     <div className="mb-3 text-xs text-gray-500 sm:hidden">
                                                         ← Geser tabel untuk melihat data lengkap →
                                                     </div>
-
                                                     <div className="overflow-x-auto">
                                                         <table className="min-w-full border-collapse" style={{ fontFamily: 'Arial, sans-serif' }}>
                                                             <thead>
                                                                 <tr>
-                                                                    <th
-                                                                        rowSpan={2}
-                                                                        className="border border-gray-400 bg-orange-100 px-4 py-3 text-center text-sm font-bold text-gray-900 uppercase sm:px-6"
-                                                                    >
-                                                                        No.
-                                                                    </th>
+                                                                    {/* Kolom No. — kondisional */}
+                                                                    {showRowNumber && (
+                                                                        <th
+                                                                            rowSpan={2}
+                                                                            className="border border-gray-400 bg-orange-100 px-4 py-3 text-center text-sm font-bold text-gray-900 uppercase sm:px-6"
+                                                                        >
+                                                                            No.
+                                                                        </th>
+                                                                    )}
                                                                     {organizedHeaders.map((header, idx) => (
                                                                         <th
                                                                             key={idx}
                                                                             rowSpan={header.type === 'regular' ? 2 : 1}
                                                                             colSpan={header.type === 'group' ? header.fields.length : 1}
-                                                                            className={`border border-gray-400 px-4 py-3 text-center text-sm font-bold text-gray-900 uppercase sm:px-6 ${header.type === 'group' ? 'bg-orange-100' : 'bg-orange-100'}`}
+                                                                            className="border border-gray-400 bg-orange-100 px-4 py-3 text-center text-sm font-bold text-gray-900 uppercase sm:px-6"
                                                                         >
                                                                             {header.name}
                                                                         </th>
@@ -600,9 +482,12 @@ export default function DataDesa({ auth, tables, tahun, settings, filters }: Dat
 
                                                                     return (
                                                                         <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                                                            <td className="border border-gray-400 px-4 py-3 text-center text-sm text-gray-900 sm:px-6">
-                                                                                {idx + 1}
-                                                                            </td>
+                                                                            {/* No. — kondisional */}
+                                                                            {showRowNumber && (
+                                                                                <td className="border border-gray-400 px-4 py-3 text-center text-sm text-gray-900 sm:px-6">
+                                                                                    {idx + 1}
+                                                                                </td>
+                                                                            )}
                                                                             {organizedHeaders.map((header, colIdx) =>
                                                                                 header.fields.map((field, fieldIdx) => (
                                                                                     <td
@@ -627,10 +512,16 @@ export default function DataDesa({ auth, tables, tahun, settings, filters }: Dat
 
                                                                 {table.has_row_total && (
                                                                     <tr className="bg-blue-100 font-bold">
+                                                                        {/* No. total row — kondisional */}
+                                                                        {showRowNumber && (
+                                                                            <td className="border border-gray-400 px-4 py-3 text-center text-sm text-gray-900 sm:px-6">
+                                                                                —
+                                                                            </td>
+                                                                        )}
                                                                         <td className="border border-gray-400 px-4 py-3 text-center text-sm text-gray-900 uppercase sm:px-6">
                                                                             Total
                                                                         </td>
-                                                                        {organizedHeaders.map((header, colIdx) =>
+                                                                        {organizedHeaders.slice(1).map((header, colIdx) =>
                                                                             header.fields.map((field, fieldIdx) => (
                                                                                 <td
                                                                                     key={`total-${colIdx}-${fieldIdx}`}
@@ -648,6 +539,22 @@ export default function DataDesa({ auth, tables, tahun, settings, filters }: Dat
                                                                                 </td>
                                                                             )),
                                                                         )}
+                                                                        {organizedHeaders[0]?.fields.slice(1).map((field, fieldIdx) => (
+                                                                            <td
+                                                                                key={`total-first-${fieldIdx}`}
+                                                                                className="border border-gray-400 px-4 py-3 text-center text-sm text-gray-900 sm:px-6"
+                                                                            >
+                                                                                {field.column.type === 'number'
+                                                                                    ? calculateColumnTotal(
+                                                                                          field.fieldName,
+                                                                                          table.data,
+                                                                                      ).toLocaleString('id-ID', {
+                                                                                          minimumFractionDigits: 2,
+                                                                                          maximumFractionDigits: 2,
+                                                                                      })
+                                                                                    : '-'}
+                                                                            </td>
+                                                                        ))}
                                                                         {table.has_column_total && (
                                                                             <td className="border border-gray-400 bg-orange-100 px-4 py-3 text-center text-sm text-gray-900 sm:px-6">
                                                                                 {allFields
@@ -671,7 +578,7 @@ export default function DataDesa({ auth, tables, tahun, settings, filters }: Dat
                                                 </>
                                             )}
 
-                                            {/* Sumber & Catatan — ditampilkan di bawah tabel/grafik */}
+                                            {/* Sumber & Catatan */}
                                             {hasSourceOrNotes && (
                                                 <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
                                                     <div className="flex items-start gap-2">

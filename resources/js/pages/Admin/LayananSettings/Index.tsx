@@ -6,7 +6,6 @@ import { useState } from 'react';
 
 interface LayananSetting {
     id: number;
-    key: string;
     name: string;
     is_active: boolean;
     category: 'kependudukan' | 'umum' | 'pengaduan';
@@ -32,33 +31,33 @@ interface LayananSettingsIndexProps {
 }
 
 export default function LayananSettingsIndex({ auth, layananSettings, flash }: LayananSettingsIndexProps) {
-    const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [bulkAction, setBulkAction] = useState<'activate' | 'deactivate' | null>(null);
 
-    const handleToggle = (key: string, currentStatus: boolean) => {
-        router.post(route('admin.layanan-settings.toggle'), { key, is_active: !currentStatus }, { preserveState: true, preserveScroll: true });
+    const handleToggle = (id: number, currentStatus: boolean) => {
+        router.post(route('admin.layanan-settings.toggle'), { id, is_active: !currentStatus }, { preserveState: true, preserveScroll: true });
     };
 
     const handleSelectAll = (category: 'kependudukan' | 'umum' | 'pengaduan', checked: boolean) => {
-        const categoryKeys = layananSettings[category]?.map((l) => l.key) || [];
+        const categoryIds = layananSettings[category]?.map((l) => l.id) || [];
         if (checked) {
-            setSelectedKeys([...new Set([...selectedKeys, ...categoryKeys])]);
+            setSelectedIds([...new Set([...selectedIds, ...categoryIds])]);
         } else {
-            setSelectedKeys(selectedKeys.filter((k) => !categoryKeys.includes(k)));
+            setSelectedIds(selectedIds.filter((id) => !categoryIds.includes(id)));
         }
     };
 
-    const handleSelect = (key: string, checked: boolean) => {
+    const handleSelect = (id: number, checked: boolean) => {
         if (checked) {
-            setSelectedKeys([...selectedKeys, key]);
+            setSelectedIds([...selectedIds, id]);
         } else {
-            setSelectedKeys(selectedKeys.filter((k) => k !== key));
+            setSelectedIds(selectedIds.filter((i) => i !== id));
         }
     };
 
     const handleBulkAction = (action: 'activate' | 'deactivate') => {
-        if (selectedKeys.length === 0) {
+        if (selectedIds.length === 0) {
             alert('Pilih layanan terlebih dahulu');
             return;
         }
@@ -70,12 +69,12 @@ export default function LayananSettingsIndex({ auth, layananSettings, flash }: L
         if (!bulkAction) return;
         router.post(
             route('admin.layanan-settings.toggle-bulk'),
-            { keys: selectedKeys, is_active: bulkAction === 'activate' },
+            { ids: selectedIds, is_active: bulkAction === 'activate' },
             {
                 preserveState: false,
                 preserveScroll: false,
                 onSuccess: () => {
-                    setSelectedKeys([]);
+                    setSelectedIds([]);
                     setShowConfirmModal(false);
                     setBulkAction(null);
                 },
@@ -84,22 +83,21 @@ export default function LayananSettingsIndex({ auth, layananSettings, flash }: L
     };
 
     const renderLayananCard = (layanan: LayananSetting) => (
-        <div key={layanan.key} className="flex items-center justify-between rounded-lg border bg-white p-4 shadow-sm transition-all hover:shadow-md">
+        <div key={layanan.id} className="flex items-center justify-between rounded-lg border bg-white p-4 shadow-sm transition-all hover:shadow-md">
             <div className="flex items-center space-x-3">
                 <input
                     type="checkbox"
-                    checked={selectedKeys.includes(layanan.key)}
-                    onChange={(e) => handleSelect(layanan.key, e.target.checked)}
+                    checked={selectedIds.includes(layanan.id)}
+                    onChange={(e) => handleSelect(layanan.id, e.target.checked)}
                     className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                 />
                 <div>
                     <h3 className="font-medium text-gray-900">{layanan.name}</h3>
-                    <p className="text-xs text-gray-500">{layanan.key}</p>
                 </div>
             </div>
 
             <button
-                onClick={() => handleToggle(layanan.key, layanan.is_active)}
+                onClick={() => handleToggle(layanan.id, layanan.is_active)}
                 className={`flex items-center space-x-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                     layanan.is_active ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
@@ -186,10 +184,10 @@ export default function LayananSettingsIndex({ auth, layananSettings, flash }: L
                 </div>
 
                 {/* Bulk Actions */}
-                {selectedKeys.length > 0 && (
+                {selectedIds.length > 0 && (
                     <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
                         <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium text-orange-800">{selectedKeys.length} layanan dipilih</p>
+                            <p className="text-sm font-medium text-orange-800">{selectedIds.length} layanan dipilih</p>
                             <div className="flex space-x-2">
                                 <button
                                     onClick={() => handleBulkAction('activate')}
@@ -204,7 +202,7 @@ export default function LayananSettingsIndex({ auth, layananSettings, flash }: L
                                     Nonaktifkan Semua
                                 </button>
                                 <button
-                                    onClick={() => setSelectedKeys([])}
+                                    onClick={() => setSelectedIds([])}
                                     className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                                 >
                                     Batal
@@ -222,7 +220,7 @@ export default function LayananSettingsIndex({ auth, layananSettings, flash }: L
                             <label className="flex items-center space-x-2">
                                 <input
                                     type="checkbox"
-                                    checked={kependudukanLayanan.length > 0 && kependudukanLayanan.every((l) => selectedKeys.includes(l.key))}
+                                    checked={kependudukanLayanan.length > 0 && kependudukanLayanan.every((l) => selectedIds.includes(l.id))}
                                     onChange={(e) => handleSelectAll('kependudukan', e.target.checked)}
                                     className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                                 />
@@ -241,7 +239,7 @@ export default function LayananSettingsIndex({ auth, layananSettings, flash }: L
                             <label className="flex items-center space-x-2">
                                 <input
                                     type="checkbox"
-                                    checked={umumLayanan.length > 0 && umumLayanan.every((l) => selectedKeys.includes(l.key))}
+                                    checked={umumLayanan.length > 0 && umumLayanan.every((l) => selectedIds.includes(l.id))}
                                     onChange={(e) => handleSelectAll('umum', e.target.checked)}
                                     className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                                 />
@@ -256,13 +254,11 @@ export default function LayananSettingsIndex({ auth, layananSettings, flash }: L
                 <div className="rounded-lg border bg-white shadow-sm">
                     <div className="border-b bg-gray-50 p-4">
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <h3 className="text-lg font-semibold text-gray-900">Layanan Pengaduan & Aspirasi</h3>
-                            </div>
+                            <h3 className="text-lg font-semibold text-gray-900">Layanan Pengaduan & Aspirasi</h3>
                             <label className="flex items-center space-x-2">
                                 <input
                                     type="checkbox"
-                                    checked={pengaduanLayanan.length > 0 && pengaduanLayanan.every((l) => selectedKeys.includes(l.key))}
+                                    checked={pengaduanLayanan.length > 0 && pengaduanLayanan.every((l) => selectedIds.includes(l.id))}
                                     onChange={(e) => handleSelectAll('pengaduan', e.target.checked)}
                                     className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                                 />
@@ -285,7 +281,7 @@ export default function LayananSettingsIndex({ auth, layananSettings, flash }: L
                         <div className="p-6">
                             <p className="text-gray-700">
                                 Apakah Anda yakin ingin <strong>{bulkAction === 'activate' ? 'mengaktifkan' : 'menonaktifkan'}</strong>{' '}
-                                <strong>{selectedKeys.length}</strong> layanan yang dipilih?
+                                <strong>{selectedIds.length}</strong> layanan yang dipilih?
                             </p>
                         </div>
 

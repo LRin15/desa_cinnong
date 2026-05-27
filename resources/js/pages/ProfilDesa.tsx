@@ -15,7 +15,7 @@ interface Official {
 }
 
 interface ProfilDesaProps {
-    auth?: any; // ← tambahkan auth agar navbar tahu status login
+    auth?: any;
     settings: Setting;
     officials: Official[];
 }
@@ -35,8 +35,6 @@ export default function ProfilDesa({ auth, settings, officials }: ProfilDesaProp
 
     return (
         <MainLayout auth={auth}>
-            {' '}
-            {/* ← teruskan auth ke layout */}
             <Head title="Profil Desa" />
             <div className="min-h-screen py-4 sm:py-6 lg:py-8">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -191,6 +189,7 @@ export default function ProfilDesa({ auth, settings, officials }: ProfilDesaProp
                     </div>
                 </div>
             </div>
+
             {/* Image Modal */}
             {selectedImage && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4" onClick={closeImageModal}>
