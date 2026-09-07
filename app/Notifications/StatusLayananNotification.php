@@ -32,7 +32,7 @@ class StatusLayananNotification extends Notification
         $mail = (new MailMessage)
             ->subject("[{$this->layanan->jenis_layanan}] {$this->emailSubject()}")
             ->greeting("Halo, {$notifiable->name}!")
-            ->line("Status permohonan layanan Anda telah diperbarui menjadi **{$statusLabel}**.")
+            ->line("Status perngajuan layanan Anda telah diperbarui menjadi **{$statusLabel}**.")
             ->line("**Jenis Layanan:** {$this->layanan->jenis_layanan}")
             ->line("**Tanggal Pengajuan:** " . $this->layanan->created_at->translatedFormat('d F Y'));
 
@@ -69,10 +69,10 @@ class StatusLayananNotification extends Notification
     private function emailSubject(): string
     {
         return match ($this->layanan->status) {
-            'diproses' => 'Permohonan Anda Sedang Diproses',
-            'selesai'  => 'Permohonan Anda Telah Selesai',
-            'ditolak'  => 'Permohonan Anda Ditolak',
-            default    => 'Update Status Permohonan',
+            'diproses' => 'Pengajuan Anda Sedang Diproses',
+            'selesai'  => 'Pengajuan Anda Telah Selesai',
+            'ditolak'  => 'Pengajuan Anda Ditolak',
+            default    => 'Update Status Pengajuan',
         };
     }
 

@@ -24,6 +24,9 @@ import { useEffect, useRef, useState } from 'react';
 
 interface LayananSubmission {
     id: number;
+    layanan_id?: number;
+    nama_pemohon?: string;
+    email_pemohon?: string;
     jenis_layanan: string;
     form_data: {
         nama_lengkap?: string;
@@ -49,6 +52,12 @@ interface PaginationLink {
     active: boolean;
 }
 
+// jenisLayananList sekarang berupa array { id, name } sesuai backend
+interface JenisLayananItem {
+    id: number;
+    name: string;
+}
+
 interface LayananIndexProps {
     auth: { user: { id: number; name: string; email: string; role: string } };
     layanan: {
@@ -61,7 +70,7 @@ interface LayananIndexProps {
         from?: number;
         to?: number;
     };
-    jenisLayananList: string[];
+    jenisLayananList: JenisLayananItem[];
     filters: { search?: string; jenis_layanan?: string; status?: string };
     flash?: { success?: string; error?: string };
 }
@@ -83,10 +92,14 @@ function StarDisplay({ rating }: { rating: number }) {
 
 export default function LayananIndex({ auth, layanan, jenisLayananList, filters, flash }: LayananIndexProps) {
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
+    // filter jenis_layanan menyimpan layanan_id (string) agar sesuai backend
     const [selectedJenisLayanan, setSelectedJenisLayanan] = useState(filters.jenis_layanan || '');
     const [selectedStatus, setSelectedStatus] = useState(filters.status || '');
     const [selectedLayanan, setSelectedLayanan] = useState<LayananSubmission | null>(null);
-    const [showFilters, setShowFilters] = useState(false);
+    const [showFilters, setShowFilters] = useState(
+        // tampilkan filter panel otomatis jika ada filter aktif
+        !!(filters.jenis_layanan || filters.status),
+    );
 
     // Modal states
     const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -95,16 +108,16 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
     const [confirmData, setConfirmData] = useState<{ item: LayananSubmission; newStatus: string } | null>(null);
     const [rejectReason, setRejectReason] = useState('');
 
-    // Form selesai: file only (link dihapus)
+    // Form selesai
     const [selesaiFiles, setSelesaiFiles] = useState<File[]>([]);
     const [selesaiCatatan, setSelesaiCatatan] = useState('');
     const [selesaiSubmitting, setSelesaiSubmitting] = useState(false);
     const [fileError, setFileError] = useState('');
 
     const isInitialMount = useRef(true);
-
     const isAdminBps = auth.user.role === 'admin_bps';
 
+    // Debounced search — trigger saat search/filter berubah
     useEffect(() => {
         if (isInitialMount.current) {
             isInitialMount.current = false;
@@ -115,12 +128,11 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
     }, [searchTerm, selectedJenisLayanan, selectedStatus]);
 
     const handleSearch = () => {
-        const params = new URLSearchParams();
-        if (searchTerm) params.set('search', searchTerm);
-        if (selectedJenisLayanan) params.set('jenis_layanan', selectedJenisLayanan);
-        if (selectedStatus) params.set('status', selectedStatus);
-        const qs = params.toString();
-        router.get(qs ? `${route('admin.layanan.index')}?${qs}` : route('admin.layanan.index'), {}, { preserveState: true, replace: true });
+        const params: Record<string, string> = {};
+        if (searchTerm) params['search'] = searchTerm;
+        if (selectedJenisLayanan) params['jenis_layanan'] = selectedJenisLayanan; // layanan_id
+        if (selectedStatus) params['status'] = selectedStatus;
+        router.get(route('admin.layanan.index'), params, { preserveState: true, replace: true });
     };
 
     const clearSearch = () => {
@@ -200,7 +212,6 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
         formData.append('_method', 'PUT');
         if (selesaiCatatan) formData.append('catatan_admin', selesaiCatatan);
         selesaiFiles.forEach((f) => formData.append('result_files[]', f));
-
         if (searchTerm) formData.append('search', searchTerm);
         if (selectedJenisLayanan) formData.append('jenis_layanan_filter', selectedJenisLayanan);
         if (selectedStatus) formData.append('status_filter', selectedStatus);
@@ -231,23 +242,19 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
         setFileError('');
     };
 
-    const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1 MB
+    const MAX_FILE_SIZE = 1 * 1024 * 1024;
 
     const handleFileAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
-
         const oversized = Array.from(files).filter((f) => f.size > MAX_FILE_SIZE);
         if (oversized.length > 0) {
-            const names = oversized.map((f) => f.name).join(', ');
-            setFileError(`File berikut melebihi batas maksimal 1 MB: ${names}`);
+            setFileError(`File berikut melebihi batas maksimal 1 MB: ${oversized.map((f) => f.name).join(', ')}`);
             e.target.value = '';
             return;
         }
-
         setFileError('');
-        const newFiles = Array.from(files);
-        setSelesaiFiles((prev) => [...prev, ...newFiles]);
+        setSelesaiFiles((prev) => [...prev, ...Array.from(files)]);
         e.target.value = '';
     };
 
@@ -272,6 +279,7 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
         );
     };
 
+    const hasActiveFilter = !!(searchTerm || selectedJenisLayanan || selectedStatus);
     const layananArray = layanan?.data || [];
 
     // ── Card (mobile) ────────────────────────────────────────────────────────
@@ -280,8 +288,7 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
             <div className="mb-3 flex items-start justify-between">
                 <div className="flex-1">
                     <h3 className="mb-1 text-sm font-semibold text-gray-900">{item.jenis_layanan}</h3>
-                    <p className="text-xs text-gray-600">{item.form_data.nama_lengkap}</p>
-                    <p className="text-xs text-gray-400">{new Date(item.created_at).toLocaleDateString('id-ID')}</p>
+                    <p className="text-xs text-gray-600">{item.nama_pemohon ?? item.form_data.nama_lengkap}</p>
                 </div>
                 <div>{getStatusBadge(item.status)}</div>
             </div>
@@ -314,8 +321,8 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
     );
 
     return (
-        <AuthenticatedLayout auth={auth} title="Kelola Permohonan Layanan">
-            <Head title="Kelola Permohonan Layanan" />
+        <AuthenticatedLayout auth={auth} title="Kelola Pengajuan Layanan">
+            <Head title="Kelola Pengajuan Layanan" />
 
             <div className="space-y-4 px-4 sm:space-y-6 sm:px-0">
                 {/* Flash */}
@@ -333,16 +340,16 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex-1">
-                        <h2 className="text-xl font-semibold text-gray-700 sm:text-2xl">Kelola Permohonan Layanan</h2>
+                        <h2 className="text-xl font-semibold text-gray-700 sm:text-2xl">Kelola Pengajuan Layanan</h2>
                         {layanan.total !== undefined && (
                             <p className="mt-1 text-xs text-gray-500 sm:text-sm">
                                 {layanan.from && layanan.to ? (
                                     <>
-                                        Menampilkan {layanan.from}–{layanan.to} dari {layanan.total} permohonan
-                                        {(searchTerm || selectedJenisLayanan || selectedStatus) && ' (difilter)'}
+                                        Menampilkan {layanan.from}–{layanan.to} dari {layanan.total} pengajuan
+                                        {hasActiveFilter && ' (difilter)'}
                                     </>
                                 ) : (
-                                    <>Total {layanan.total} permohonan</>
+                                    <>Total {layanan.total} pengajuan</>
                                 )}
                             </p>
                         )}
@@ -378,12 +385,7 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                             color: 'text-green-600',
                             icon: CheckCircle,
                         },
-                        {
-                            label: 'Ditolak',
-                            value: layananArray.filter((p) => p.status === 'ditolak').length,
-                            color: 'text-red-600',
-                            icon: XCircle,
-                        },
+                        { label: 'Ditolak', value: layananArray.filter((p) => p.status === 'ditolak').length, color: 'text-red-600', icon: XCircle },
                     ].map(({ label, value, color, icon: Icon }) => (
                         <div key={label} className="rounded-lg border bg-white p-4 shadow-sm">
                             <div className="flex items-center justify-between">
@@ -397,8 +399,9 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                     ))}
                 </div>
 
-                {/* Search */}
+                {/* Search & Filter ─────────────────────────────────────────── */}
                 <div className="rounded-lg border bg-white p-3 shadow-sm sm:p-4">
+                    {/* Search bar */}
                     <div className="relative">
                         <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                         <input
@@ -408,24 +411,27 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="block w-full rounded-lg border border-gray-300 py-2.5 pr-10 pl-9 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none"
                         />
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                            {searchTerm ? (
+                        <div className="absolute inset-y-0 right-0 flex items-center gap-1 pr-3">
+                            {searchTerm && (
                                 <button onClick={() => setSearchTerm('')} className="text-gray-400 hover:text-gray-600">
                                     <X className="h-4 w-4" />
                                 </button>
-                            ) : (
-                                <button
-                                    onClick={() => setShowFilters(!showFilters)}
-                                    className={showFilters ? 'text-orange-600' : 'text-gray-400 hover:text-gray-600'}
-                                >
-                                    <Filter className="h-4 w-4" />
-                                </button>
                             )}
+                            <button
+                                onClick={() => setShowFilters(!showFilters)}
+                                className={`${showFilters || selectedJenisLayanan || selectedStatus ? 'text-orange-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                title="Filter"
+                            >
+                                <Filter className="h-4 w-4" />
+                            </button>
                         </div>
                     </div>
+
+                    {/* Filter panel — tampil saat showFilters aktif ATAU ada filter terpilih */}
                     {(showFilters || selectedJenisLayanan || selectedStatus) && (
                         <div className="mt-3 border-t border-gray-200 pt-3">
-                            <div className="flex flex-col gap-3 sm:flex-row">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                                {/* Filter Jenis Layanan — value adalah layanan_id */}
                                 <div className="flex-1">
                                     <label className="mb-1 block text-xs font-medium text-gray-700">Jenis Layanan</label>
                                     <select
@@ -433,14 +439,16 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                                         onChange={(e) => setSelectedJenisLayanan(e.target.value)}
                                         className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:outline-none"
                                     >
-                                        <option value="">Semua</option>
+                                        <option value="">Semua Layanan</option>
                                         {jenisLayananList.map((j) => (
-                                            <option key={j} value={j}>
-                                                {j}
+                                            <option key={j.id} value={String(j.id)}>
+                                                {j.name}
                                             </option>
                                         ))}
                                     </select>
                                 </div>
+
+                                {/* Filter Status */}
                                 <div className="flex-1">
                                     <label className="mb-1 block text-xs font-medium text-gray-700">Status</label>
                                     <select
@@ -455,17 +463,46 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                                         <option value="ditolak">Ditolak</option>
                                     </select>
                                 </div>
-                                {(searchTerm || selectedJenisLayanan || selectedStatus) && (
-                                    <div className="flex items-end">
+
+                                {/* Tombol clear filter */}
+                                {hasActiveFilter && (
+                                    <div className="shrink-0">
                                         <button
                                             onClick={clearSearch}
                                             className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                                         >
-                                            <X className="mr-1 h-4 w-4" /> Clear
+                                            <X className="mr-1 h-4 w-4" /> Reset Filter
                                         </button>
                                     </div>
                                 )}
                             </div>
+
+                            {/* Indikator filter aktif */}
+                            {(selectedJenisLayanan || selectedStatus) && (
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    {selectedJenisLayanan && (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-700">
+                                            {jenisLayananList.find((j) => String(j.id) === selectedJenisLayanan)?.name ?? 'Jenis Layanan'}
+                                            <button onClick={() => setSelectedJenisLayanan('')} className="ml-0.5 hover:text-orange-900">
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </span>
+                                    )}
+                                    {selectedStatus && (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-700">
+                                            {{
+                                                pending: 'Menunggu',
+                                                diproses: 'Sedang Diproses',
+                                                selesai: 'Selesai',
+                                                ditolak: 'Ditolak',
+                                            }[selectedStatus] ?? selectedStatus}
+                                            <button onClick={() => setSelectedStatus('')} className="ml-0.5 hover:text-orange-900">
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </span>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -475,25 +512,33 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                     {layananArray.length === 0 ? (
                         <div className="rounded-lg border bg-white py-12 text-center shadow-sm">
                             <FileText className="mx-auto h-12 w-12 text-gray-400" />
-                            <h3 className="mt-4 text-base font-medium text-gray-900">Tidak ada permohonan</h3>
+                            <h3 className="mt-4 text-base font-medium text-gray-900">Tidak ada pengajuan</h3>
+                            {hasActiveFilter && (
+                                <p className="mt-1 text-sm text-gray-500">
+                                    Tidak ditemukan pengajuan yang sesuai filter.{' '}
+                                    <button onClick={clearSearch} className="text-orange-600 underline hover:text-orange-700">
+                                        Reset filter
+                                    </button>
+                                </p>
+                            )}
                         </div>
                     ) : (
                         <>
-                            {/* Mobile */}
+                            {/* Mobile cards */}
                             <div className="block space-y-3 lg:hidden">
                                 {layananArray.map((item) => (
                                     <LayananCard key={item.id} item={item} />
                                 ))}
                             </div>
 
-                            {/* Desktop */}
+                            {/* Desktop table — tanpa kolom Tanggal */}
                             <div className="hidden lg:block">
                                 <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
                                     <div className="overflow-x-auto">
                                         <table className="min-w-full divide-y divide-gray-200">
                                             <thead className="bg-gray-50">
                                                 <tr>
-                                                    {['Tanggal', 'Pemohon', 'Jenis Layanan', 'Status', 'Penilaian', 'Aksi'].map((h) => (
+                                                    {['Pengaju', 'Jenis Layanan', 'Status', 'Penilaian', 'Aksi'].map((h) => (
                                                         <th
                                                             key={h}
                                                             className="px-6 py-3 text-center text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase"
@@ -506,19 +551,24 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                                             <tbody className="divide-y divide-gray-200 bg-white">
                                                 {layananArray.map((item) => (
                                                     <tr key={item.id} className="hover:bg-gray-50">
-                                                        <td className="px-6 py-4 text-center text-sm whitespace-nowrap text-gray-900">
-                                                            {new Date(item.created_at).toLocaleDateString('id-ID')}
-                                                        </td>
+                                                        {/* Pengaju */}
                                                         <td className="px-6 py-4 text-center text-sm text-gray-900">
-                                                            <div className="font-medium">{item.form_data.nama_lengkap}</div>
-                                                            <div className="text-gray-500">{item.form_data.email || item.form_data.no_telepon}</div>
+                                                            <div className="font-medium">
+                                                                {item.nama_pemohon ?? item.form_data.nama_lengkap ?? '-'}
+                                                            </div>
+                                                            <div className="text-gray-500">
+                                                                {item.email_pemohon ?? item.form_data.email ?? item.form_data.no_telepon ?? ''}
+                                                            </div>
                                                         </td>
+                                                        {/* Jenis Layanan */}
                                                         <td className="px-6 py-4 text-center text-sm text-gray-900">
                                                             <div className="max-w-xs truncate">{item.jenis_layanan}</div>
                                                         </td>
+                                                        {/* Status */}
                                                         <td className="px-6 py-4 text-center text-sm whitespace-nowrap">
                                                             {getStatusBadge(item.status)}
                                                         </td>
+                                                        {/* Penilaian */}
                                                         <td className="px-6 py-4 text-center text-sm whitespace-nowrap">
                                                             {item.rating ? (
                                                                 <div className="flex justify-center">
@@ -530,6 +580,7 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                                                                 </span>
                                                             )}
                                                         </td>
+                                                        {/* Aksi */}
                                                         <td className="px-4 py-4 text-center text-sm whitespace-nowrap">
                                                             <div className="flex items-center justify-center gap-2">
                                                                 <button
@@ -578,7 +629,7 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                             <h3 className="text-lg font-semibold">Konfirmasi Perubahan Status</h3>
                         </div>
                         <div className="space-y-4 p-6">
-                            <p className="text-sm text-gray-700">Apakah Anda yakin ingin mengubah status permohonan ini?</p>
+                            <p className="text-sm text-gray-700">Apakah Anda yakin ingin mengubah status pengajuan ini?</p>
                             <div className="space-y-3 rounded-lg border bg-gray-50 p-4">
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-medium text-gray-600">Dari:</span>
@@ -591,7 +642,10 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                             </div>
                             <div className="space-y-2 rounded-lg border border-orange-100 bg-orange-50 p-4">
                                 <p className="text-xs font-medium text-gray-700">
-                                    Pemohon: <span className="font-semibold text-gray-900">{confirmData.item.form_data.nama_lengkap}</span>
+                                    Pengaju:{' '}
+                                    <span className="font-semibold text-gray-900">
+                                        {confirmData.item.nama_pemohon ?? confirmData.item.form_data.nama_lengkap}
+                                    </span>
                                 </p>
                                 <p className="text-xs font-medium text-gray-700">
                                     Layanan: <span className="text-gray-900">{confirmData.item.jenis_layanan}</span>
@@ -621,12 +675,13 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
                     <div className="w-full max-w-md rounded-lg bg-white shadow-xl">
                         <div className="border-b p-6">
-                            <h3 className="text-lg font-semibold">Tolak Permohonan</h3>
+                            <h3 className="text-lg font-semibold">Tolak Pengajuan</h3>
                         </div>
                         <div className="space-y-4 p-6">
                             <div className="space-y-1 rounded-lg border border-orange-100 bg-orange-50 p-4">
                                 <p className="text-xs font-medium text-gray-700">
-                                    Pemohon: <span className="font-semibold">{confirmData.item.form_data.nama_lengkap}</span>
+                                    Pengaju:{' '}
+                                    <span className="font-semibold">{confirmData.item.nama_pemohon ?? confirmData.item.form_data.nama_lengkap}</span>
                                 </p>
                                 <p className="text-xs font-medium text-gray-700">Layanan: {confirmData.item.jenis_layanan}</p>
                             </div>
@@ -656,7 +711,7 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                                 disabled={!rejectReason.trim()}
                                 className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                             >
-                                Tolak Permohonan
+                                Tolak Pengajuan
                             </button>
                         </div>
                     </div>
@@ -669,8 +724,8 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                     <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white shadow-xl">
                         <div className="sticky top-0 flex items-center justify-between border-b bg-white px-6 py-4">
                             <div>
-                                <h3 className="text-lg font-semibold text-gray-900">Selesaikan Permohonan</h3>
-                                <p className="mt-0.5 text-xs text-gray-500">Lampirkan hasil layanan untuk pemohon (opsional)</p>
+                                <h3 className="text-lg font-semibold text-gray-900">Selesaikan Pengajuan</h3>
+                                <p className="mt-0.5 text-xs text-gray-500">Lampirkan hasil layanan untuk pengaju (opsional)</p>
                             </div>
                             <button onClick={cancelAll} className="rounded-full p-1 hover:bg-gray-100">
                                 <X className="h-5 w-5 text-gray-500" />
@@ -678,27 +733,23 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                         </div>
 
                         <div className="space-y-5 p-6">
-                            {/* Info pemohon */}
                             <div className="rounded-lg border border-green-200 bg-green-50 p-4">
                                 <div className="mb-2 flex items-center gap-2">
                                     <CheckCircle className="h-4 w-4 text-green-600" />
                                     <span className="text-sm font-semibold text-green-800">Menandai sebagai Selesai</span>
                                 </div>
                                 <p className="text-xs text-green-700">
-                                    Pemohon: <strong>{confirmData.item.form_data.nama_lengkap}</strong>
+                                    Pengaju: <strong>{confirmData.item.nama_pemohon ?? confirmData.item.form_data.nama_lengkap}</strong>
                                 </p>
                                 <p className="text-xs text-green-700">Layanan: {confirmData.item.jenis_layanan}</p>
                             </div>
 
-                            {/* ── Upload file hasil ── */}
                             <div>
                                 <p className="mb-2 block text-sm font-medium text-gray-700">
                                     <Paperclip className="mr-1 inline h-4 w-4" />
                                     Upload File Hasil Layanan
                                     <span className="ml-1 text-xs font-normal text-gray-400">(opsional, maks. 1 MB/file)</span>
                                 </p>
-
-                                {/* Drop-zone */}
                                 <label
                                     htmlFor="selesai-file-upload"
                                     className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 py-6 transition-colors hover:border-orange-400 hover:bg-orange-50"
@@ -715,16 +766,12 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                                     className="hidden"
                                     onChange={handleFileAdd}
                                 />
-
-                                {/* Pesan error ukuran file */}
                                 {fileError && (
                                     <div className="mt-2 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5">
                                         <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
                                         <p className="text-xs font-medium text-red-600">{fileError}</p>
                                     </div>
                                 )}
-
-                                {/* Daftar file terpilih */}
                                 {selesaiFiles.length > 0 && (
                                     <ul className="mt-3 space-y-2">
                                         {selesaiFiles.map((f, i) => (
@@ -748,14 +795,12 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                                         ))}
                                     </ul>
                                 )}
-
                                 {selesaiFiles.length > 0 && <p className="mt-2 text-xs text-gray-500">{selesaiFiles.length} file dipilih</p>}
                             </div>
 
-                            {/* Catatan */}
                             <div>
                                 <label className="mb-2 block text-sm font-medium text-gray-700">
-                                    Catatan untuk Pemohon <span className="text-xs font-normal text-gray-400">(opsional)</span>
+                                    Catatan untuk Pengaju <span className="text-xs font-normal text-gray-400">(opsional)</span>
                                 </label>
                                 <textarea
                                     value={selesaiCatatan}
@@ -779,7 +824,7 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                                 disabled={selesaiSubmitting || !!fileError}
                                 className="flex-1 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
                             >
-                                {selesaiSubmitting ? 'Menyimpan...' : '✓ Selesaikan Permohonan'}
+                                {selesaiSubmitting ? 'Menyimpan...' : '✓ Selesaikan Pengajuan'}
                             </button>
                         </div>
                     </div>
@@ -791,14 +836,13 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
                     <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg bg-white shadow-xl">
                         <div className="sticky top-0 flex items-center justify-between border-b bg-white p-6">
-                            <h2 className="text-xl font-bold text-gray-900">Detail Permohonan</h2>
+                            <h2 className="text-xl font-bold text-gray-900">Detail Pengajuan</h2>
                             <button onClick={() => setSelectedLayanan(null)} className="rounded-full p-1 hover:bg-gray-100">
                                 <X className="h-6 w-6" />
                             </button>
                         </div>
 
                         <div className="space-y-6 p-6">
-                            {/* Status */}
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
                                     <label className="text-sm font-medium text-gray-700">Status</label>
@@ -829,7 +873,6 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                                 </div>
                             )}
 
-                            {/* Hasil layanan — hanya file, tanpa link */}
                             {selectedLayanan.result_files && selectedLayanan.result_files.length > 0 && (
                                 <div className="rounded-lg border border-green-200 bg-green-50 p-4">
                                     <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-green-800">
@@ -852,11 +895,10 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                                 </div>
                             )}
 
-                            {/* Penilaian */}
                             {selectedLayanan.rating && (
                                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
                                     <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-amber-800">
-                                        <Star className="h-4 w-4" /> Penilaian Pemohon
+                                        <Star className="h-4 w-4" /> Penilaian Pengaju
                                         {selectedLayanan.rated_at && (
                                             <span className="text-xs font-normal text-amber-600">({selectedLayanan.rated_at})</span>
                                         )}
@@ -868,9 +910,8 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                                 </div>
                             )}
 
-                            {/* Data form */}
                             <div>
-                                <h3 className="mb-4 text-lg font-semibold text-gray-900">Data Permohonan</h3>
+                                <h3 className="mb-4 text-lg font-semibold text-gray-900">Data Pengajuan</h3>
                                 <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
                                     {Object.entries(selectedLayanan.form_data).map(([key, value]) => (
                                         <div key={key} className="grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -881,10 +922,9 @@ export default function LayananIndex({ auth, layanan, jenisLayananList, filters,
                                 </div>
                             </div>
 
-                            {/* File pengajuan */}
                             {selectedLayanan.uploaded_files && Object.keys(selectedLayanan.uploaded_files).length > 0 && (
                                 <div>
-                                    <h3 className="mb-4 text-lg font-semibold text-gray-900">Dokumen Diunggah Pemohon</h3>
+                                    <h3 className="mb-4 text-lg font-semibold text-gray-900">Dokumen Diunggah Pengaju</h3>
                                     <div className="space-y-3">
                                         {Object.entries(selectedLayanan.uploaded_files).map(([fieldName, files]) => {
                                             const fa = Array.isArray(files) ? files : [files];

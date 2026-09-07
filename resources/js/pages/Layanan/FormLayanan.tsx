@@ -307,7 +307,7 @@ export default function FormLayanan({ auth, jenisLayanan, deskripsi, persyaratan
                                             disabled={processing}
                                             className="rounded-md bg-orange-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-50"
                                         >
-                                            {processing ? 'Mengirim...' : 'Kirim Permohonan'}
+                                            {processing ? 'Mengirim...' : 'Kirim Pengajuan'}
                                         </button>
                                     </div>
                                 </form>

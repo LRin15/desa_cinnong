@@ -23,9 +23,13 @@ class PenggunaTerdaftar
         }
 
         if (!auth()->user()->isPenggunaTerdaftar()) {
-            // Admin tidak perlu akses layanan publik, redirect ke dashboard
             return redirect()->route('dashboard')
                 ->with('info', 'Halaman ini hanya untuk pengguna terdaftar.');
+        }
+
+        if (!auth()->user()->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice')
+                ->with('info', 'Silakan verifikasi email Anda terlebih dahulu untuk mengakses layanan ini.');
         }
 
         return $next($request);

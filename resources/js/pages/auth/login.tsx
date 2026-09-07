@@ -1,28 +1,36 @@
-// resources/js/Pages/Auth/Login.tsx
 import { FieldError, inputPassword, inputWithIcon } from '@/components/ui/FieldError';
 import MainLayout from '@/layouts/MainLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { Eye, EyeOff, LoaderCircle, Lock, Mail, MapPin } from 'lucide-react';
 import { FormEventHandler, useState } from 'react';
 
 type LoginForm = {
     email: string;
     password: string;
-    remember: boolean;
 };
 
 interface LoginProps {
     status?: string;
     canResetPassword?: boolean;
+    unverified_email?: string;
 }
 
-export default function Login({ status }: LoginProps) {
-    const [showPassword, setShowPassword] = useState(false);
+interface SharedPageProps {
+    villageSettings?: {
+        nama_desa?: string;
+        [key: string]: string | undefined;
+    };
+    [key: string]: any;
+}
 
-    const { data, setData, post, processing, errors, reset } = useForm<Required<LoginForm>>({
+export default function Login({ status, canResetPassword, unverified_email }: LoginProps) {
+    const [showPassword, setShowPassword] = useState(false);
+    const { villageSettings } = usePage<SharedPageProps>().props;
+    const namaDesa = villageSettings?.nama_desa || 'Desa Cinnong';
+
+    const { data, setData, post, processing, errors, reset } = useForm<LoginForm>({
         email: '',
         password: '',
-        remember: false,
     });
 
     const submit: FormEventHandler = (e) => {
@@ -32,11 +40,10 @@ export default function Login({ status }: LoginProps) {
 
     return (
         <MainLayout>
-            <Head title="Masuk - Sistem Informasi Desa Cinnong" />
+            <Head title={`Masuk - Sistem Informasi ${namaDesa}`} />
 
             <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-orange-50 to-orange-100 px-4 py-6 sm:px-6 sm:py-12 lg:px-8">
                 <div className="w-full max-w-sm space-y-6 sm:max-w-md sm:space-y-8">
-                    {/* Header */}
                     <div className="text-center">
                         <div className="mb-4 flex items-center justify-center sm:mb-6">
                             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-orange-600 to-orange-700 shadow-lg sm:h-20 sm:w-20">
@@ -44,7 +51,7 @@ export default function Login({ status }: LoginProps) {
                             </div>
                         </div>
                         <h2 className="mb-2 text-2xl leading-tight font-bold text-gray-900 sm:text-3xl">Masuk ke Sistem</h2>
-                        <p className="text-sm font-medium text-gray-600 sm:text-base">Sistem Informasi Desa Cinnong</p>
+                        <p className="text-sm font-medium text-gray-600 sm:text-base">Sistem Informasi {namaDesa}</p>
                         <div className="mx-auto mt-2 h-1 w-12 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 sm:w-16" />
                     </div>
 
@@ -82,9 +89,19 @@ export default function Login({ status }: LoginProps) {
 
                             {/* Password */}
                             <div>
-                                <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-gray-700">
-                                    Kata Sandi
-                                </label>
+                                <div className="mb-1.5 flex items-center justify-between">
+                                    <label htmlFor="password" className="text-sm font-medium text-gray-700">
+                                        Kata Sandi
+                                    </label>
+                                    {canResetPassword && (
+                                        <Link
+                                            href={route('password.request')}
+                                            className="text-xs font-medium text-orange-600 hover:text-orange-700 hover:underline"
+                                        >
+                                            Lupa kata sandi?
+                                        </Link>
+                                    )}
+                                </div>
                                 <div className="relative">
                                     <Lock className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                     <input
@@ -106,20 +123,6 @@ export default function Login({ status }: LoginProps) {
                                     </button>
                                 </div>
                                 <FieldError message={errors.password} />
-                            </div>
-
-                            {/* Remember */}
-                            <div className="flex items-center">
-                                <input
-                                    id="remember"
-                                    type="checkbox"
-                                    checked={data.remember}
-                                    onChange={(e) => setData('remember', e.target.checked)}
-                                    className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-2 focus:ring-orange-500"
-                                />
-                                <label htmlFor="remember" className="ml-2 cursor-pointer text-sm text-gray-700 select-none">
-                                    Ingat saya
-                                </label>
                             </div>
 
                             {/* Submit */}

@@ -44,7 +44,8 @@ class RegisteredUserController extends Controller
 
         event(new Registered($user));
 
-        // Redirect ke login dengan pesan sukses
-        return redirect()->route('login')->with('status', 'Registrasi berhasil! Silakan login dengan akun Anda.');
+        Auth::login($user); // ← tambahkan ini
+
+        return redirect()->route('verification.notice'); // ← ubah redirect ke sini
     }
 }

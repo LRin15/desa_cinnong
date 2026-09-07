@@ -1,7 +1,7 @@
 // resources/js/Pages/Auth/Register.tsx
 import { FieldError, inputPassword, inputWithIcon } from '@/components/ui/FieldError';
 import MainLayout from '@/layouts/MainLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { Eye, EyeOff, LoaderCircle, Lock, Mail, MapPin, User } from 'lucide-react';
 import { FormEventHandler, useState } from 'react';
 
@@ -11,11 +11,19 @@ type RegisterForm = {
     password: string;
     password_confirmation: string;
 };
+interface SharedPageProps {
+    villageSettings?: {
+        nama_desa?: string;
+        [key: string]: string | undefined;
+    };
+    [key: string]: any;
+}
 
 export default function Register() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
-
+    const { villageSettings } = usePage<SharedPageProps>().props;
+    const namaDesa = villageSettings?.nama_desa || 'Desa Cinnong';
     const { data, setData, post, processing, errors, reset } = useForm<Required<RegisterForm>>({
         name: '',
         email: '',
@@ -30,7 +38,7 @@ export default function Register() {
 
     return (
         <MainLayout>
-            <Head title="Daftar - Sistem Informasi Desa Cinnong" />
+            <Head title={`Daftar - Sistem Informasi ${namaDesa}`} />
 
             <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-orange-50 to-orange-100 px-4 py-6 sm:px-6 sm:py-12 lg:px-8">
                 <div className="w-full max-w-sm space-y-6 sm:max-w-md sm:space-y-8">
@@ -42,7 +50,7 @@ export default function Register() {
                             </div>
                         </div>
                         <h2 className="mb-2 text-2xl leading-tight font-bold text-gray-900 sm:text-3xl">Daftar Akun Baru</h2>
-                        <p className="text-sm font-medium text-gray-600 sm:text-base">Sistem Informasi Desa Cinnong</p>
+                        <p className="text-sm font-medium text-gray-600 sm:text-base">Sistem Informasi {namaDesa}</p>
                         <div className="mx-auto mt-2 h-1 w-12 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 sm:w-16" />
                     </div>
 

@@ -31,10 +31,22 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
+        $user = Auth::user();
+
+        if ($user->isPenggunaTerdaftar() && !$user->hasVerifiedEmail()) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')
+                ->withErrors(['email' => 'Email Anda belum diverifikasi. Silakan cek inbox atau folder spam Anda.'])
+                ->with('unverified_email', $request->email);
+        }
+
         $request->session()->regenerate();
 
         // Arahkan pengguna_terdaftar ke beranda, role lain ke dashboard
-        if (Auth::user()->role === \App\Models\User::ROLE_PENGGUNA_TERDAFTAR) {
+        if ($user->isPenggunaTerdaftar()) {
             return redirect()->intended(route('beranda', absolute: false));
         }
 

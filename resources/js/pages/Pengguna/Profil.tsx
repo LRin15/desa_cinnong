@@ -113,14 +113,14 @@ function LayananProgressBar({ status }: { status: string }) {
         return (
             <div className="mt-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
                 <XCircle className="h-4 w-4 flex-shrink-0 text-red-500" />
-                <p className="text-xs font-medium text-red-600">Permohonan ini ditolak. Silakan hubungi kantor desa untuk informasi lebih lanjut.</p>
+                <p className="text-xs font-medium text-red-600">Pengajuan ini ditolak. Silakan hubungi kantor desa untuk informasi lebih lanjut.</p>
             </div>
         );
     }
 
     return (
         <div className="mt-5">
-            <p className="mb-3 text-xs font-semibold tracking-wide text-gray-400 uppercase">Progres Permohonan</p>
+            <p className="mb-3 text-xs font-semibold tracking-wide text-gray-400 uppercase">Progres Pengajuan</p>
             <div className="flex items-center">
                 {steps.map((step, i) => {
                     const done = i <= currentIdx;
@@ -406,7 +406,7 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
 
                                 <div className="border-b border-gray-100 py-3 text-center">
                                     <p className="text-lg font-bold text-orange-600">{riwayatLayanan.length}</p>
-                                    <p className="text-xs text-gray-500">Total Permohonan Layanan</p>
+                                    <p className="text-xs text-gray-500">Total Pengajuan Layanan</p>
                                 </div>
 
                                 <nav className="p-2">
@@ -591,14 +591,14 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                                 <div className="space-y-4">
                                     <div>
                                         <h2 className="text-base font-semibold text-gray-900">Riwayat Pengajuan Layanan</h2>
-                                        <p className="text-sm text-gray-500">{riwayatLayanan.length} permohonan tercatat</p>
+                                        <p className="text-sm text-gray-500">{riwayatLayanan.length} pengajuan tercatat</p>
                                     </div>
 
                                     {riwayatLayanan.length === 0 ? (
                                         <EmptyState
                                             icon={FileText}
                                             title="Belum ada pengajuan"
-                                            description="Anda belum pernah mengajukan permohonan layanan. Kunjungi menu Layanan untuk mulai mengajukan."
+                                            description="Anda belum pernah mengajukan pengajuan layanan. Kunjungi menu Layanan untuk mulai mengajukan."
                                         />
                                     ) : (
                                         <div className="space-y-3">
@@ -645,11 +645,10 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                                                                 <dl className="space-y-2 text-sm">
                                                                     {[
                                                                         {
-                                                                            dt: 'ID Permohonan',
+                                                                            dt: 'ID Pengajuan',
                                                                             dd: `#${String(item.id).padStart(5, '0')}`,
                                                                             mono: true,
                                                                         },
-                                                                        { dt: 'Jenis Layanan', dd: item.jenis_layanan },
                                                                         { dt: 'Tanggal Diajukan', dd: item.created_at },
                                                                         { dt: 'Terakhir Diperbarui', dd: item.updated_at },
                                                                     ].map(({ dt, dd, mono }) => (
@@ -662,12 +661,6 @@ export default function Profil({ auth, status, riwayatLayanan }: ProfilProps) {
                                                                             </dd>
                                                                         </div>
                                                                     ))}
-                                                                    <div className="flex justify-between gap-4">
-                                                                        <dt className="text-gray-500">Status</dt>
-                                                                        <dd>
-                                                                            <StatusBadge status={item.status} config={layananStatusConfig} />
-                                                                        </dd>
-                                                                    </div>
                                                                 </dl>
 
                                                                 {/* Catatan admin */}

@@ -156,7 +156,7 @@ class LayananController extends Controller
 
         return Inertia::render('Layanan/FormLayanan', [
             'jenisLayanan' => 'Surat Pengantar KTP',
-            'deskripsi'    => 'Permohonan surat pengantar untuk pembuatan atau perpanjangan KTP',
+            'deskripsi'    => 'Pengajuan surat pengantar untuk pembuatan atau perpanjangan KTP',
             'persyaratan'  => [
                 'Fotocopy KK',
                 'Fotocopy KTP lama (jika perpanjangan)',
@@ -840,7 +840,7 @@ class LayananController extends Controller
                 'status'         => 'pending',
             ]);
 
-            return redirect()->back()->with('success', 'Permohonan layanan berhasil dikirim. Silakan tunggu proses verifikasi.');
+            return redirect()->back()->with('success', 'Pengajuan layanan berhasil dikirim. Silakan tunggu proses verifikasi.');
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return redirect()->back()

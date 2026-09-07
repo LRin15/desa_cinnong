@@ -198,25 +198,41 @@ const TimeSeriesChart = ({
             ) : (
                 <div className="space-y-6">
                     <div className="relative pt-4">
-                        <div className="flex h-48 items-end gap-2 overflow-x-auto pb-2">
-                            {rawData.map((point, idx) => {
-                                const heightPct = maxVal > 0 ? (point.total / maxVal) * 100 : 0;
-                                return (
-                                    <div key={idx} className="group relative flex min-w-[30px] flex-1 flex-col items-center">
+                        <div className="overflow-x-auto pb-2">
+                            <div className="flex h-56 min-w-full gap-2">
+                                {rawData.map((point, idx) => {
+                                    const heightPct = maxVal > 0 ? (point.total / maxVal) * 100 : 0;
+                                    const minColWidth = granularity === 'hari' ? 32 : granularity === 'minggu' ? 76 : 48;
+
+                                    return (
                                         <div
-                                            className={`w-full rounded-t-sm transition-all duration-300 ${point.total > 0 ? 'bg-orange-400 group-hover:bg-orange-500' : 'bg-gray-100'}`}
-                                            style={{ height: `${Math.max(heightPct, 5)}%` }}
+                                            key={idx}
+                                            className="group relative flex h-full flex-1 flex-col items-center"
+                                            style={{ minWidth: `${minColWidth}px` }}
                                         >
-                                            <div className="absolute -top-8 left-1/2 z-10 -translate-x-1/2 rounded bg-gray-900 px-2 py-1 text-[10px] whitespace-nowrap text-white opacity-0 transition-opacity group-hover:opacity-100">
-                                                {point.total} Pengajuan
+                                            {/* Area bar — flex-1 supaya tingginya definit (h-56 dikurangi tinggi label) */}
+                                            <div className="relative flex w-full flex-1 items-end justify-center">
+                                                <div
+                                                    className={`w-full max-w-[32px] rounded-t-sm transition-all duration-300 ${point.total > 0 ? 'bg-orange-400 group-hover:bg-orange-500' : 'bg-gray-100'}`}
+                                                    style={{ height: `${Math.max(heightPct, 5)}%` }}
+                                                >
+                                                    <div className="absolute -top-8 left-1/2 z-10 -translate-x-1/2 rounded bg-gray-900 px-2 py-1 text-[10px] whitespace-nowrap text-white opacity-0 transition-opacity group-hover:opacity-100">
+                                                        {point.total} Pengajuan
+                                                    </div>
+                                                </div>
                                             </div>
+
+                                            {/* Label — boleh wrap 2 baris untuk teks panjang seperti "Mg 1 (01-05)" */}
+                                            <span className="mt-2 shrink-0 text-center text-[10px] leading-tight font-medium text-gray-400">
+                                                {point.label}
+                                            </span>
                                         </div>
-                                        <span className="mt-2 rotate-45 text-[10px] font-medium text-gray-400 sm:rotate-0">{point.label}</span>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
+
                     <div className="flex gap-6 border-t pt-4">
                         <div className="text-center">
                             <p className="text-[10px] font-bold tracking-wider text-gray-400 uppercase">Total</p>
@@ -296,7 +312,7 @@ export default function Dashboard({ auth, stats, settings, chartData, jenisLayan
                     {/* Status Permohonan */}
                     <div className="rounded-xl border bg-white p-6 shadow-sm lg:col-span-2">
                         <div className="mb-6 flex items-center justify-between">
-                            <h2 className="text-lg font-bold text-gray-900">Status Permohonan</h2>
+                            <h2 className="text-lg font-bold text-gray-900">Status Pengajuan</h2>
                             <Link href={route('admin.layanan.index')} className="text-sm font-semibold text-orange-600 hover:text-orange-700">
                                 Kelola Semua
                             </Link>

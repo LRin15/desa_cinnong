@@ -3,7 +3,7 @@
 import Pagination from '@/components/Pagination';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Calendar, FileText, Filter, ImageIcon, Pencil, Plus, Search, Tag, Trash2, X } from 'lucide-react';
+import { Calendar, FileText, Filter, Pencil, Plus, Search, Tag, Trash2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface BeritaItem {
@@ -140,45 +140,34 @@ export default function Index() {
 
     const BeritaCard = ({ item }: { item: BeritaItem }) => (
         <div className="rounded-lg border bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
-            <div className="flex gap-4">
-                <div className="flex-shrink-0">
-                    {item.gambar ? (
-                        <img src={item.gambar} alt={item.judul} className="h-16 w-20 rounded-md border object-cover sm:h-20 sm:w-24" />
-                    ) : (
-                        <div className="flex h-16 w-20 items-center justify-center rounded-md border bg-gray-100 sm:h-20 sm:w-24">
-                            <ImageIcon className="h-6 w-6 text-gray-400" />
-                        </div>
-                    )}
+            <div className="min-w-0">
+                <h3 className="mb-2 line-clamp-2 text-sm font-semibold text-gray-900 sm:text-base">{item.judul}</h3>
+                <div className="mb-3 flex flex-wrap gap-2">
+                    <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800">
+                        <Tag className="mr-1 h-3 w-3" />
+                        {item.kategori}
+                    </span>
+                    <span className="inline-flex items-center text-xs text-gray-500">
+                        <Calendar className="mr-1 h-3 w-3" />
+                        {item.tanggal_terbit}
+                    </span>
                 </div>
-                <div className="min-w-0 flex-1">
-                    <h3 className="mb-2 line-clamp-2 text-sm font-semibold text-gray-900 sm:text-base">{item.judul}</h3>
-                    <div className="mb-3 flex flex-wrap gap-2">
-                        <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800">
-                            <Tag className="mr-1 h-3 w-3" />
-                            {item.kategori}
-                        </span>
-                        <span className="inline-flex items-center text-xs text-gray-500">
-                            <Calendar className="mr-1 h-3 w-3" />
-                            {item.tanggal_terbit}
-                        </span>
-                    </div>
-                    <div className="flex justify-end gap-2">
-                        <Link
-                            href={`/admin/berita/${item.id}/edit`}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-blue-50 text-blue-600 transition-colors hover:bg-blue-100"
-                            title={`Edit ${item.judul}`}
-                        >
-                            <Pencil className="h-4 w-4" />
-                        </Link>
-                        <button
-                            onClick={() => handleDeleteBerita(item)}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-red-50 text-red-600 transition-colors hover:bg-red-100"
-                            title={`Hapus ${item.judul}`}
-                            type="button"
-                        >
-                            <Trash2 className="h-4 w-4" />
-                        </button>
-                    </div>
+                <div className="flex justify-end gap-2">
+                    <Link
+                        href={`/admin/berita/${item.id}/edit`}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-blue-50 text-blue-600 transition-colors hover:bg-blue-100"
+                        title={`Edit ${item.judul}`}
+                    >
+                        <Pencil className="h-4 w-4" />
+                    </Link>
+                    <button
+                        onClick={() => handleDeleteBerita(item)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-red-50 text-red-600 transition-colors hover:bg-red-100"
+                        title={`Hapus ${item.judul}`}
+                        type="button"
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </button>
                 </div>
             </div>
         </div>
@@ -337,9 +326,6 @@ export default function Index() {
                                         <thead className="bg-gray-50">
                                             <tr>
                                                 <th className="px-6 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">
-                                                    Gambar
-                                                </th>
-                                                <th className="px-6 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">
                                                     Judul
                                                 </th>
                                                 <th className="px-6 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">
@@ -356,36 +342,23 @@ export default function Index() {
                                         <tbody className="divide-y divide-gray-200 bg-white">
                                             {beritaArray.map((item) => (
                                                 <tr key={item.id} className="hover:bg-gray-50">
-                                                    <td className="px-6 py-4 text-center">
-                                                        <div className="flex justify-center">
-                                                            {item.gambar ? (
-                                                                <img
-                                                                    src={item.gambar}
-                                                                    alt={item.judul}
-                                                                    className="h-12 w-20 rounded-md border object-cover"
-                                                                />
-                                                            ) : (
-                                                                <div className="flex h-12 w-20 items-center justify-center rounded-md border bg-gray-100">
-                                                                    <ImageIcon className="h-6 w-6 text-gray-400" />
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-center text-sm font-medium text-gray-900">
-                                                        <div className="max-w-xs truncate" title={item.judul}>
+                                                    <td className="px-6 py-4 text-center align-middle text-sm font-medium text-gray-900">
+                                                        {/* Tambahkan mx-auto di sini */}
+                                                        <div className="mx-auto max-w-xs truncate" title={item.judul}>
                                                             {item.judul}
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 text-center text-sm text-gray-500">
-                                                        <span className="inline-flex rounded-full bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-800">
+                                                    <td className="px-6 py-4 text-center align-middle text-sm text-gray-500">
+                                                        <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-800">
                                                             {item.kategori}
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-4 text-center text-sm whitespace-nowrap text-gray-500">
+                                                    <td className="px-6 py-4 text-center align-middle text-sm whitespace-nowrap text-gray-500">
                                                         {item.tanggal_terbit}
                                                     </td>
-                                                    <td className="px-6 py-4 text-center text-sm font-medium whitespace-nowrap">
-                                                        <div className="flex justify-center space-x-2">
+                                                    <td className="px-6 py-4 text-center align-middle text-sm font-medium whitespace-nowrap">
+                                                        {/* Tambahkan items-center di flex container ini */}
+                                                        <div className="flex items-center justify-center space-x-2">
                                                             <Link
                                                                 href={`/admin/berita/${item.id}/edit`}
                                                                 className="rounded p-1 text-blue-600 transition-colors hover:text-blue-900"

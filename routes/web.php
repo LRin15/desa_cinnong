@@ -57,8 +57,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile',  [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('/akun/profil',    [App\Http\Controllers\PenggunaTerdaftarController::class, 'index'])->name('pengguna.profil');
-    Route::patch('/akun/profil',  [App\Http\Controllers\PenggunaTerdaftarController::class, 'update'])->name('pengguna.profil.update');
+    Route::middleware('verified')->group(function () {
+        Route::get('/akun/profil',   [App\Http\Controllers\PenggunaTerdaftarController::class, 'index'])->name('pengguna.profil');
+        Route::patch('/akun/profil', [App\Http\Controllers\PenggunaTerdaftarController::class, 'update'])->name('pengguna.profil.update');
+    });
 });
 
 require __DIR__.'/auth.php';
