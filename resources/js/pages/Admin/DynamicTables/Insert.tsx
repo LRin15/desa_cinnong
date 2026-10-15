@@ -465,7 +465,7 @@ export default function Insert() {
                                                 )}
                                                 {table.has_column_total && (
                                                     <td className="border-r border-gray-200 bg-yellow-50 px-4 py-4 text-center text-sm font-semibold whitespace-nowrap sm:px-6">
-                                                        {isEditing ? calculateRowTotal(editingData, allFields).toFixed(2) : rowTotal.toFixed(2)}
+                                                        {isEditing ? calculateRowTotal(editingData, allFields).toFixed(0) : rowTotal.toFixed(0)}
                                                     </td>
                                                 )}
                                                 <td className="px-4 py-4 text-center text-sm font-medium whitespace-nowrap sm:px-6">
@@ -533,7 +533,7 @@ export default function Insert() {
                                         )}
                                         {table.has_column_total && (
                                             <td className="border-r border-gray-200 bg-yellow-50 px-4 py-4 text-center text-sm font-semibold whitespace-nowrap sm:px-6">
-                                                {calculateRowTotal(editingData, allFields).toFixed(2)}
+                                                {calculateRowTotal(editingData, allFields).toFixed(0)}
                                             </td>
                                         )}
                                         <td className="px-4 py-4 text-center text-sm font-medium whitespace-nowrap sm:px-6">
@@ -575,7 +575,7 @@ export default function Insert() {
                                                     className="border-r border-gray-200 px-4 py-4 text-center text-sm sm:px-6"
                                                 >
                                                     {field.column.type === 'number'
-                                                        ? calculateColumnTotal(field.fieldName, dataArray).toFixed(2)
+                                                        ? calculateColumnTotal(field.fieldName, dataArray).toFixed(0)
                                                         : '-'}
                                                 </td>
                                             )),
@@ -586,7 +586,7 @@ export default function Insert() {
                                                 key={`total-first-${fieldIdx}`}
                                                 className="border-r border-gray-200 px-4 py-4 text-center text-sm sm:px-6"
                                             >
-                                                {field.column.type === 'number' ? calculateColumnTotal(field.fieldName, dataArray).toFixed(2) : '-'}
+                                                {field.column.type === 'number' ? calculateColumnTotal(field.fieldName, dataArray).toFixed(0) : '-'}
                                             </td>
                                         ))}
                                         {table.has_column_total && (
@@ -594,7 +594,7 @@ export default function Insert() {
                                                 {allFields
                                                     .filter((f) => f.column.type === 'number')
                                                     .reduce((sum, field) => sum + calculateColumnTotal(field.fieldName, dataArray), 0)
-                                                    .toFixed(2)}
+                                                    .toFixed(0)}
                                             </td>
                                         )}
                                         <td className="px-4 py-4 text-center text-sm sm:px-6">-</td>
